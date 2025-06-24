@@ -250,43 +250,43 @@ def theme_already_logged_in_csv(
 
 
 def should_log_bet(
-    row: dict,
-    exposure: dict,
+    new_bet: dict,
+    existing_theme_stakes: dict,
     verbose: bool = True,
     min_ev: float = 0.05,
+    min_stake: float = MIN_FIRST_STAKE,
     eval_tracker: dict | None = None,
     reference_tracker: dict | None = None,
+    existing_csv_stakes: dict | None = None,
+    csv_path: str | None = None,
 ) -> dict:
-    """Purely evaluate whether ``row`` should be logged.
+    """Evaluate whether a bet should be logged and return a structured result.
 
-    The function performs no side effects and does not mutate ``row`` or
-    ``exposure``.  The returned dictionary includes:
+    Parameters
+    ----------
+    existing_csv_stakes : dict | None, optional
+        Mapping of previously logged stakes keyed by ``(game_id, market, side)``.
+        When provided, the function treats missing entries as no prior stake for
+        that specific market even if theme exposure exists.
 
-    - ``log``: ``True`` when the bet should be logged.
-    - ``stake``: stake amount to log (full stake or top-up delta).
-    - ``entry_type``: ``"first"``, ``"top-up```, or ``"none``.
-    - ``movement``: difference between current and baseline probabilities.
-    - ``required_movement``: confirmation threshold applied.
-    - ``skip_reason``: reason for skipping when ``log`` is ``False``.
-    
-    ``eval_tracker`` and ``reference_tracker`` provide baseline snapshot data
-    used to calculate market movement.
+    The optional ``eval_tracker`` should contain previous market evaluations
+    keyed by ``game_id:market:side:book`` so line movement can be enforced for
+    first-time entries.
+
+    csv_path : str | None, optional
+        Path to ``market_evals.csv`` for verifying previously logged exposure.
+        When provided, the CSV is scanned to confirm any prior theme-level
+        entry before classifying a bet as a top-up.
     """
-
-    new_bet = row.copy()
 
     game_id = new_bet["game_id"]
     market = new_bet["market"]
     side = normalize_label_for_odds(new_bet["side"], market)
     new_bet["side"] = side  # ensure consistent formatting
-
-    raw_kelly = float(new_bet.get("raw_kelly", 0.0))
-    stake = round_stake(raw_kelly * 0.25)
-
-    print(f"🔍 DEBUG: raw_kelly from row = {raw_kelly}")
-    print(f"🎯 Calculated stake from raw_kelly × 0.25 = {stake}")
-
-    ev = float(new_bet.get("ev_percent", 0.0))
+    # ``full_stake`` may be absent in legacy entries; fall back to ``stake``
+    # or 0.0 to avoid KeyError.
+    stake = round_stake(float(new_bet.get("full_stake", new_bet.get("stake", 0.0))))
+    ev = new_bet["ev_percent"]
 
     segment = normalize_segment(market)
     try:
@@ -310,17 +310,9 @@ def should_log_bet(
                 "⛔ should_log_bet: Rejected due to odds out of range",
                 verbose,
             )
-            return {
-                **new_bet,
-                "log": False,
-                "skip": True,
-                "stake": 0.0,
-                "entry_type": "none",
-                "movement": 0.0,
-                "required_movement": 0.0,
-                "skip_reason": "bad_odds",
-                "reason": "bad_odds",
-            }
+            new_bet["entry_type"] = "none"
+            new_bet["skip_reason"] = "bad_odds"
+            return build_skipped_evaluation("bad_odds", game_id, new_bet)
 
     # Determine EV% threshold based on market type and segment
     base_market = market.replace("alternate_", "").lower()
@@ -344,24 +336,34 @@ def should_log_bet(
             print(
                 f"⛔ should_log_bet: Rejected due to EV threshold → EV: {ev:.2f}%, Required: {threshold_frac * 100:.2f}%"
             )
-        return {
-            **new_bet,
-            "log": False,
-            "skip": True,
-            "stake": 0.0,
-            "entry_type": "none",
-            "movement": 0.0,
-            "required_movement": threshold_frac,
-            "skip_reason": "low_ev",
-            "reason": "low_ev",
-        }
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = "low_ev"
+        return build_skipped_evaluation("low_ev", game_id, new_bet)
 
     base_market = market.replace("alternate_", "")
     theme = get_theme({"side": side, "market": base_market})
     theme_key = get_theme_key(base_market, theme)
     exposure_key = make_theme_key(game_id, theme_key, segment)
-    theme_total = exposure.get(exposure_key, 0.0)
+    theme_total = existing_theme_stakes.get(exposure_key, 0.0)
+    csv_stake = 0.0
+    if existing_csv_stakes is not None:
+        csv_stake = existing_csv_stakes.get((game_id, market, side), 0.0)
+
+    if theme_total >= stake and existing_csv_stakes is not None:
+        csv_theme_total = _compute_csv_theme_total(
+            game_id, theme_key, segment, existing_csv_stakes
+        )
+        if csv_theme_total == 0:
+            # Tracker likely stale; reset exposure
+            existing_theme_stakes[exposure_key] = 0.0
+            theme_total = 0.0
+
     delta_base = theme_total
+    if theme_total >= stake and csv_stake == 0:
+        print(
+            f"⚠️ Theme stake exists ({theme_total}) but no CSV stake for {side}. Tracker may be stale."
+        )
+        delta_base = 0.0
     is_alt_line = (
         market.startswith("alternate_") or new_bet.get("market_class") == "alternate"
     )
@@ -408,123 +410,116 @@ def should_log_bet(
         agreement=agreement,
     )
     if prev_prob is not None and movement < threshold and theme_total == 0:
+        try:
+            from core.pending_bets import queue_pending_bet
+
+            queue_pending_bet(
+                {
+                    **new_bet,
+                    "baseline_consensus_prob": prev_prob,
+                }
+            )
+        except Exception:
+            pass
+
         if verbose:
             print(
                 "⏸️ Market move did not meet confirmation threshold. Skipping log."
             )
-        return {
-            **new_bet,
-            "log": False,
-            "skip": True,
-            "stake": 0.0,
-            "entry_type": "none",
-            "movement": movement,
-            "required_movement": threshold,
-            "skip_reason": "not_confirmed",
-            "reason": "not_confirmed",
-        }
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = "not_confirmed"
+        return build_skipped_evaluation("not_confirmed", game_id, new_bet)
 
 
     tracker_key = f"{game_id}:{market}:{side}"
 
-    # Restrict early bets for low-liquidity segments (1st_3, 1st_7, team_totals)
-    if segment in {"1st_3", "1st_7", "team_totals"} and hours_to_game is not None and hours_to_game > 12:
-        if verbose:
-            print(f"⏳ should_log_bet: Queued {segment} bet — too early (>12h to game)")
-        return {
-            **new_bet,
-            "log": False,
-            "skip": True,
-            "stake": 0.0,
-            "entry_type": "none",
-            "movement": movement,
-            "required_movement": threshold,
-            "skip_reason": "time_blocked",
-            "reason": "time_blocked",
-        }
-
-    if theme_total == 0:
-        stake_to_log = round_stake(stake)
-        if stake_to_log < MIN_FIRST_STAKE:
+    if theme_total > 0 and csv_path is not None:
+        if not theme_already_logged_in_csv(csv_path, game_id, theme_key, segment):
             _log_verbose(
-                f"⛔ Skipping bet — scaled stake {stake_to_log}u is below {MIN_FIRST_STAKE:.1f}u minimum",
+                "⚠️ Tracker showed exposure but no log found — treating as first log.",
                 verbose,
             )
-            return {
-                **new_bet,
-                "log": False,
-                "skip": True,
-                "stake": 0.0,
-                "entry_type": "none",
-                "movement": movement,
-                "required_movement": threshold,
-                "skip_reason": SkipReason.LOW_INITIAL.value,
-                "reason": SkipReason.LOW_INITIAL.value,
-            }
+            theme_total = 0.0
+            delta_base = 0.0
 
+    # Restrict early bets for low-liquidity segments (1st_3, 1st_7, team_totals)
+    if segment in {"1st_3", "1st_7", "team_totals"} and hours_to_game is not None and hours_to_game > 12:
+        try:
+            from core.pending_bets import queue_pending_bet
+
+            baseline = new_bet.get("consensus_prob") or new_bet.get("market_prob")
+            queue_pending_bet({**new_bet, "baseline_consensus_prob": baseline})
+        except Exception:
+            pass
+        if verbose:
+            print(f"⏳ should_log_bet: Queued {segment} bet — too early (>12h to game)")
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = "time_blocked"
+        return build_skipped_evaluation("time_blocked", game_id, new_bet)
+
+    if theme_total == 0:
+        new_bet["stake"] = round_stake(stake)
+        new_bet["entry_type"] = "first"
+        if new_bet["stake"] < MIN_FIRST_STAKE:
+            _log_verbose(
+                f"⛔ Skipping bet — scaled stake {new_bet['stake']}u is below {MIN_FIRST_STAKE:.1f}u minimum",
+                verbose,
+            )
+            new_bet["entry_type"] = "none"
+            new_bet["skip_reason"] = SkipReason.LOW_INITIAL.value
+            return build_skipped_evaluation(
+                SkipReason.LOW_INITIAL.value, game_id, new_bet
+            )
         _log_verbose(
-            f"✅ should_log_bet: First bet → {side} | {theme_key} [{segment}] | Stake: {stake_to_log:.2f}u | EV: {ev:.2f}%",
+            f"✅ should_log_bet: First bet → {side} | {theme_key} [{segment}] | Stake: {stake:.2f}u | EV: {ev:.2f}%",
             verbose,
         )
         return {
-            **new_bet,
-            "log": True,
             "skip": False,
-            "stake": stake_to_log,
-            "entry_type": "first",
-            "movement": movement,
-            "required_movement": threshold,
-            "skip_reason": None,
+            "full_stake": stake,
+            "ev": ev,
+            "log": True,
+            "game_id": game_id,
+            "side": new_bet["side"],
+            **new_bet,
         }
 
     # Round the delta once to avoid floating point drift across the pipeline
     delta_raw = stake - delta_base
     delta = round_stake(delta_raw)
     if delta >= MIN_TOPUP_STAKE:
+        new_bet["stake"] = delta
+        new_bet["entry_type"] = "top-up"
         _log_verbose(
             f"🔼 should_log_bet: Top-up accepted → {side} | {theme_key} [{segment}] | Δ {delta:.2f}u",
             verbose,
         )
         return {
-            **new_bet,
-            "log": True,
             "skip": False,
-            "stake": delta,
-            "entry_type": "top-up",
-            "movement": movement,
-            "required_movement": threshold,
-            "skip_reason": None,
+            "full_stake": stake,
+            "partial_stake": delta,
+            "ev": ev,
+            "log": True,
+            "game_id": game_id,
+            "side": new_bet["side"],
+            **new_bet,
         }
 
     if delta > 0:
-        _log_verbose(
-            f"🔄 Delta stake {delta:.2f}u below minimum top-up threshold",
-            verbose,
-        )
-        return {
-            **new_bet,
-            "log": False,
-            "skip": True,
-            "stake": 0.0,
-            "entry_type": "none",
-            "movement": movement,
-            "required_movement": threshold,
-            "skip_reason": SkipReason.LOW_TOPUP.value,
-            "reason": SkipReason.LOW_TOPUP.value,
-        }
+        try:
+            from core.micro_topups import queue_micro_topup
 
-    _log_verbose(
-        f"⛔ Delta stake {delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum",
-        verbose,
-    )
-    return {
-        **new_bet,
-        "log": False,
-        "skip": True,
-        "stake": 0.0,
-        "entry_type": "none",
-        "movement": movement,
-        "required_movement": threshold,
-        "skip_reason": SkipReason.ALREADY_LOGGED.value,
-        "reason": SkipReason.ALREADY_LOGGED.value,
-    }
+            queue_micro_topup(exposure_key, new_bet, delta)
+        except Exception:
+            pass
+        msg = f"🔄 Delta stake {delta:.2f}u queued for later"
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = "below_min_topup_queued"
+        _log_verbose(msg, verbose)
+        return build_skipped_evaluation("below_min_topup_queued", game_id, new_bet)
+
+    msg = f"⛔ Delta stake {delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum"
+    new_bet["entry_type"] = "none"
+    new_bet["skip_reason"] = SkipReason.LOW_TOPUP.value
+    _log_verbose(msg, verbose)
+    return build_skipped_evaluation(SkipReason.LOW_TOPUP.value, game_id, new_bet)
