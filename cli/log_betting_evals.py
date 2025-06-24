@@ -1003,23 +1003,7 @@ def expand_snapshot_rows_with_kelly(
 
                 raw_kelly = kelly_fraction(p, odds, fraction=fraction)
 
-                prev_prob = None
-                if prior_snapshot_row:
-                    prev_prob = prior_snapshot_row.get(
-                        "market_prob"
-                    ) or prior_snapshot_row.get("consensus_prob")
-                curr_prob = bet.get("market_prob") or bet.get("consensus_prob")
-                try:
-                    observed_move = float(curr_prob) - float(prev_prob)
-                except Exception:
-                    observed_move = 0.0
-
-                hours = bet.get("hours_to_game")
-                book_count = extract_book_count(bet)
-                strength = confirmation_strength(
-                    observed_move, hours, book_count=book_count
-                )
-                stake = round(raw_kelly * (strength**1.5), 4)
+                stake = round(raw_kelly, 4)
                 ev = calculate_ev_from_prob(p, odds)
 
                 if base_fields["side"] == "St. Louis Cardinals":
@@ -1052,7 +1036,6 @@ def expand_snapshot_rows_with_kelly(
                         "stake": stake,
                         "full_stake": stake,
                         "raw_kelly": raw_kelly,
-                        "adjusted_kelly": stake,
                         "_prior_snapshot": prior_snapshot_row,
                         "_raw_sportsbook": raw_books,
                         "consensus_books": raw_books,
@@ -2226,7 +2209,6 @@ def log_bets(
             "blend_weight_model": round(w_model, 2),
             "stake": stake,
             "raw_kelly": raw_kelly,
-            "adjusted_kelly": stake,
             "entry_type": "",
             "segment": segment,
             "segment_label": get_segment_label(matched_key, side_clean),
@@ -2615,7 +2597,6 @@ def log_derivative_bets(
                     "blend_weight_model": round(w_model, 2),
                     "stake": stake,  # Will be updated to delta after comparing `prev`
                     "raw_kelly": raw_kelly,
-                    "adjusted_kelly": stake,
                     "entry_type": "",  # Set below based on `prev`
                     "segment": segment,
                     "segment_label": get_segment_label(market_full, side_clean),

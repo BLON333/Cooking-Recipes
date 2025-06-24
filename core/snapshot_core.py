@@ -1341,16 +1341,7 @@ def expand_snapshot_rows_with_kelly(
                 fraction = 0.125 if row.get("market_class") == "alternate" else 0.25
                 raw_kelly = kelly_fraction(p, odds_val, fraction=fraction)
 
-                prev_prob = row.get("prev_market_prob")
-                curr_prob = row.get("market_prob")
-                try:
-                    observed_move = float(curr_prob) - float(prev_prob)
-                except Exception:
-                    observed_move = 0.0
-
-                hours = row.get("hours_to_game")
-                strength = confirmation_strength(observed_move, hours)
-                adjusted_kelly = round(raw_kelly * (strength ** 1.5), 4)
+                stake = round(raw_kelly, 4)
             except Exception:
                 continue
 
@@ -1363,10 +1354,9 @@ def expand_snapshot_rows_with_kelly(
                     "book": book,
                     "market_odds": odds_val,
                     "ev_percent": round(ev, 2),
-                    "stake": adjusted_kelly,
-                    "full_stake": adjusted_kelly,
+                    "stake": stake,
+                    "full_stake": stake,
                     "raw_kelly": raw_kelly,
-                    "adjusted_kelly": adjusted_kelly,
                     "_raw_sportsbook": per_book,
                     "consensus_books": per_book,
                 }
