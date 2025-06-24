@@ -50,7 +50,7 @@ from core.market_pricer import (
     decimal_odds,
     extract_best_book,
 )
-from core.confirmation_utils import confirmation_strength
+from core.confirmation_utils import required_market_move
 from core.scaling_utils import blend_prob
 from core.consensus_pricer import calculate_consensus_prob
 from core.market_movement_tracker import track_and_update_market_movement
@@ -867,8 +867,6 @@ def build_snapshot_rows(
             except Exception:
                 observed_move = 0.0
 
-            strength = confirmation_strength(observed_move, hours_to_game)
-
             p_blended, _, _, p_market = blend_prob(
                 sim_prob,
                 price,
@@ -881,6 +879,14 @@ def build_snapshot_rows(
             )
 
             ev_pct = calculate_ev_from_prob(p_blended, price)
+            required_move = required_market_move(
+                hours_to_game,
+                market=market_clean,
+                ev_percent=ev_pct,
+                book_count=len(book_odds_list),
+            )
+            ratio = observed_move / required_move if required_move > 0 else 0.0
+            strength = max(0.0, ratio)
             stake_fraction = 0.125 if market_class == "alternate" else 0.25
             raw_kelly = kelly_fraction(p_blended, price, fraction=stake_fraction)
 
