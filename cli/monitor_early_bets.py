@@ -89,6 +89,7 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
 
     updated = {}
     for key, bet in pending.items():
+        bet.pop("adjusted_kelly", None)
         start_dt = _start_time_from_gid(bet["game_id"])
         if not start_dt:
             continue
@@ -135,6 +136,7 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
             updated[key] = bet
             continue
         row = bet.copy()
+        row.pop("adjusted_kelly", None)
         row["consensus_prob"] = new_prob
         row["market_prob"] = new_prob
         row["hours_to_game"] = hours_to_game
@@ -152,6 +154,7 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
             existing_csv_stakes=existing,
         )
         if evaluated:
+            evaluated.pop("adjusted_kelly", None)
             result = write_to_csv(
                 evaluated,
                 "logs/market_evals.csv",
