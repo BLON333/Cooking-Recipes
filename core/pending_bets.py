@@ -59,7 +59,11 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     """Append or update ``bet`` in ``pending_bets.json``."""
     pending = load_pending_bets(path)
     key = f"{bet['game_id']}:{bet['market']}:{bet['side']}"
-    bet_copy = {k: v for k, v in bet.items() if not k.startswith('_')}
+    bet_copy = {
+        k: v
+        for k, v in bet.items()
+        if not k.startswith("_") and k != "adjusted_kelly"
+    }
     bet_copy['queued_ts'] = datetime.now().isoformat()
     pending[key] = bet_copy
     save_pending_bets(pending, path)

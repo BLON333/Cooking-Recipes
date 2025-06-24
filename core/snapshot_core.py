@@ -910,7 +910,6 @@ def build_snapshot_rows(
                 "stake": stake,
                 "full_stake": stake,
                 "raw_kelly": raw_kelly,
-                "adjusted_kelly": stake,
                 "segment": segment,
                 "market_class": market_class,
                 "best_book": best_book,
