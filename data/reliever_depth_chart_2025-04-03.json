@@ -1,0 +1,3427 @@
+{
+  "Twins": [
+    {
+      "name": "Griffin Jax",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Jhoan Duran",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Louis Varland",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Cole Sands",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Danny Coulombe",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brock Stewart",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Topa",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jorge Alcala",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Tonkin",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kody Funderburk",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Paddack",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zebby Matthews",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Connor Prielipp",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Randy Dobnak",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Anthony Misiewicz",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Darren McCaughan",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "David Festa",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Morris",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Travis Adams",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cory Lewis",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Jensen",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Orioles": [
+    {
+      "name": "Keegan Akin",
+      "ip": 57.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Seranthony Domnguez",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Yennier Cano",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Bryan Baker",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gregory Soto",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Flix Bautista",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cionel Prez",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Bowman",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Kittredge",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colin Selby",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kade Strowd",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Albert Surez",
+      "ip": 25.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brandon Young",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Grant Wolfram",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trevor Rogers",
+      "ip": 19.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Walter Pennington",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chayce McDermott",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cody Poteet",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cade Povich",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Bradish",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Charlie Morton",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Wells",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Gibson",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Red Sox": [
+    {
+      "name": "Garrett Whitlock",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Justin Slaten",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Aroldis Chapman",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Greg Weissert",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Liam Hendriks",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brennan Bernardino",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Wilson",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Guerrero",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sean Newcomb",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Winckowski",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kutter Crawford",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zack Kelly",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Richard Fitts",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cooper Criswell",
+      "ip": 24.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hunter Dobbins",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryan Mata",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Austin Adams",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Robert Stock",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Walker Buehler",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tanner Houck",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lucas Giolito",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Murphy",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Patrick Sandoval",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Phillies": [
+    {
+      "name": "Tanner Banks",
+      "ip": 56.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Matt Strahm",
+      "ip": 54.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Jos Alvarado",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Orion Kerkering",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jos Ruiz",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jordan Romano",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joe Ross",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Taijuan Walker",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carlos Hernndez",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Tyler",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Max Lazar",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "John McMillon",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Mercado",
+      "ip": 25.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Seth Johnson",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Devin Sweet",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alan Rangel",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brett de Geus",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mick Abel",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Guillo Zuiga",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ranger Surez",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jess Luzardo",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jose Cuas",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Painter",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Yankees": [
+    {
+      "name": "Luke Weaver",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Devin Williams",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Fernando Cruz",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Mark Leiter Jr.",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ian Hamilton",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tim Hill",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Matzek",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Yarbrough",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jonathan Loisiga",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jake Cousins",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brent Headrick",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Clayton Beeter",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Allan Winans",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "JT Brubaker",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Yerry De Los Santos",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Scott Effross",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colten Brewer",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carlos Carrasco",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Will Warren",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eric Reyzelman",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Gil",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Clarke Schmidt",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Dodgers": [
+    {
+      "name": "Tanner Scott",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Kirby Yates",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Alex Vesia",
+      "ip": 49.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Evan Phillips",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Anthony Banda",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ben Casparius",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jack Dreyer",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Kopech",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Garca",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Yoendrys Gmez",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Blake Treinen",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Sauer",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Wrobleski",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Landon Knack",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dustin May",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Noah Davis",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bobby Miller",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brusdar Graterol",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tony Gonsolin",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Edgardo Henriquez",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Giovanny Gallegos",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Frasso",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Guardians": [
+    {
+      "name": "Cade Smith",
+      "ip": 56.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Emmanuel Clase",
+      "ip": 54.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Hunter Gaddis",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tim Herrin",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kolby Allard",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jakob Junis",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joey Cantillo",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nic Enright",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Vince Velasquez",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Paul Sewald",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Doug Nikhazy",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trevor Stephan",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cody Bolton",
+      "ip": 25.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Festa",
+      "ip": 22.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Walters",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Erik Sabrowski",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zak Kent",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Slade Cecconi",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Franco Aleman",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Webb",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Triston McKenzie",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis L. Ortiz",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shane Bieber",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Mets": [
+    {
+      "name": "Reed Garrett",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Edwin Daz",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Max Kranick",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Ryne Stanek",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Huascar Brazobn",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jos Butt",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dedniel Nez",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kevin Herget",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Devenski",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Paul Blackburn",
+      "ip": 37.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gnesis Cabrera",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tylor Megill",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Danny Young",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brooks Raley",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brandon Waddell",
+      "ip": 24.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Zuber",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "A.J. Minter",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Griffin Canning",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Clay Holmes",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Hagenman",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Drew Smith",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Austin Warren",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kodai Senga",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Padres": [
+    {
+      "name": "Jason Adam",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Robert Suarez",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Jeremiah Estrada",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Adrian Morejon",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Yuki Matsui",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alek Jacob",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Wandy Peralta",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sean Reynolds",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "David Morgan",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Omar Cruz",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryan Hoeing",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ron Marinaccio",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Bergert",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Stephen Kolek",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Hart",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Francis Pena",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Logan Gillaspie",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bradgley Rodriguez",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jhony Brito",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Randy Vsquez",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Patio",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Waldron",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Astros": [
+    {
+      "name": "Bryan Abreu",
+      "ip": 59.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Josh Hader",
+      "ip": 56.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tayler Scott",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Bryan King",
+      "ip": 52.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Steven Okert",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kaleb Ort",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bennett Sousa",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Logan VanWey",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shawn Dubin",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Contreras",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Forrest Whitley",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Gusto",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Hernandez",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Robertson",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colton Gordon",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lance McCullers Jr.",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Miguel Castro",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "J.P. France",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "AJ Blubaugh",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hayden Wesneski",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cristian Javier",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Garcia",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Braves": [
+    {
+      "name": "Raisel Iglesias",
+      "ip": 56.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Daysbel Hernndez",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Dylan Lee",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Pierce Johnson",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Aaron Bummer",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Enyel De Los Santos",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Rafael Montero",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Craig Kimbrel",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Scott Blewett",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Petersen",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dylan Dodd",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nathan Wiles",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Davis Daniel",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Domingo Gonzalez",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joe Jimnez",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "AJ Smith-Shawver",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Grant Holmes",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jos Suarez",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Reynaldo Lpez",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ian Anderson",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryce Elder",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Royals": [
+    {
+      "name": "Lucas Erceg",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Carlos Estvez",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "John Schreiber",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Angel Zerpa",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Daniel Lynch IV",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Stratton",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Steven Cruz",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hunter Harvey",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jonathan Bowlan",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Evan Sisk",
+      "ip": 37.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sam Long",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Noah Cameron",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Lorenzen",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "James McArthur",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kris Bubic",
+      "ip": 22.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Wright",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luinder Avila",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alec Marsh",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Taylor Clarke",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eric Cerantola",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Wallace",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Austin Cox",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Junior Fernndez",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Blue Jays": [
+    {
+      "name": "Jeff Hoffman",
+      "ip": 53.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Yimi Garca",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Chad Green",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Yariel Rodrguez",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brendon Little",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mason Fluharty",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dillon Tate",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Sandlin",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Walker",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Paxton Schultz",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Erik Swanson",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eric Lauer",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Easton Lucas",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Burr",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tommy Nance",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Braydon Fisher",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jake Bloss",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Casey Lawrence",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bowden Francis",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alek Manoah",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Max Scherzer",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Brewers": [
+    {
+      "name": "Trevor Megill",
+      "ip": 52.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Jared Koenig",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Abner Uribe",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Grant Anderson",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Craig Yoho",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Mears",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joel Payamps",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryan Hudson",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Alexander",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Elvis Peguero",
+      "ip": 37.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Aaron Ashby",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Quinn Priester",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Elvin Rodriguez",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Misiorowski",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "DL Hall",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chad Patrick",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Connor Thomas",
+      "ip": 19.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nestor Cortes",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Logan Henderson",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carlos Rodriguez",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Aaron Civale",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tobias Myers",
+      "ip": 8.0,
+      "role": "Middle"
+    }
+  ],
+  "Rangers": [
+    {
+      "name": "Luke Jackson",
+      "ip": 52.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Robert Garcia",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Hoby Milner",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Cole Winn",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Webb",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Martin",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Latz",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shawn Armstrong",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Sborz",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Marc Church",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gerson Garabito",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Caleb Boushley",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cody Bradford",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hunter Strickland",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Patrick Murphy",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Emiliano Teodo",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Curvelo",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jack Leiter",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dane Dunning",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jon Gray",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Adrian Houser",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kumar Rocker",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Athletics": [
+    {
+      "name": "Mason Miller",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Tyler Ferguson",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Justin Sterner",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "T.J. McFarland",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Grant Holman",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michel Otaez",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Noah Murdock",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carlos Duran",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hogan Harris",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mitch Spence",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Lopez",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dylan Floro",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jos Leclerc",
+      "ip": 24.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jason Alexander",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gunnar Hoglund",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Elvis Alvarado",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Osvaldo Bido",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joey Estes",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "J.T. Ginn",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brady Basso",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Kelly",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Cusick",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jeffrey Springs",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Giants": [
+    {
+      "name": "Tyler Rogers",
+      "ip": 57.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Ryan Walker",
+      "ip": 55.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Camilo Doval",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Erik Miller",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Randy Rodrguez",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lou Trivino",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Spencer Bivens",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sean Hjelle",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Keaton Winn",
+      "ip": 37.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tristan Beck",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mason Black",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trevor McDonald",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joel Peguero",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carson Ragsdale",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hayden Birdsong",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Harrison",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carson Seymour",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jordan Hicks",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Landen Roupp",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joey Lucchesi",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Antonio Jimenez",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carson Whisenhunt",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ethan Small",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Pirates": [
+    {
+      "name": "Joey Wentz",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "David Bednar",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Caleb Ferguson",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Dennis Santana",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colin Holderman",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Borucki",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Nicolas",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chase Shugart",
+      "ip": 40.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hunter Stratton",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mike Burrows",
+      "ip": 37.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Lawrence",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carmen Mlodzinski",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tanner Rainey",
+      "ip": 24.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tim Mayza",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dauri Moreta",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Braxton Ashcraft",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bailey Falter",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Johan Oviedo",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Thomas Harrington",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Peter Strzelecki",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Heaney",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jared Jones",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Tigers": [
+    {
+      "name": "Kenta Maeda",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Will Vest",
+      "ip": 54.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tyler Holton",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tommy Kahnle",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brant Hurter",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brenan Hanifee",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sean Guenther",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Beau Brieske",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chase Lee",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "John Brebbia",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jason Foley",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Chafin",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bailey Horn",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Manning",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alex Lange",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Owens",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sawyer Gipson-Long",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ty Madden",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Mattison",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Keider Montero",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jackson Jobe",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dietrich Enns",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jordan Balazovic",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Mariners": [
+    {
+      "name": "Andrs Muoz",
+      "ip": 53.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Trent Thornton",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Gabe Speier",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Collin Snider",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eduard Bazardo",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carlos Vargas",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Brash",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Troy Taylor",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Casey Legumina",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tayler Saucedo",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jackson Kowar",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Will Klein",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gregory Santos",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jhonathan Daz",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shintaro Fujinami",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Blas Castano",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis F. Castillo",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brandyn Garcia",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Logan Evans",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Emerson Hancock",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trevor Gott",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sauryn Lao",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Fleming",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Angels": [
+    {
+      "name": "Brock Burke",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Ryan Zeferjahn",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Ryan Johnson",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Kenley Jansen",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Reid Detmers",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jose Fermin",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Garrett McDaniels",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ben Joyce",
+      "ip": 40.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jake Eder",
+      "ip": 40.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Darrell-Hicks",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Robert Stephenson",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chase Silseth",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jos Quijada",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hctor Neris",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Connor Brogdon",
+      "ip": 19.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Victor Mederos",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Caden Dana",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Victor Gonzlez",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jack Kochanowicz",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sam Bachman",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Diamondbacks": [
+    {
+      "name": "Justin Martinez",
+      "ip": 55.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Shelby Miller",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Kevin Ginkel",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Ryan Thompson",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jalen Beeks",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Juan Morillo",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Scott McGough",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kendall Graveman",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryne Nelson",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Yilber Daz",
+      "ip": 35.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Drey Jameson",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "A.J. Puk",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joe Mantiply",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryce Jarvis",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Nelson",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tommy Henry",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Saalfrank",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "John Curtiss",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kyle Amendt",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cristian Mena",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "J.P. Feyereisen",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brandon Pfaadt",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eduardo Rodriguez",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Rays": [
+    {
+      "name": "Edwin Uceta",
+      "ip": 52.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Pete Fairbanks",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Garrett Cleavinger",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Manuel Rodrguez",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mason Montgomery",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Hunter Bigge",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mason Englert",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eric Orze",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cole Sulser",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Kevin Kelly",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joe Boyle",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alex Faedo",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jacob Waguespack",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jonathan Hernndez",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Drew Rasmussen",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nate Lavender",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joey Gerber",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joe Rock",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ian Seymour",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cole Wilcox",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shane Baz",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zack Littell",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shane McClanahan",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Cardinals": [
+    {
+      "name": "Ryan Helsley",
+      "ip": 54.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Phil Maton",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "JoJo Romero",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Kyle Leahy",
+      "ip": 51.0,
+      "role": "Middle"
+    },
+    {
+      "name": "John King",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Riley O'Brien",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matt Svanson",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Roddery Muoz",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gordon Graceffo",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Fernandez",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Roycroft",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matthew Liberatore",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Steven Matz",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael McGreevy",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Anderson",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zack Thompson",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sem Robberse",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andre Pallante",
+      "ip": 16.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andre Granillo",
+      "ip": 13.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Loutos",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Quinn Mathews",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Max Rajcic",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Alex Cornwell",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Cubs": [
+    {
+      "name": "Porter Hodge",
+      "ip": 51.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Daniel Palencia",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Ryan Pressly",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Julian Merryweather",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brad Keller",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Caleb Thielbar",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Drew Pomeranz",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyson Miller",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nate Pearson",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Brasier",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tom Cosgrove",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ethan Roberts",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luke Little",
+      "ip": 24.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chris Flexen",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gavin Hollowell",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jordan Wicks",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Fulmer",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eli Morgan",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jack Neely",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Javier Assad",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ben Brown",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colin Rea",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Matthew Boyd",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Reds": [
+    {
+      "name": "Emilio Pagn",
+      "ip": 53.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Graham Ashcraft",
+      "ip": 53.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tony Santillan",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Alexis Daz",
+      "ip": 50.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Taylor Rogers",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Scott Barlow",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brent Suter",
+      "ip": 47.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lyon Richardson",
+      "ip": 43.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sam Moll",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Mey",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ian Gibaut",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Carson Spiers",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Yosver Zulueta",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zach Maxwell",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Connor Phillips",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chase Petty",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Moore",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Martinez",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Rhett Lowder",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Randy Wynne",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Albert Abreu",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tejay Antone",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Marlins": [
+    {
+      "name": "Calvin Faucher",
+      "ip": 52.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Anthony Bender",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Jesus Tinoco",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Ronny Henriquez",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Anthony Veneziano",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lake Bachar",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Declan Cronin",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "George Soriano",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Phillips",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luarbert Arias",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cade Gibson",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Connor Gillispie",
+      "ip": 32.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andrew Nardi",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Simpson",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "John Rooney",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Janson Junk",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Patrick Monteverde",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Valente Bellozo",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josh Ekness",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Edward Cabrera",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Xzavion Curry",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Max Meyer",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin King",
+      "ip": 7.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Weathers",
+      "ip": 5.0,
+      "role": "Middle"
+    }
+  ],
+  "Nationals": [
+    {
+      "name": "Kyle Finnegan",
+      "ip": 51.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Jorge Lpez",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Jose A. Ferrer",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Jackson Rutledge",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cole Henry",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lucas Sims",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Eduardo Salazar",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Colin Poche",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Derek Law",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brad Lord",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Orlando Ribalta",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mason Thompson",
+      "ip": 31.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Michael Soroka",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Joan Adon",
+      "ip": 29.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Andry Lara",
+      "ip": 23.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shinnosuke Ogasawara",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Zach Brzykcy",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trevor Williams",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Stuart",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Cade Cavalli",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Josiah Gray",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mitchell Parker",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "White Sox": [
+    {
+      "name": "Jordan Leasure",
+      "ip": 53.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Steven Wilson",
+      "ip": 52.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Fraser Ellard",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Cam Booser",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Penn Murfee",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Brandon Eisert",
+      "ip": 45.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mike Vasil",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jared Shuster",
+      "ip": 42.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bryse Wilson",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tyler Gilbert",
+      "ip": 36.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gus Varland",
+      "ip": 33.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Owen White",
+      "ip": 30.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Anderson",
+      "ip": 26.0,
+      "role": "Middle"
+    },
+    {
+      "name": "James Karinchak",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Justin Dunn",
+      "ip": 19.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jairo Iriarte",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Trey McGough",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Shane Smith",
+      "ip": 14.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Dan Altavilla",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Anthony Hoopii-Tuionetoa",
+      "ip": 11.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Mike Clevinger",
+      "ip": 10.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Nick Nastrini",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Sean Burke",
+      "ip": 8.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jonathan Cannon",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ],
+  "Rockies": [
+    {
+      "name": "Jake Bird",
+      "ip": 53.0,
+      "role": "Closer"
+    },
+    {
+      "name": "Zach Agnos",
+      "ip": 51.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Seth Halvorsen",
+      "ip": 50.0,
+      "role": "Setup"
+    },
+    {
+      "name": "Tyler Kinley",
+      "ip": 49.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Angel Chivilli",
+      "ip": 48.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Scott Alexander",
+      "ip": 46.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jimmy Herget",
+      "ip": 44.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Juan Mejia",
+      "ip": 41.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Victor Vodnik",
+      "ip": 39.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Luis Peralta",
+      "ip": 38.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jaden Hill",
+      "ip": 34.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Bradley Blalock",
+      "ip": 28.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Diego Castillo",
+      "ip": 27.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Jefry Yan",
+      "ip": 25.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Tanner Gordon",
+      "ip": 21.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Ryan Rolison",
+      "ip": 20.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Anthony Molina",
+      "ip": 18.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Gabriel Hughes",
+      "ip": 17.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Lucas Gilbreath",
+      "ip": 15.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Evan Justice",
+      "ip": 12.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Antonio Senzatela",
+      "ip": 9.0,
+      "role": "Middle"
+    },
+    {
+      "name": "Chase Dollander",
+      "ip": 7.0,
+      "role": "Middle"
+    }
+  ]
+}
