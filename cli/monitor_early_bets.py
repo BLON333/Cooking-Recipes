@@ -138,6 +138,10 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
         row["consensus_prob"] = new_prob
         row["market_prob"] = new_prob
         row["hours_to_game"] = hours_to_game
+        if row.get("entry_type") == "first":
+            raw_kelly = float(row.get("raw_kelly", 0))
+            row["stake"] = round(raw_kelly, 4)
+            row["full_stake"] = row["stake"]
         ref = {key: {"consensus_prob": prev_prob}}
         evaluated = should_log_bet(
             row,
