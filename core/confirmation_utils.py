@@ -8,9 +8,7 @@ from core.market_pricer import kelly_fraction
 
 __all__ = [
     "required_market_move",
-    "confirmation_strength",
     "print_threshold_table",
-    "book_agreement_score",
     "extract_book_count",
     "evaluate_late_confirmed_bet",
 ]
@@ -117,40 +115,6 @@ def required_market_move(
     return base_threshold
 
 
-def confirmation_strength(
-    observed_move: float, hours_to_game: float, book_count: int = 1
-) -> float:
-    """Return the market confirmation strength for a bet.
-
-    Parameters
-    ----------
-    observed_move : float
-        The consensus implied probability change observed in the market.
-    hours_to_game : float
-        Hours until game time used to determine the required threshold.
-    book_count : int
-        Number of sharp books contributing to the consensus probability (default = 1).
-
-    Returns
-    -------
-    float
-        A normalized strength value between 0 and 1 where 1 means the
-        observed move meets or exceeds the required threshold.
-    """
-
-    threshold = required_market_move(hours_to_game, book_count=book_count)
-    if threshold <= 0:
-        return 1.0
-
-    strength = max(0.0, min(1.0, float(observed_move) / threshold))
-    if VERBOSE and strength <= 0:
-        print(
-            f"[DEBUG] Negative market confirmation: observed_move={observed_move:.4f}, "
-            f"threshold={threshold:.4f} → strength=0.0"
-        )
-    return strength
-
-
 def print_threshold_table() -> None:
     """Print required market move thresholds at key hours.
 
@@ -165,50 +129,6 @@ def print_threshold_table() -> None:
         percent = threshold * 100.0
         units = threshold / 0.0045
         print(f"{hours:>3}h | {percent:>6.3f}% | {units:>5.2f}")
-
-
-def book_agreement_score(market_data: dict) -> float:
-    """Return the fraction of sharp books agreeing on a line move.
-
-    ``market_data`` should map sportsbook keys to the implied probability
-    change observed at that book. Positive deltas indicate movement in favor
-    of the bet while negative deltas reflect the opposite.
-    """
-
-    sharp_books = [
-        "pinnacle",
-        "betonlineag",
-        "fanduel",
-        "betmgm",
-        "draftkings",
-        "williamhill",
-        "mybookieag",
-    ]
-
-    threshold = 0.005
-    deltas = {}
-    for book in sharp_books:
-        try:
-            delta = float(market_data.get(book))
-        except Exception:
-            continue
-        if abs(delta) >= threshold:
-            deltas[book] = delta
-
-    if not deltas:
-        return 0.0
-
-    up = sum(1 for d in deltas.values() if d > 0)
-    down = sum(1 for d in deltas.values() if d < 0)
-    direction = 1 if up >= down else -1
-
-    agree = sum(
-        1
-        for d in deltas.values()
-        if (d > 0 and direction > 0) or (d < 0 and direction < 0)
-    )
-
-    return round(agree / len(sharp_books), 2)
 
 
 def evaluate_late_confirmed_bet(
@@ -267,13 +187,12 @@ def evaluate_late_confirmed_bet(
         raw_kelly = 0.0
 
     entry_type = str(bet.get("entry_type", "first")).lower()
-    agreement = book_agreement_score(bet.get("per_book", {}))
     required_move = required_market_move(
         hours,
         book_count=count,
         market=bet.get("market"),
         ev_percent=bet.get("ev_percent"),
-        agreement=agreement,
+        agreement=None,
     )
     strength = movement / required_move if required_move > 0 else 0.0
 
@@ -292,7 +211,7 @@ def evaluate_late_confirmed_bet(
             )
             return updated
 
-        # 🔁 confirmation_strength logic bypassed; using raw_kelly stake
+        # 🔁 Using raw Kelly stake without confirmation scaling
         print(f"🔁 Using raw_kelly stake without confirmation scaling: {raw_kelly:.4f}")
         target_stake = round(raw_kelly, 4)
         try:
