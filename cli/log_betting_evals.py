@@ -480,7 +480,7 @@ from core.market_pricer import (
     calculate_ev_from_prob,
     extract_best_book,
 )
-from core.confirmation_utils import confirmation_strength, extract_book_count
+from core.confirmation_utils import extract_book_count
 from core.snapshot_core import annotate_display_deltas
 from core.scaling_utils import blend_prob
 from core.odds_fetcher import fetch_market_odds_from_api, save_market_odds_to_file
@@ -2126,10 +2126,6 @@ def log_bets(
 
         book_count = extract_book_count(market_entry)
 
-        strength = confirmation_strength(
-            observed_move, hours_to_game, book_count=book_count
-        )
-
         p_blended, w_model, p_model, _ = blend_prob(
             sim_prob,
             market_price,
@@ -2145,10 +2141,7 @@ def log_bets(
         stake_fraction = 0.125 if price_source == "alternate" else 0.25
 
         raw_kelly = kelly_fraction(p_blended, market_price, fraction=stake_fraction)
-        stake = round(
-            raw_kelly * (strength**1.5),
-            4,
-        )
+        stake = round(raw_kelly, 4)
 
         # print statement below was previously used for every bet processed
         # but created noisy output during batch logging. It has been removed
@@ -2488,10 +2481,6 @@ def log_derivative_bets(
 
                 book_count = extract_book_count(market_entry)
 
-                strength = confirmation_strength(
-                    observed_move, hours_to_game, book_count=book_count
-                )
-
                 p_blended, w_model, p_model, _ = blend_prob(
                     p_model=prob,
                     market_odds=market_price,
@@ -2515,7 +2504,7 @@ def log_derivative_bets(
                 raw_kelly = kelly_fraction(
                     p_blended, market_price, fraction=stake_fraction
                 )
-                stake = round(raw_kelly * (strength**1.5), 4)
+                stake = round(raw_kelly, 4)
 
                 print(
                     f"        🕒 Game in {hours_to_game:.2f}h → model weight: {w_model:.2f}"

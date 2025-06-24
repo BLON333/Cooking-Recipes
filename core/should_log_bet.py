@@ -25,7 +25,7 @@ MIN_EV_THRESHOLDS = {
 }
 
 from core.market_pricer import decimal_odds
-from core.confirmation_utils import required_market_move, book_agreement_score
+from core.confirmation_utils import required_market_move
 from core.skip_reasons import SkipReason
 from core.logger import get_logger
 import csv
@@ -401,13 +401,12 @@ def should_log_bet(
 
     books = new_bet.get("per_book")
     book_count = len(books) if isinstance(books, dict) and books else 1
-    agreement = book_agreement_score(new_bet.get("per_book", {}))
     threshold = required_market_move(
         hours_to_game or 8,
         book_count=book_count,
         market=new_bet.get("market"),
         ev_percent=new_bet.get("ev_percent"),
-        agreement=agreement,
+        agreement=None,
     )
     if prev_prob is not None and movement < threshold and theme_total == 0:
         try:
