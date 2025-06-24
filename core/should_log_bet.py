@@ -285,7 +285,14 @@ def should_log_bet(
     new_bet["side"] = side  # ensure consistent formatting
     # ``full_stake`` may be absent in legacy entries; fall back to ``stake``
     # or 0.0 to avoid KeyError.
-    stake = round_stake(float(new_bet.get("full_stake", new_bet.get("stake", 0.0))))
+    stake = round_stake(
+        float(
+            new_bet.get(
+                "raw_kelly",
+                new_bet.get("full_stake", new_bet.get("stake", 0.0)),
+            )
+        )
+    )
     ev = new_bet["ev_percent"]
 
     segment = normalize_segment(market)
