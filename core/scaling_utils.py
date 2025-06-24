@@ -4,7 +4,7 @@ import math
 import os
 from typing import Optional, Tuple, List
 
-from core.confirmation_utils import confirmation_strength
+from core.confirmation_utils import required_market_move
 
 __all__ = [
     "scale_distribution",
@@ -158,7 +158,13 @@ def blend_prob(
     w_model = max(min_weight, w_base * (1 - decay_factor))
 
     # Scale down model weight if market movement lacks confirmation
-    strength = confirmation_strength(observed_move, hours_to_game)
+    required_move = required_market_move(
+        hours_to_game,
+        market=market_type,
+        book_count=len(book_odds_list) if book_odds_list else 1,
+    )
+    ratio = observed_move / required_move if required_move > 0 else 0.0
+    strength = max(0.0, ratio)
     if strength < 1.0:
         w_model *= 0.5 + 0.5 * strength
 
@@ -176,7 +182,7 @@ def blend_prob(
         logger = get_logger(__name__)
         logger.debug(
             "High-EV bet: std_dev_books=%.3f line_volatility_factor=%.3f "
-            "confirmation_strength=%.3f final_model_weight=%.3f",
+            "market_strength=%.3f final_model_weight=%.3f",
             std_dev_books,
             line_volatility_factor,
             strength,
