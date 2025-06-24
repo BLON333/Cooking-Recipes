@@ -1890,7 +1890,13 @@ def write_to_csv(
             row.pop("blend_weight_model", None)
 
             # Remove transient keys not meant for CSV output
-            for k in ["_movement", "_movement_str", "_prior_snapshot", "full_stake"]:
+            for k in [
+                "_movement",
+                "_movement_str",
+                "_prior_snapshot",
+                "full_stake",
+                "adjusted_kelly",
+            ]:
                 row.pop(k, None)
 
             # Attach logger configuration for audit trail
