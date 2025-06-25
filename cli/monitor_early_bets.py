@@ -138,50 +138,68 @@ def recheck_pending_bets(
         if not row:
             updated[key] = bet
             continue
-        new_prob = row.get("market_prob")
-        if new_prob is None:
-            odds = row.get("market_odds")
-            new_prob = american_to_prob(odds) if odds is not None else None
-        if new_prob is None:
-            updated[key] = bet
-            continue
-        prev_prob = bet.get("baseline_consensus_prob")
-        if prev_prob is None:
-            prev_prob = bet.get("consensus_prob")
-        try:
-            movement = float(new_prob) - float(prev_prob)
-        except Exception:
-            movement = 0.0
+        # Preserve baseline
+        baseline = bet.get("baseline_consensus_prob")
 
-        books_val = row.get("books_used")
-        if not books_val and isinstance(row.get("consensus_books"), dict):
-            books_val = ", ".join(sorted(row["consensus_books"].keys()))
-        book_list = [b.strip() for b in str(books_val).split(",") if b.strip()] if books_val else []
-        book_count = len(book_list) if book_list else 1
-        if books_val:
-            bet["books_used"] = books_val
-        threshold = required_market_move(
-            hours_to_game=hours_to_game,
-            book_count=book_count,
-            market=bet.get("market"),
-            ev_percent=bet.get("ev_percent"),
+        # 1. Copy all core fields from snapshot
+        for field in [
+            "sim_prob",
+            "blended_prob",
+            "blended_fv",
+            "ev_percent",
+            "raw_kelly",
+            "market_odds",
+            "market_prob",
+            "market_class",
+            "hours_to_game",
+        ]:
+            if field in row:
+                bet[field] = row[field]
+
+        # 2. Normalize books_used from consensus_books
+        consensus_books = row.get("consensus_books", {})
+        if isinstance(consensus_books, dict):
+            bet["books_used"] = list(consensus_books.keys())
+
+        # 3. Optionally store per_book for debugging / CLV audits
+        if "_raw_sportsbook" in row:
+            bet["per_book"] = row["_raw_sportsbook"]
+
+        # 4. Compute movement vs baseline
+        try:
+            current_prob = float(row.get("market_prob"))
+            base_prob = float(baseline)
+            bet["consensus_move"] = round(current_prob - base_prob, 5)
+        except Exception:
+            bet["consensus_move"] = 0.0
+
+        # 5. Compute required movement threshold
+        from core.confirmation_utils import required_market_move
+        book_count = len(bet.get("books_used", [])) or 1
+        hours = bet.get("hours_to_game", 0)
+        bet["required_move"] = round(
+            required_market_move(
+                hours_to_game=hours,
+                book_count=book_count,
+                market=bet.get("market"),
+                ev_percent=bet.get("ev_percent"),
+            ),
+            5,
         )
-        bet["required_move"] = round(threshold, 4)
-        bet["consensus_move"] = round(movement, 4)
-        bet["hours_to_game"] = round(hours_to_game, 2)
-        if movement < threshold:
+        if bet.get("consensus_move", 0.0) < bet.get("required_move", 0.0):
             updated[key] = bet
             continue
         row = bet.copy()
         row.pop("adjusted_kelly", None)
+        new_prob = bet.get("market_prob")
         row["consensus_prob"] = new_prob
         row["market_prob"] = new_prob
-        row["hours_to_game"] = hours_to_game
+        row["hours_to_game"] = bet.get("hours_to_game", hours_to_game)
         if row.get("entry_type") == "first":
             raw_kelly = float(row.get("raw_kelly", 0))
             row["stake"] = round(raw_kelly, 4)
             row["full_stake"] = row["stake"]
-        ref = {key: {"consensus_prob": prev_prob}}
+        ref = {key: {"consensus_prob": baseline}}
         evaluated = should_log_bet(
             row,
             theme_stakes,
