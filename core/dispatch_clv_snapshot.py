@@ -588,6 +588,15 @@ def main() -> None:
             logger.warning("❌ No 'CLV%' column found — skipping sort.")
             df["CLV%"] = "–"
 
+    drop_cols = [
+        "game_id",
+        "market",
+        "side",
+        "book",  # lowercase raw fields
+        "label",  # optional, if already merged into Bet
+    ]
+    df = df.drop(columns=[col for col in drop_cols if col in df.columns])
+
     if args.output_discord and WEBHOOK_URL:
         send_snapshot(df, WEBHOOK_URL, counts)
     else:
