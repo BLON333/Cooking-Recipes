@@ -229,6 +229,32 @@ def recheck_pending_bets(
         updated[key] = bet
 
     if updated != pending:
+        # Format fields before saving
+        for key, bet in updated.items():
+            # Sort keys for readability
+            bet_sorted = {k: bet[k] for k in sorted(bet.keys())}
+
+            # Optional: Round float fields for cleaner storage
+            for float_key in [
+                "sim_prob",
+                "blended_prob",
+                "blended_fv",
+                "ev_percent",
+                "raw_kelly",
+                "market_prob",
+                "consensus_move",
+                "required_move",
+                "market_odds",
+            ]:
+                if float_key in bet_sorted and isinstance(bet_sorted[float_key], float):
+                    bet_sorted[float_key] = round(bet_sorted[float_key], 4)
+
+            # Keep books_used as a sorted list
+            if isinstance(bet_sorted.get("books_used"), list):
+                bet_sorted["books_used"] = sorted(bet_sorted["books_used"])
+
+            updated[key] = bet_sorted
+
         save_pending_bets(updated, path)
 
 
