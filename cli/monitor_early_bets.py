@@ -73,10 +73,50 @@ def _start_time_from_gid(game_id: str) -> datetime | None:
         return None
 
 
+def _clean_snapshot_row(row: dict) -> dict:
+    """Return a sanitized pending bet dict from ``row``."""
+    allowed: dict = {}
+    for k, v in row.items():
+        if k.startswith("_") or k.startswith("snapshot_") or k.endswith("_display"):
+            continue
+        allowed[k] = v
+    return allowed
+
+
+def merge_snapshot_pending(pending: dict, rows: list) -> dict:
+    """Merge queued bets from ``rows`` into ``pending``."""
+    if not isinstance(pending, dict):
+        pending = {}
+
+    merged = dict(pending)
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        if not r.get("queued_ts") or r.get("logged"):
+            continue
+        gid = r.get("game_id")
+        market = r.get("market")
+        side = r.get("side")
+        if not gid or not market:
+            continue
+        key = f"{gid}:{market}:{side}"
+        base = merged.get(key, {})
+        bet = _clean_snapshot_row(r)
+        baseline = base.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = bet.get("market_prob") or bet.get("consensus_prob")
+        bet["baseline_consensus_prob"] = baseline
+        bet["queued_ts"] = base.get("queued_ts", r.get("queued_ts"))
+        merged[key] = bet
+    return merged
+
+
 def recheck_pending_bets(
     path: str = PENDING_BETS_PATH, snapshot_dir: str = DEFAULT_SNAPSHOT_DIR
 ) -> None:
     pending = load_pending_bets(path)
+    snapshot_rows = load_latest_snapshot(snapshot_dir)
+    pending = merge_snapshot_pending(pending, snapshot_rows)
     if not pending:
         return
 
@@ -84,8 +124,6 @@ def recheck_pending_bets(
     session_exposure = defaultdict(set)
     theme_stakes = load_theme_stakes()
     eval_tracker = load_eval_tracker()
-
-    snapshot_rows = load_latest_snapshot(snapshot_dir)
     snapshot_index = {
         (
             r.get("game_id"),
