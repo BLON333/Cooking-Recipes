@@ -320,6 +320,13 @@ def build_snapshot_rows(
         except Exception:
             stake = 0.0
         expected_profit = round(stake * clv_pct / 100, 2)
+
+        # Store raw values back into the row for downstream filtering/deduping
+        row["stake"] = stake
+        row["game_id"] = gid
+        row["market"] = row.get("market")
+        row["side"] = row.get("side")
+        row["book"] = row.get("book") or row.get("best_book")
         parts = parse_game_id(gid)
         date = row.get("Date") or parts.get("date", "")
         matchup = row.get("Matchup") or f"{parts.get('away','')} @ {parts.get('home','')}"
