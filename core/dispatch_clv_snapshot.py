@@ -350,6 +350,10 @@ def build_snapshot_rows(
                 "CLV%": f"{clv_pct:+.1f}%",
                 "Stake": f"{stake:.2f}u",
                 "Expected Profit": f"{expected_profit:.2f}u",
+                "game_id": gid,
+                "market": row.get("market", ""),
+                "side": row.get("side"),
+                "book": row.get("best_book", row.get("book", "")),
             }
         )
     if skipped and not verbose:
