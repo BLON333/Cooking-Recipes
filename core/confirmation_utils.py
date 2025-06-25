@@ -40,7 +40,6 @@ def required_market_move(
     book_count: int = 1,
     market: str | None = None,
     ev_percent: float | None = None,
-    agreement: float | None = None,
 ) -> float:
     """Return required consensus probability movement for confirmation.
 
@@ -56,9 +55,6 @@ def required_market_move(
     ev_percent : float, optional
         Model-derived expected value percentage. Higher EV loosens the
         requirement while lower EV tightens it.
-    agreement : float, optional
-        Fraction of books in agreement on the market movement. Provided for
-        logging purposes only – low agreement will not block confirmation.
 
     Returns
     -------
@@ -100,17 +96,6 @@ def required_market_move(
                 base_threshold *= 0.8
             elif 5.0 <= ev_val <= 7.0:
                 base_threshold *= 1.25
-
-    # Do not block for low agreement but optionally log the situation
-    if agreement is not None:
-        try:
-            agr = float(agreement)
-        except Exception:
-            agr = None
-        if agr is not None and agr < 0.4:
-            print(
-                f"⚠️ Low book agreement ({agr:.2f}) — proceeding due to model-first logic."
-            )
 
     return base_threshold
 
@@ -192,7 +177,6 @@ def evaluate_late_confirmed_bet(
         book_count=count,
         market=bet.get("market"),
         ev_percent=bet.get("ev_percent"),
-        agreement=None,
     )
     strength = movement / required_move if required_move > 0 else 0.0
 

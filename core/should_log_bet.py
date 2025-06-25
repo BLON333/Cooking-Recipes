@@ -413,7 +413,6 @@ def should_log_bet(
         book_count=book_count,
         market=new_bet.get("market"),
         ev_percent=new_bet.get("ev_percent"),
-        agreement=None,
     )
     if prev_prob is not None and movement < threshold and theme_total == 0:
         try:
