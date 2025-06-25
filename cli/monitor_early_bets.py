@@ -1,5 +1,4 @@
 import os
-import sys
 import glob
 import json
 from core.bootstrap import *  # noqa
@@ -10,10 +9,8 @@ from datetime import datetime
 from core.utils import (
     parse_game_id,
     EASTERN_TZ,
-    now_eastern,
 )
 from core.time_utils import compute_hours_to_game
-from core.odds_fetcher import american_to_prob
 from core.logger import get_logger
 from core.confirmation_utils import required_market_move
 from core.pending_bets import (
@@ -53,29 +50,6 @@ def load_latest_snapshot(snapshot_dir: str = DEFAULT_SNAPSHOT_DIR) -> list:
     except Exception as e:
         logger.warning("⚠️ Failed to load snapshot %s — %s", latest, e)
         return []
-
-
-def retry_api_call(func, max_attempts: int = 3, wait_seconds: int = 2):
-    """Call ``func`` retrying on Exception."""
-    for attempt in range(max_attempts):
-        try:
-            return func()
-        except Exception as e:
-            if attempt < max_attempts - 1:
-                logger.warning(
-                    "\u26a0\ufe0f API call failed (attempt %d/%d): %s. Retrying...",
-                    attempt + 1,
-                    max_attempts,
-                    e,
-                )
-                time.sleep(wait_seconds)
-            else:
-                logger.error(
-                    "\u274c API call failed after %d attempts: %s",
-                    max_attempts,
-                    e,
-                )
-                raise
 
 
 def _start_time_from_gid(game_id: str) -> datetime | None:
@@ -174,7 +148,6 @@ def recheck_pending_bets(
             bet["consensus_move"] = 0.0
 
         # 5. Compute required movement threshold
-        from core.confirmation_utils import required_market_move
         book_count = len(bet.get("books_used", [])) or 1
         hours = bet.get("hours_to_game", 0)
         bet["required_move"] = round(
