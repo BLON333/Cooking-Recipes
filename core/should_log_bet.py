@@ -25,7 +25,6 @@ MIN_EV_THRESHOLDS = {
 }
 
 from core.market_pricer import decimal_odds
-from core.confirmation_utils import required_market_move
 from core.skip_reasons import SkipReason
 from core.logger import get_logger
 import csv
@@ -256,7 +255,6 @@ def should_log_bet(
     min_ev: float = 0.05,
     min_stake: float = MIN_FIRST_STAKE,
     eval_tracker: dict | None = None,
-    reference_tracker: dict | None = None,
     existing_csv_stakes: dict | None = None,
     csv_path: str | None = None,
 ) -> dict:
@@ -371,70 +369,8 @@ def should_log_bet(
             f"⚠️ Theme stake exists ({theme_total}) but no CSV stake for {side}. Tracker may be stale."
         )
         delta_base = 0.0
-    is_alt_line = (
-        market.startswith("alternate_") or new_bet.get("market_class") == "alternate"
-    )
-
-    prior_entry = None
-    t_key = f"{game_id}:{market}:{side}"
-
-    if reference_tracker is not None:
-        tracker_entry = reference_tracker.get(t_key)
-        if isinstance(tracker_entry, dict):
-            prior_entry = tracker_entry
-
-    if prior_entry is None and eval_tracker is not None:
-        tracker_entry = eval_tracker.get(t_key)
-        if isinstance(tracker_entry, dict):
-            prior_entry = tracker_entry
-
-    # 🆕 Track early bets for potential confirmation-based top-ups
-    # ``segment`` and ``hours_to_game`` defined earlier
-
-    prev_prob = None
-    if prior_entry is not None:
-        prev_prob = prior_entry.get("consensus_prob")
-        if prev_prob is None:
-            prev_prob = prior_entry.get("market_prob")
-    curr_prob = new_bet.get("consensus_prob")
-    if curr_prob is None:
-        curr_prob = new_bet.get("market_prob")
-    movement = 0.0
-    try:
-        if prev_prob is not None and curr_prob is not None:
-            movement = float(curr_prob) - float(prev_prob)
-    except Exception:
-        movement = 0.0
-
-    books = new_bet.get("per_book")
-    book_count = len(books) if isinstance(books, dict) and books else 1
-    threshold = required_market_move(
-        hours_to_game or 8,
-        book_count=book_count,
-        market=new_bet.get("market"),
-        ev_percent=new_bet.get("ev_percent"),
-    )
-    if prev_prob is not None and movement < threshold and theme_total == 0:
-        try:
-            from core.pending_bets import queue_pending_bet
-
-            queue_pending_bet(
-                {
-                    **new_bet,
-                    "baseline_consensus_prob": prev_prob,
-                }
-            )
-        except Exception:
-            pass
-
-        if verbose:
-            print(
-                "⏸️ Market move did not meet confirmation threshold. Skipping log."
-            )
-        new_bet["entry_type"] = "none"
-        new_bet["skip_reason"] = "not_confirmed"
-        return build_skipped_evaluation("not_confirmed", game_id, new_bet)
-
+    if new_bet.get("entry_type") == "first" and new_bet.get("consensus_move", 0.0) < new_bet.get("required_move", 0.0):
+        return {"skip_reason": "not_confirmed", "stake": 0.0, **new_bet}
 
     tracker_key = f"{game_id}:{market}:{side}"
 
