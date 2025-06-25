@@ -110,8 +110,18 @@ def recheck_pending_bets(
             (bet.get("game_id"), bet.get("market"), str(bet.get("side", "")).lower())
         )
         if not row:
-            updated[key] = bet
-            continue
+            start_dt = _start_time_from_gid(bet["game_id"])
+            if not start_dt:
+                continue
+            hours_to_game = compute_hours_to_game(start_dt)
+
+            if hours_to_game <= 0:
+                # Game has started — remove from pending
+                continue
+            else:
+                bet["hours_to_game"] = round(hours_to_game, 2)
+                updated[key] = bet
+                continue
         # Preserve baseline
         baseline = bet.get("baseline_consensus_prob")
 
