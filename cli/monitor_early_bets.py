@@ -220,13 +220,11 @@ def recheck_pending_bets(
             raw_kelly = float(row.get("raw_kelly", 0))
             row["stake"] = round(raw_kelly, 4)
             row["full_stake"] = row["stake"]
-        ref = {key: {"consensus_prob": baseline}}
         evaluated = should_log_bet(
             row,
             theme_stakes,
             verbose=False,
             eval_tracker=eval_tracker,
-            reference_tracker=ref,
             existing_csv_stakes=existing,
         )
         if evaluated:
