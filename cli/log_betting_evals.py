@@ -344,61 +344,10 @@ def latest_snapshot_path(folder="backtest"):
 MARKET_EVAL_TRACKER = load_eval_tracker()
 
 # Load most recent snapshot file for movement comparison
-SNAPSHOT_PATH_USED = latest_snapshot_path("backtest")
+# Disabled snapshot loading – use current tracker state only
+SNAPSHOT_PATH_USED = None
 STALE_SNAPSHOT = False
-if SNAPSHOT_PATH_USED and os.path.exists(SNAPSHOT_PATH_USED):
-    print(
-        f"📂 Using prior snapshot for market movement detection: {SNAPSHOT_PATH_USED}"
-    )
-
-    # Determine snapshot timestamp from filename or modification time
-    snap_dt = None
-    m = re.search(
-        r"market_snapshot_(\d{8}T\d{4})",
-        os.path.basename(SNAPSHOT_PATH_USED),
-    )
-    if m:
-        snap_dt = parse_snapshot_timestamp(m.group(1))
-    if snap_dt is None:
-        try:
-            snap_dt = datetime.fromtimestamp(
-                os.path.getmtime(SNAPSHOT_PATH_USED), tz=EASTERN_TZ
-            )
-        except Exception:
-            snap_dt = None
-
-    if snap_dt is not None:
-        age_hours = (now_eastern() - snap_dt).total_seconds() / 3600.0
-        if age_hours > 2:
-            logger.warning(
-                "⚠️ Snapshot is over 2 hours old – movement tracking may be stale."
-            )
-            STALE_SNAPSHOT = True
-
-    prior_snapshot_data = safe_load_json(SNAPSHOT_PATH_USED) or []
-
-    if isinstance(prior_snapshot_data, list):
-        # Convert snapshot list to tracker-style dict
-        prior_snapshot_tracker = {
-            build_tracker_key(r["game_id"], r["market"], r["side"]): r
-            for r in prior_snapshot_data
-            if "game_id" in r and "market" in r and "side" in r
-        }
-        print(f"🔁 Loaded {len(prior_snapshot_tracker)} entries from snapshot.")
-    else:
-        prior_snapshot_tracker = prior_snapshot_data  # already dict
-
-    # After loading the snapshot (or falling back), determine our baseline tracker
-    MARKET_EVAL_TRACKER_BEFORE_UPDATE = {} if STALE_SNAPSHOT else prior_snapshot_tracker
-else:
-    print("⚠️ No valid prior snapshot found — using fallback copy of tracker.")
-    MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
-
-# Warn if the baseline tracker is empty which means we have no prior snapshot
-if not MARKET_EVAL_TRACKER_BEFORE_UPDATE:
-    warn_msg = "No prior snapshot found—early bets will be suppressed."
-    print(f"⚠️ {warn_msg}")
-    logger.warning(warn_msg)
+MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
 
 
 # === Local Modules ===
@@ -3219,11 +3168,17 @@ def process_theme_logged_bets(
     final_rows = []
     failed_log_count = 0
     for best_row in best_market_segment.values():
+        # Skip bets that failed evaluation or have too small a stake
+        if best_row.get("skip_reason") or best_row.get("stake", 0) < 1.0:
+            continue
+
         if config.VERBOSE_MODE:
             print(
                 f"📄 Logging: {best_row['game_id']} | {best_row['market']} | {best_row['side']} @ {best_row['stake']}u"
             )
+
         assert best_row.get("side"), f"Missing 'side' for {best_row}"
+
         try:
             result = write_to_csv(
                 best_row,
