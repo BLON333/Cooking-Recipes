@@ -526,12 +526,9 @@ def main() -> None:
     for row in rows:
         ensure_side(row)
 
-    filtered = []
-    for r in rows:
-        stake_val = r.get("stake") or r.get("snapshot_stake") or 0
-        if stake_val < 1.0 and not r.get("is_prospective"):
-            continue
-        filtered.append(r)
+    # Filter out prospective bets from the snapshot while keeping all
+    # actual logged bets regardless of stake size.
+    filtered = [r for r in rows if not r.get("is_prospective", False)]
     rows = filtered
 
     seen = set()
