@@ -141,7 +141,7 @@ def recheck_pending_bets(
         # Preserve baseline
         baseline = bet.get("baseline_consensus_prob")
 
-        # 1. Copy all core fields from snapshot
+        # ✅ Copy snapshot fields into pending bet entry
         for field in [
             "sim_prob",
             "blended_prob",
@@ -156,14 +156,14 @@ def recheck_pending_bets(
             if field in row:
                 bet[field] = row[field]
 
-        # 2. Normalize books_used from consensus_books
+        # ✅ Copy per_book from snapshot (optional, useful for CLV tracking)
+        if "_raw_sportsbook" in row:
+            bet["per_book"] = row["_raw_sportsbook"]
+
+        # ✅ Normalize books_used
         consensus_books = row.get("consensus_books", {})
         if isinstance(consensus_books, dict):
             bet["books_used"] = list(consensus_books.keys())
-
-        # 3. Optionally store per_book for debugging / CLV audits
-        if "_raw_sportsbook" in row:
-            bet["per_book"] = row["_raw_sportsbook"]
 
         # 4. Compute movement vs baseline
         try:
