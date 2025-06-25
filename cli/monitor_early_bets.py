@@ -1,5 +1,7 @@
 import os
 import sys
+import glob
+import json
 from core.bootstrap import *  # noqa
 import time
 from collections import defaultdict
@@ -11,7 +13,7 @@ from core.utils import (
     now_eastern,
 )
 from core.time_utils import compute_hours_to_game
-from core.odds_fetcher import fetch_consensus_for_single_game, american_to_prob
+from core.odds_fetcher import american_to_prob
 from core.logger import get_logger
 from core.confirmation_utils import required_market_move
 from core.pending_bets import (
@@ -31,6 +33,26 @@ from core.should_log_bet import should_log_bet
 logger = get_logger(__name__)
 
 CHECK_INTERVAL = 30 * 60  # 30 minutes
+
+# Directory containing generated snapshot JSON files
+DEFAULT_SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "..", "backtest")
+
+
+def load_latest_snapshot(snapshot_dir: str = DEFAULT_SNAPSHOT_DIR) -> list:
+    """Load the most recent ``market_snapshot_*.json`` from ``snapshot_dir``."""
+    pattern = os.path.join(snapshot_dir, "market_snapshot_*.json")
+    files = glob.glob(pattern)
+    if not files:
+        logger.warning("⚠️ No snapshot files found in %s", snapshot_dir)
+        return []
+
+    latest = max(files, key=os.path.getmtime)
+    try:
+        with open(latest, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception as e:
+        logger.warning("⚠️ Failed to load snapshot %s — %s", latest, e)
+        return []
 
 
 def retry_api_call(func, max_attempts: int = 3, wait_seconds: int = 2):
@@ -77,7 +99,9 @@ def _start_time_from_gid(game_id: str) -> datetime | None:
         return None
 
 
-def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
+def recheck_pending_bets(
+    path: str = PENDING_BETS_PATH, snapshot_dir: str = DEFAULT_SNAPSHOT_DIR
+) -> None:
     pending = load_pending_bets(path)
     if not pending:
         return
@@ -86,6 +110,17 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
     session_exposure = defaultdict(set)
     theme_stakes = load_theme_stakes()
     eval_tracker = load_eval_tracker()
+
+    snapshot_rows = load_latest_snapshot(snapshot_dir)
+    snapshot_index = {
+        (
+            r.get("game_id"),
+            r.get("market"),
+            str(r.get("side", "")).lower(),
+        ): r
+        for r in snapshot_rows
+        if isinstance(r, dict)
+    }
 
     updated = {}
     for key, bet in pending.items():
@@ -97,22 +132,16 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
         if hours_to_game <= 0:
             # Game started; drop entry
             continue
-        market_data = retry_api_call(
-            lambda: fetch_consensus_for_single_game(bet["game_id"])
+        row = snapshot_index.get(
+            (bet.get("game_id"), bet.get("market"), str(bet.get("side", "")).lower())
         )
-        if not market_data:
+        if not row:
             updated[key] = bet
             continue
-        market = market_data.get(bet["market"], {})
-        label_key = next(
-            (k for k in market if k.lower() == bet["side"].lower()),
-            None,
-        )
-        if not label_key:
-            updated[key] = bet
-            continue
-        price = market[label_key].get("price")
-        new_prob = american_to_prob(price) if price is not None else None
+        new_prob = row.get("market_prob")
+        if new_prob is None:
+            odds = row.get("market_odds")
+            new_prob = american_to_prob(odds) if odds is not None else None
         if new_prob is None:
             updated[key] = bet
             continue
@@ -124,14 +153,22 @@ def recheck_pending_bets(path: str = PENDING_BETS_PATH) -> None:
         except Exception:
             movement = 0.0
 
-        books = bet.get("per_book")
-        book_count = len(books) if isinstance(books, dict) and books else 1
+        books_val = row.get("books_used")
+        if not books_val and isinstance(row.get("consensus_books"), dict):
+            books_val = ", ".join(sorted(row["consensus_books"].keys()))
+        book_list = [b.strip() for b in str(books_val).split(",") if b.strip()] if books_val else []
+        book_count = len(book_list) if book_list else 1
+        if books_val:
+            bet["books_used"] = books_val
         threshold = required_market_move(
             hours_to_game=hours_to_game,
             book_count=book_count,
             market=bet.get("market"),
             ev_percent=bet.get("ev_percent"),
         )
+        bet["required_move"] = round(threshold, 4)
+        bet["consensus_move"] = round(movement, 4)
+        bet["hours_to_game"] = round(hours_to_game, 2)
         if movement < threshold:
             updated[key] = bet
             continue
