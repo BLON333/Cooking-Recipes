@@ -58,6 +58,12 @@ def run_bankroll_sim(log_path, starting_bankroll=40000, unit_percent=1.0, start_
         "12%-20%": {"profit": 0.0, "bets": 0, "wins": 0, "losses": 0, "staked": 0.0},
         "20%+": {"profit": 0.0, "bets": 0, "wins": 0, "losses": 0, "staked": 0.0}
     }
+    ev_buckets_spreads = defaultdict(
+        lambda: {"profit": 0.0, "bets": 0, "wins": 0, "losses": 0, "staked": 0.0}
+    )
+    ev_buckets_totals = defaultdict(
+        lambda: {"profit": 0.0, "bets": 0, "wins": 0, "losses": 0, "staked": 0.0}
+    )
 
     daily_stats = defaultdict(lambda: {"profit": 0.0, "bets": 0, "wins": 0, "losses": 0, "pushes": 0, "staked": 0.0})
     time_buckets = {
@@ -147,6 +153,24 @@ def run_bankroll_sim(log_path, starting_bankroll=40000, unit_percent=1.0, start_
                 ev_buckets[bucket_ev]["wins"] += 1
             elif result == "loss":
                 ev_buckets[bucket_ev]["losses"] += 1
+
+            market_lower = market.lower()
+            if "spread" in market_lower:
+                ev_buckets_spreads[bucket_ev]["profit"] += delta
+                ev_buckets_spreads[bucket_ev]["bets"] += 1
+                ev_buckets_spreads[bucket_ev]["staked"] += staked_amount
+                if result == "win":
+                    ev_buckets_spreads[bucket_ev]["wins"] += 1
+                elif result == "loss":
+                    ev_buckets_spreads[bucket_ev]["losses"] += 1
+            if "total" in market_lower and "team_totals" not in market_lower:
+                ev_buckets_totals[bucket_ev]["profit"] += delta
+                ev_buckets_totals[bucket_ev]["bets"] += 1
+                ev_buckets_totals[bucket_ev]["staked"] += staked_amount
+                if result == "win":
+                    ev_buckets_totals[bucket_ev]["wins"] += 1
+                elif result == "loss":
+                    ev_buckets_totals[bucket_ev]["losses"] += 1
 
             if 5 <= ev_percent < 20:
                 ev_5_20_no_h2h["profit"] += delta
@@ -249,6 +273,18 @@ def run_bankroll_sim(log_path, starting_bankroll=40000, unit_percent=1.0, start_
 
     print("\n📈 ROI by EV% Range:")
     for bucket, stats in ev_buckets.items():
+        roi = (stats["profit"] / stats["staked"] * 100) if stats["staked"] > 0 else 0.0
+        winrate = (stats["wins"] / stats["bets"] * 100) if stats["bets"] else 0.0
+        print(f"    - {bucket:<7} | {stats['bets']:>3} bets | ROI: {colorize(roi, is_percent=True)} | Win Rate: {colorize(winrate, is_percent=True)}")
+
+    print("\n📈 ROI by EV% (Spreads Only):")
+    for bucket, stats in ev_buckets_spreads.items():
+        roi = (stats["profit"] / stats["staked"] * 100) if stats["staked"] > 0 else 0.0
+        winrate = (stats["wins"] / stats["bets"] * 100) if stats["bets"] else 0.0
+        print(f"    - {bucket:<7} | {stats['bets']:>3} bets | ROI: {colorize(roi, is_percent=True)} | Win Rate: {colorize(winrate, is_percent=True)}")
+
+    print("\n📈 ROI by EV% (Totals Only):")
+    for bucket, stats in ev_buckets_totals.items():
         roi = (stats["profit"] / stats["staked"] * 100) if stats["staked"] > 0 else 0.0
         winrate = (stats["wins"] / stats["bets"] * 100) if stats["bets"] else 0.0
         print(f"    - {bucket:<7} | {stats['bets']:>3} bets | ROI: {colorize(roi, is_percent=True)} | Win Rate: {colorize(winrate, is_percent=True)}")
