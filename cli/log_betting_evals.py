@@ -3204,6 +3204,9 @@ if __name__ == "__main__":
         if odds is None:
             logger.warning("❌ Failed to load odds file %s", args.odds_path)
             sys.exit(1)
+        # ✅ Extract "games" key if snapshot is nested (e.g. { "games": { <game_id>: {...} } })
+        if isinstance(odds, dict) and "games" in odds:
+            odds = odds["games"]
         odds_file = args.odds_path
     else:
         from pathlib import Path
