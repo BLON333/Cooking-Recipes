@@ -1705,7 +1705,7 @@ def write_to_csv(
             # Wrap any problematic strings with quotes to avoid malformed CSV rows
             for k, v in row_to_write.items():
                 if isinstance(v, str) and ("," in v or "\n" in v):
-                    row_to_write[k] = f'"{v.replace("\"", "'")}"'
+                    row_to_write[k] = f'"{str(v).replace("\"", "'")}"'
 
             writer.writerow(row_to_write)
 
