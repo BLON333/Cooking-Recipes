@@ -64,6 +64,10 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
         for k, v in bet.items()
         if not k.startswith("_") and k != "adjusted_kelly"
     }
-    bet_copy['queued_ts'] = datetime.now().isoformat()
+    existing = pending.get(key, {})
+    bet_copy["queued_ts"] = existing.get("queued_ts", datetime.now().isoformat())
+    bet_copy["logged"] = bool(existing.get("logged", False))
+    if "logged_ts" in existing:
+        bet_copy["logged_ts"] = existing["logged_ts"]
     pending[key] = bet_copy
     save_pending_bets(pending, path)

@@ -121,7 +121,10 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
         row = bet.copy()
         row["book"] = row.get("book", row.get("best_book"))
 
-        row["snapshot_stake"] = round(rk, 2)
+        if bet.get("logged") and "stake" in bet:
+            row["snapshot_stake"] = round(float(bet.get("stake", rk)), 2)
+        else:
+            row["snapshot_stake"] = round(rk, 2)
         row["is_prospective"] = True
 
         if "sim_prob" in row:

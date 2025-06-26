@@ -239,7 +239,9 @@ def recheck_pending_bets(
             if result and not result.get("skip_reason") and result.get("side"):
                 record_successful_log(result, existing, theme_stakes)
                 save_theme_stakes(theme_stakes)
-                continue
+                bet.update(result)
+                bet["logged"] = True
+                bet["logged_ts"] = datetime.now().isoformat()
             else:
                 logger.warning(
                     "❌ Skipping tracker update: result was skipped or malformed → %s",
