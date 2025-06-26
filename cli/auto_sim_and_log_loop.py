@@ -27,11 +27,13 @@ if config.DEBUG_MODE:
 
 import time
 import subprocess
+from pathlib import Path
 
 
 from datetime import datetime, timedelta
 from core.utils import now_eastern
 from core.odds_fetcher import fetch_all_market_odds, save_market_odds_to_file
+from cli.monitor_early_bets import recheck_pending_bets
 
 EDGE_THRESHOLD = 0.05
 MIN_EV = 0.05
@@ -426,6 +428,18 @@ if initial_odds:
     else:
         run_unified_snapshot_and_dispatch(initial_odds)
 
+        # Ensure latest snapshot is fully written before rechecking pending bets
+        latest_snapshot = max(
+            Path("backtest").glob("market_snapshot_*.json"),
+            key=lambda f: f.stat().st_mtime,
+        )
+        for _ in range(10):  # retry up to ~2 seconds
+            if latest_snapshot.exists() and latest_snapshot.stat().st_size > 1000:
+                break
+            time.sleep(0.2)
+
+        recheck_pending_bets()
+
 start_time = time.time()
 loop_count = 0
 if not initial_odds:
@@ -484,6 +498,18 @@ while True:
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_tracker_with_csv"])
                 run_unified_snapshot_and_dispatch(odds_file)
+
+                # Ensure latest snapshot is fully written before rechecking pending bets
+                latest_snapshot = max(
+                    Path("backtest").glob("market_snapshot_*.json"),
+                    key=lambda f: f.stat().st_mtime,
+                )
+                for _ in range(10):  # retry up to ~2 seconds
+                    if latest_snapshot.exists() and latest_snapshot.stat().st_size > 1000:
+                        break
+                    time.sleep(0.2)
+
+                recheck_pending_bets()
 
         last_log_time = now
         triggered_log = True
