@@ -3204,9 +3204,23 @@ if __name__ == "__main__":
         if odds is None:
             logger.warning("❌ Failed to load odds file %s", args.odds_path)
             sys.exit(1)
-        # ✅ Extract "games" key if snapshot is nested (e.g. { "games": { <game_id>: {...} } })
-        if isinstance(odds, dict) and "games" in odds:
+
+        # ✅ Support snapshot-style odds (list of rows)
+        if isinstance(odds, list):
+            odds_dict = {}
+            for row in odds:
+                gid = row.get("game_id")
+                market = row.get("market")
+                side = row.get("side")
+                if not (gid and market and side):
+                    continue
+                odds_dict.setdefault(gid, {}).setdefault(market, {})[side] = row
+            odds = odds_dict
+
+        # ✅ Support odds wrapped in "games" block
+        elif isinstance(odds, dict) and "games" in odds:
             odds = odds["games"]
+
         odds_file = args.odds_path
     else:
         from pathlib import Path
