@@ -438,6 +438,7 @@ if initial_odds:
                 break
             time.sleep(0.2)
 
+        run_subprocess([PYTHON, "-m", "scripts.update_pending_from_snapshot"])
         recheck_pending_bets()
 
 start_time = time.time()
@@ -509,6 +510,7 @@ while True:
                         break
                     time.sleep(0.2)
 
+                run_subprocess([PYTHON, "-m", "scripts.update_pending_from_snapshot"])
                 recheck_pending_bets()
 
         last_log_time = now
