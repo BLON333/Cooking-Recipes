@@ -255,6 +255,7 @@ def should_log_bet(
     min_ev: float = 0.05,
     min_stake: float = MIN_FIRST_STAKE,
     eval_tracker: dict | None = None,
+    reference_tracker: dict | None = None,
     existing_csv_stakes: dict | None = None,
     csv_path: str | None = None,
 ) -> dict:
@@ -270,6 +271,10 @@ def should_log_bet(
     The optional ``eval_tracker`` should contain previous market evaluations
     keyed by ``game_id:market:side:book`` so line movement can be enforced for
     first-time entries.
+
+    reference_tracker : dict | None, optional
+        Optional frozen snapshot used for movement comparison when
+        ``eval_tracker`` is updated externally.
 
     csv_path : str | None, optional
         Path to ``market_evals.csv`` for verifying previously logged exposure.
