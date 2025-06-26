@@ -79,9 +79,10 @@ def required_market_move(
 
     base_threshold = movement_unit * time_multiplier * book_multiplier
 
-    # Loosen confirmation for full-game totals and spreads
-    if market and (
-        (
+    # Loosen confirmation for full-game totals and spreads using a tiered rule
+    full_game = (
+        market
+        and (
             market.startswith("totals")
             or market.startswith("spreads")
             or market.startswith("runline")
@@ -89,8 +90,16 @@ def required_market_move(
         and "1st_" not in market
         and "1st" not in market
         and "team_totals" not in market
-    ):
-        base_threshold *= 0.75
+    )
+    if full_game:
+        try:
+            ev_val = float(ev_percent)
+        except Exception:
+            ev_val = None
+        if ev_val is not None and 10.0 <= ev_val <= 20.0:
+            base_threshold *= 0.25
+        else:
+            base_threshold *= 0.50
 
     # Volatile segments like first inning or team totals require more movement
     if market and (
