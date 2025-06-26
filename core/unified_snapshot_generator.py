@@ -155,7 +155,6 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
             row["fv_display"] = "-"
 
         row["odds_display"] = row.get("market_odds", "-")
-        row["stake_display"] = f"{round(row['snapshot_stake'], 2)}u"
         row["skip_reason"] = bet.get("skip_reason", None)
         row["logged"] = bet.get("logged", False)
 
@@ -206,7 +205,6 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
             row["fv_display"] = "-"
 
         row["odds_display"] = row.get("market_odds", "-")
-        row["stake_display"] = f"{round(row['snapshot_stake'], 2)}u"
 
         role = _assign_snapshot_role(row)
         row["snapshot_role"] = role

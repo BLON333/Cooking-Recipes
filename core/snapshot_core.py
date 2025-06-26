@@ -157,11 +157,10 @@ def annotate_display_deltas(entry: Dict, prior: Optional[Dict]) -> None:
         "ev_percent": ("ev_display", fmt_percent),
         "market_prob": ("mkt_prob_display", fmt_prob),
         "sim_prob": ("sim_prob_display", fmt_prob),
-        "stake": ("stake_display", fmt_stake),
         "blended_fv": ("fv_display", fmt_fv),
     }
 
-    skip_deltas_for = {"stake", "ev_percent"}
+    skip_deltas_for = {"ev_percent"}
 
     movement_fields = {
         "sim_prob": ("sim_movement", "percent"),
@@ -433,11 +432,6 @@ def send_bet_snapshot_to_discord(
         return
 
     df = df.copy()
-    if "stake_display" not in df.columns:
-        df["stake_display"] = df.apply(
-            lambda r: f"{(r.get('stake', 0) or r.get('snapshot_stake', 0)):.2f}u",
-            axis=1,
-        )
 
     if debug_counts is not None:
         for _, row in df.iterrows():
@@ -446,9 +440,14 @@ def send_bet_snapshot_to_discord(
             market = row.get("Market") or row.get("market")
             side = row.get("Bet") or row.get("side")
             book = row.get("Book") or row.get("book")
-            print(
-                f"{label} {matchup} | {market} | {side} | {row['stake_display']} @ {book}"
-            )
+            stake_val = row.get("Stake") or row.get("stake") or row.get("snapshot_stake")
+            if stake_val is None:
+                stake_val = 0
+            try:
+                stake_str = f"{float(str(stake_val).replace('u','')):.2f}u"
+            except Exception:
+                stake_str = str(stake_val)
+            print(f"{label} {matchup} | {market} | {side} | {stake_str} @ {book}")
     if dfi is None:
         print("⚠️ dataframe_image is not available. Sending text fallback.")
         _send_table_text(df, market_type, webhook_url)
@@ -1482,8 +1481,6 @@ def expand_snapshot_rows_with_kelly(
                 row["fv_display"] = "-"
 
             row["odds_display"] = row.get("market_odds", "-")
-            stake_val = row.get("stake") or row.get("snapshot_stake") or 0
-            row["stake_display"] = f"{stake_val:.2f}u"
             row["label"] = "🔍" if row.get("is_prospective") else "🟢"
             row["skip_reason"] = bet.get("skip_reason", None)
             row["logged"] = bet.get("logged", False)
