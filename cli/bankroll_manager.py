@@ -155,7 +155,7 @@ def run_bankroll_sim(log_path, starting_bankroll=40000, unit_percent=1.0, start_
                 ev_buckets[bucket_ev]["losses"] += 1
 
             market_lower = market.lower()
-            if "spread" in market_lower:
+            if market_lower.strip() == "spreads":
                 ev_buckets_spreads[bucket_ev]["profit"] += delta
                 ev_buckets_spreads[bucket_ev]["bets"] += 1
                 ev_buckets_spreads[bucket_ev]["staked"] += staked_amount
@@ -163,7 +163,7 @@ def run_bankroll_sim(log_path, starting_bankroll=40000, unit_percent=1.0, start_
                     ev_buckets_spreads[bucket_ev]["wins"] += 1
                 elif result == "loss":
                     ev_buckets_spreads[bucket_ev]["losses"] += 1
-            if "total" in market_lower and "team_totals" not in market_lower:
+            if market_lower.strip() == "totals":
                 ev_buckets_totals[bucket_ev]["profit"] += delta
                 ev_buckets_totals[bucket_ev]["bets"] += 1
                 ev_buckets_totals[bucket_ev]["staked"] += staked_amount
