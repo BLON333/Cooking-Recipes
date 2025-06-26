@@ -433,6 +433,9 @@ def send_bet_snapshot_to_discord(
 
     df = df.copy()
 
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
+
     if debug_counts is not None:
         for _, row in df.iterrows():
             label = "🔍" if row.get("is_prospective") else "🟢"
