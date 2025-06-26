@@ -15,8 +15,8 @@ __all__ = [
 
 # Alignment-first betting strategy:
 # - Only place a first bet when market movement confirms the model edge.
-# - After a bet is placed, top-ups rely solely on model value without
-#   additional confirmation.
+# - Top-ups now also require market confirmation using the same
+#   dynamic movement threshold applied to first bets.
 
 # Toggle for optional debug logging
 VERBOSE = False

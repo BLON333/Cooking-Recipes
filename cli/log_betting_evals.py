@@ -1735,7 +1735,7 @@ def write_to_csv(
 
     threshold = market_prob_increase_threshold(hours_to_game, row.get("market", ""))
 
-    if row.get("entry_type") == "first":
+    if row.get("entry_type") in {"first", "top-up"}:
         if prior_prob is None or new_prob is None:
             print(
                 "⛔ No prior market probability — building baseline and skipping log."
