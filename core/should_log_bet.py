@@ -369,7 +369,7 @@ def should_log_bet(
             f"⚠️ Theme stake exists ({theme_total}) but no CSV stake for {side}. Tracker may be stale."
         )
         delta_base = 0.0
-    if new_bet.get("entry_type") == "first" and new_bet.get("consensus_move", 0.0) < new_bet.get("required_move", 0.0):
+    if new_bet.get("entry_type") in {"first", "top-up"} and new_bet.get("consensus_move", 0.0) < new_bet.get("required_move", 0.0):
         return {"skip_reason": "not_confirmed", "stake": 0.0, **new_bet}
 
     tracker_key = f"{game_id}:{market}:{side}"
