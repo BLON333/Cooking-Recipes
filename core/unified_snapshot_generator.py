@@ -30,7 +30,6 @@ from core.snapshot_core import (
 )
 from core.market_eval_tracker import load_tracker, save_tracker
 from core.pending_bets import load_pending_bets
-from cli.log_betting_evals import load_quiet_log_queue
 from core.book_helpers import ensure_consensus_books
 
 logger = get_logger(__name__)
@@ -98,10 +97,9 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
 def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
     """Return pending bets for ``date_str`` meeting the EV threshold."""
     pending = load_pending_bets()
-    quiet_logs = load_quiet_log_queue()
     rows: list = []
 
-    # Combine pending bets (dict) with quiet log queue (list)
+    # Pending bets stored in pending_bets.json
     for bet in list(pending.values()):
         gid = bet.get("game_id")
         if not gid:
@@ -165,53 +163,6 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
         ensure_consensus_books(row)
         rows.append(row)
 
-    # Quiet hours bets have stake already computed
-    for bet in quiet_logs:
-        gid = bet.get("game_id")
-        if not gid:
-            continue
-        if parse_game_id(str(gid)).get("date") != date_str:
-            continue
-        try:
-            ev = float(bet.get("ev_percent", 0))
-        except Exception:
-            continue
-        if ev < min_ev:
-            continue
-
-        row = bet.copy()
-        row["book"] = row.get("book", row.get("best_book"))
-        row["snapshot_stake"] = round(float(row.get("stake", 0)), 2)
-        row["is_prospective"] = True
-
-        if "sim_prob" in row:
-            row["sim_prob_display"] = f"{round(row['sim_prob'] * 100, 1)}%"
-        else:
-            row["sim_prob_display"] = "-"
-
-        if "market_prob" in row:
-            row["mkt_prob_display"] = f"{round(row['market_prob'] * 100, 1)}%"
-        else:
-            row["mkt_prob_display"] = "-"
-
-        if "ev_percent" in row:
-            row["ev_display"] = f"+{round(row['ev_percent'], 1)}%"
-        else:
-            row["ev_display"] = "-"
-
-        if "fair_odds" in row:
-            row["fv_display"] = f"{round(row['fair_odds'])}"
-        else:
-            row["fv_display"] = "-"
-
-        row["odds_display"] = row.get("market_odds", "-")
-
-        role = _assign_snapshot_role(row)
-        row["snapshot_role"] = role
-        row.setdefault("snapshot_roles", []).append(role)
-
-        ensure_consensus_books(row)
-        rows.append(row)
 
     return rows
 
