@@ -156,7 +156,7 @@ def main() -> None:
 
     filtered = []
     for r in rows:
-        stake_val = r.get("stake") or r.get("snapshot_stake") or 0
+        stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
         if stake_val < 1.0 and not r.get("is_prospective"):
             continue
         filtered.append(r)
