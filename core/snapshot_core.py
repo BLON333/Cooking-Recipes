@@ -11,7 +11,8 @@ import io
 import pandas as pd
 
 import requests
-from core.utils import post_with_retries
+from core.utils import post_with_retries, safe_load_json
+import glob
 
 try:
     import dataframe_image as dfi
@@ -66,6 +67,23 @@ MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
 # === Console Output Controls ===
 MOVEMENT_LOG_LIMIT = 5
 movement_log_count = 0
+
+
+def load_latest_snapshot(folder: str = "backtest") -> list:
+    """Return rows from the most recent ``market_snapshot_*.json`` in ``folder``."""
+    pattern = os.path.join(folder, "market_snapshot_*.json")
+    files = glob.glob(pattern)
+    if not files:
+        logger.warning("⚠️ No snapshot files found in %s", folder)
+        return []
+
+    latest = max(files, key=os.path.getmtime)
+    data = safe_load_json(latest)
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return list(data.values())
+    return []
 
 
 
