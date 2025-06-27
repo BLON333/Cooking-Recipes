@@ -126,8 +126,9 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             rk = float(row.get("raw_kelly", 0))
         except Exception:
             continue
-        if logged or ev < 5.0 or rk < 1.0:
-            continue
+        # Refresh logged bets each loop instead of discarding them
+        if ev < 5.0 or rk < 1.0:
+            continue  # Still filter weak edges
         key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
         entry = {
             "game_id": row.get("game_id"),

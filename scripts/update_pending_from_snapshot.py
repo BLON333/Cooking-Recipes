@@ -43,8 +43,9 @@ def filter_rows(rows: list) -> list:
             rk = float(row.get("raw_kelly", 0))
         except Exception:
             continue
-        if logged or ev < 5.0 or rk < 1.0:
-            continue
+        # Allow logged bets so they remain in pending and stay refreshed
+        if ev < 5.0 or rk < 1.0:
+            continue  # Filter weak edges only
         filtered.append(row)
     return filtered
 
