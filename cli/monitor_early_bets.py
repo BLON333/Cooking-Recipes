@@ -9,6 +9,11 @@ from datetime import datetime
 from core.utils import (
     parse_game_id,
     EASTERN_TZ,
+    normalize_market_key,
+    classify_market_segment,
+    normalize_lookup_side,
+    normalize_to_abbreviation,
+    get_segment_label,
 )
 from core.time_utils import compute_hours_to_game
 from core.logger import get_logger
@@ -33,6 +38,7 @@ CHECK_INTERVAL = 30 * 60  # 30 minutes
 
 # Directory containing generated snapshot JSON files
 DEFAULT_SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "..", "backtest")
+FAIR_ODDS_PATH = os.path.join(os.path.dirname(__file__), "..", "backtest", "last_table_snapshot.json")
 
 
 def load_latest_snapshot(snapshot_dir: str = DEFAULT_SNAPSHOT_DIR) -> list:
@@ -111,6 +117,53 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
     return merged
 
 
+def _load_fair_odds(path: str = FAIR_ODDS_PATH) -> dict:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def enrich_pending_row(bet: dict, fair_odds_map: dict | None = None) -> dict:
+    """Return a fully enriched row for logger evaluation."""
+    row = bet.copy()
+    start_dt = _start_time_from_gid(row.get("game_id", ""))
+    row["Start Time (ISO)"] = start_dt.isoformat() if start_dt else ""
+
+    market = row.get("market", "")
+    mkey = normalize_market_key(market)
+    row.setdefault("segment", classify_market_segment(mkey))
+    row.setdefault("market_class", "alternate" if "alternate" in market else "main")
+    side = row.get("side", "")
+    row.setdefault("lookup_side", normalize_lookup_side(side))
+    row.setdefault("segment_label", get_segment_label(mkey, side))
+
+    if "book" in row and "best_book" not in row:
+        row["best_book"] = row.get("book")
+
+    if row.get("blended_prob") is None:
+        row["blended_prob"] = row.get("sim_prob") or row.get("market_prob")
+
+    if fair_odds_map:
+        key = f"{mkey}:{normalize_to_abbreviation(side)}"
+        fo = fair_odds_map.get(key)
+        if isinstance(fo, dict):
+            fo = fo.get("fair_odds")
+        if fo is not None:
+            row.setdefault("fair_odds", fo)
+
+    if "market_fv" not in row and row.get("blended_fv") is not None:
+        row["market_fv"] = row["blended_fv"]
+
+    from cli.log_betting_evals import LOGGER_CONFIG
+
+    row.setdefault("logger_config", LOGGER_CONFIG or "default")
+    row.setdefault("pricing_method", "snapshot_recheck")
+
+    return row
+
+
 def recheck_pending_bets(
     path: str = PENDING_BETS_PATH, snapshot_dir: str = DEFAULT_SNAPSHOT_DIR
 ) -> None:
@@ -124,6 +177,7 @@ def recheck_pending_bets(
     session_exposure = defaultdict(set)
     theme_stakes = load_theme_stakes()
     eval_tracker = load_eval_tracker()
+    fair_odds_map = _load_fair_odds()
     snapshot_index = {
         (
             r.get("game_id"),
@@ -220,6 +274,9 @@ def recheck_pending_bets(
             raw_kelly = float(row.get("raw_kelly", 0))
             row["stake"] = round(raw_kelly, 4)
             row["full_stake"] = row["stake"]
+
+        row = enrich_pending_row(row, fair_odds_map)
+
         evaluated = should_log_bet(
             row,
             theme_stakes,
