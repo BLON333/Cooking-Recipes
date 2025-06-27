@@ -3010,7 +3010,9 @@ def process_theme_logged_bets(
     failed_log_count = 0
     for best_row in best_market_segment.values():
         # Skip bets that failed evaluation or have too small a stake
-        if best_row.get("skip_reason") or best_row.get("stake", 0) < 1.0:
+        if best_row.get("skip_reason") or best_row.get(
+            "total_stake", best_row.get("stake", 0)
+        ) < 1.0:
             continue
 
         if config.VERBOSE_MODE:
