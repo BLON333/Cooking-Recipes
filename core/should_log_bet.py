@@ -354,6 +354,7 @@ def should_log_bet(
     theme = get_theme({"side": side, "market": base_market})
     theme_key = get_theme_key(base_market, theme)
     exposure_key = make_theme_key(game_id, theme_key, segment)
+    tracker_has_key = exposure_key in existing_theme_stakes
     theme_total = existing_theme_stakes.get(exposure_key, 0.0)
     csv_stake = 0.0
     if existing_csv_stakes is not None:
@@ -413,7 +414,7 @@ def should_log_bet(
         new_bet["skip_reason"] = "time_blocked"
         return build_skipped_evaluation("time_blocked", game_id, new_bet)
 
-    if theme_total == 0:
+    if not tracker_has_key:
         new_bet["stake"] = round_stake(stake)
         new_bet["entry_type"] = "first"
         if new_bet["stake"] < MIN_FIRST_STAKE:
@@ -447,7 +448,15 @@ def should_log_bet(
     # Round the delta once to avoid floating point drift across the pipeline
     delta_raw = stake - delta_base
     delta = round_stake(delta_raw)
-    if delta >= MIN_TOPUP_STAKE:
+
+    if delta <= 0:
+        msg = "⛔ No additional stake required — already logged"
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = SkipReason.ALREADY_LOGGED.value
+        _log_verbose(msg, verbose)
+        return build_skipped_evaluation(SkipReason.ALREADY_LOGGED.value, game_id, new_bet)
+
+    if delta > MIN_TOPUP_STAKE:
         new_bet["stake"] = delta
         new_bet["entry_type"] = "top-up"
         _log_verbose(
@@ -468,26 +477,6 @@ def should_log_bet(
             "side": new_bet["side"],
             **new_bet,
         }
-
-    if delta > 0:
-        try:
-            from core.micro_topups import queue_micro_topup
-
-            queue_micro_topup(exposure_key, new_bet, delta)
-        except Exception:
-            pass
-        msg = f"🔄 Delta stake {delta:.2f}u queued for later"
-        new_bet["entry_type"] = "none"
-        new_bet["skip_reason"] = "below_min_topup_queued"
-        _log_verbose(msg, verbose)
-        return build_skipped_evaluation("below_min_topup_queued", game_id, new_bet)
-
-    if delta <= 0:
-        msg = "⛔ No additional stake required — already logged"
-        new_bet["entry_type"] = "none"
-        new_bet["skip_reason"] = SkipReason.ALREADY_LOGGED.value
-        _log_verbose(msg, verbose)
-        return build_skipped_evaluation(SkipReason.ALREADY_LOGGED.value, game_id, new_bet)
 
     msg = f"⛔ Delta stake {delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum"
     new_bet["entry_type"] = "none"
