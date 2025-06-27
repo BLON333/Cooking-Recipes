@@ -4,6 +4,7 @@ import ast
 from typing import Dict
 
 from .theme_key_utils import make_theme_key, parse_theme_key
+from core.should_log_bet import get_theme, get_theme_key, normalize_segment
 
 from core.file_utils import with_locked_file
 
@@ -36,7 +37,9 @@ def load_tracker(path: str = TRACKER_PATH) -> Dict[str, float]:
                 except Exception:
                     key = None
                 if isinstance(key, (list, tuple)) and len(key) == 3:
-                    stakes[make_theme_key(str(key[0]), str(key[1]), str(key[2]))] = float(v)
+                    stakes[make_theme_key(str(key[0]), str(key[1]), str(key[2]))] = (
+                        float(v)
+                    )
         return stakes
     except Exception:
         return {}
@@ -55,3 +58,20 @@ def save_tracker(stakes: Dict[str, float], path: str = TRACKER_PATH) -> None:
             os.replace(tmp, path)
     except Exception as e:
         print(f"⚠️ Failed to save theme exposure tracker: {e}")
+
+
+def build_theme_key(row: dict) -> str:
+    """Return ``game::theme::segment`` key for ``row``."""
+    game_id = str(row.get("game_id", ""))
+    theme_key = row.get("theme_key")
+    market = row.get("market", "")
+    side = row.get("side", "")
+    segment = row.get("segment")
+
+    if not theme_key:
+        theme = get_theme({"side": side, "market": market})
+        theme_key = get_theme_key(market, theme)
+    if not segment:
+        segment = normalize_segment(market)
+
+    return make_theme_key(game_id, str(theme_key), str(segment))

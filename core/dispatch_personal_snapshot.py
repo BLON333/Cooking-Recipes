@@ -8,6 +8,7 @@ from core.bootstrap import *  # noqa
 
 import json
 from core.utils import safe_load_json
+from theme_exposure_tracker import build_theme_key
 import argparse
 from typing import List
 import pandas as pd
@@ -34,7 +35,11 @@ PERSONAL_WEBHOOK_URL = os.getenv(
 
 def latest_snapshot_path(folder="backtest") -> str | None:
     files = sorted(
-        [f for f in os.listdir(folder) if f.startswith("market_snapshot_") and f.endswith(".json")],
+        [
+            f
+            for f in os.listdir(folder)
+            if f.startswith("market_snapshot_") and f.endswith(".json")
+        ],
         reverse=True,
     )
     return os.path.join(folder, files[0]) if files else None
@@ -68,7 +73,9 @@ def filter_by_books(df: pd.DataFrame, books: List[str] | None) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Dispatch personal-book snapshot")
-    parser.add_argument("--snapshot-path", default=None, help="Path to unified snapshot JSON")
+    parser.add_argument(
+        "--snapshot-path", default=None, help="Path to unified snapshot JSON"
+    )
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
     parser.add_argument(
@@ -97,18 +104,23 @@ def main() -> None:
         return
 
     rows = load_rows(path)
+
+    try:
+        with open("logs/theme_exposure.json") as f:
+            theme_stakes = json.load(f)
+    except FileNotFoundError:
+        theme_stakes = {}
+
     for r in rows:
+        theme_key = build_theme_key(r)
+        r["total_stake"] = theme_stakes.get(theme_key, 0.0)
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
 
     rows = [r for r in rows if "personal" in r.get("snapshot_roles", [])]
     rows = filter_by_date(rows, args.date)
 
-    rows = [
-        r
-        for r in rows
-        if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev
-    ]
+    rows = [r for r in rows if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev]
 
     filtered = []
     for r in rows:
@@ -154,7 +166,9 @@ def main() -> None:
         df["Market"] = df["market"]
 
     if "Market Class" not in df.columns:
-        logger.warning("⚠️ 'Market Class' column missing — cannot dispatch personal main/alt splits.")
+        logger.warning(
+            "⚠️ 'Market Class' column missing — cannot dispatch personal main/alt splits."
+        )
         return
 
     if args.output_discord:
@@ -164,19 +178,24 @@ def main() -> None:
         alt_df = df[df["Market Class"] == "Alt"]
 
         if not main_df.empty:
-            logger.info("📡 Dispatching Personal Snapshot → Main Markets (%s rows)", main_df.shape[0])
+            logger.info(
+                "📡 Dispatching Personal Snapshot → Main Markets (%s rows)",
+                main_df.shape[0],
+            )
             send_bet_snapshot_to_discord(main_df, "Personal (Main)", webhook)
         else:
             logger.info("⚠️ No personal bets found for Main markets")
 
         if not alt_df.empty:
-            logger.info("📡 Dispatching Personal Snapshot → Alt Markets (%s rows)", alt_df.shape[0])
+            logger.info(
+                "📡 Dispatching Personal Snapshot → Alt Markets (%s rows)",
+                alt_df.shape[0],
+            )
             send_bet_snapshot_to_discord(alt_df, "Personal (Alt)", webhook)
         else:
             logger.info("⚠️ No personal bets found for Alt markets")
     else:
         print(df.to_string(index=False))
-
 
 
 if __name__ == "__main__":

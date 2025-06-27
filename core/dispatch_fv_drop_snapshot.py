@@ -8,6 +8,7 @@ from core.bootstrap import *  # noqa
 
 import json
 from core.utils import safe_load_json
+from theme_exposure_tracker import build_theme_key
 import argparse
 from typing import List
 import re
@@ -39,7 +40,11 @@ logger.debug("✅ Loaded webhook: %s", os.getenv("DISCORD_FV_DROP_WEBHOOK_URL"))
 
 def latest_snapshot_path(folder="backtest") -> str | None:
     files = sorted(
-        [f for f in os.listdir(folder) if f.startswith("market_snapshot_") and f.endswith(".json")],
+        [
+            f
+            for f in os.listdir(folder)
+            if f.startswith("market_snapshot_") and f.endswith(".json")
+        ],
         reverse=True,
     )
     return os.path.join(folder, files[0]) if files else None
@@ -71,8 +76,6 @@ def filter_by_books(df: pd.DataFrame, books: List[str] | None) -> pd.DataFrame:
     return df[df["Book"].isin(clean_books)]
 
 
-
-
 def filter_main_lines(df: pd.DataFrame) -> pd.DataFrame:
     """Return df filtered to only main market lines."""
     if "Market Class" in df.columns:
@@ -94,8 +97,12 @@ def is_market_prob_increasing(val: str) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Dispatch FV drop snapshot (market probability increases)")
-    parser.add_argument("--snapshot-path", default=None, help="Path to unified snapshot JSON")
+    parser = argparse.ArgumentParser(
+        description="Dispatch FV drop snapshot (market probability increases)"
+    )
+    parser.add_argument(
+        "--snapshot-path", default=None, help="Path to unified snapshot JSON"
+    )
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
     parser.add_argument(
@@ -129,19 +136,23 @@ def main() -> None:
         sys.exit(1)
 
     rows = load_rows(path)
+
+    try:
+        with open("logs/theme_exposure.json") as f:
+            theme_stakes = json.load(f)
+    except FileNotFoundError:
+        theme_stakes = {}
+
     for r in rows:
+        theme_key = build_theme_key(r)
+        r["total_stake"] = theme_stakes.get(theme_key, 0.0)
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
-
 
     # ✅ No role/movement filter — allow full snapshot set
     rows = filter_by_date(rows, args.date)
 
-    rows = [
-        r
-        for r in rows
-        if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev
-    ]
+    rows = [r for r in rows if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev]
 
     filtered = []
     for r in rows:
@@ -165,10 +176,6 @@ def main() -> None:
         args.min_ev,
         args.max_ev,
     )
-
-
-
-
 
     df = format_for_display(rows, include_movement=True)
     if "label" in df.columns and "Bet" in df.columns:
