@@ -96,7 +96,7 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
     for r in rows:
         if not isinstance(r, dict):
             continue
-        if not r.get("queued_ts") or r.get("logged"):
+        if not r.get("queued_ts"):
             continue
         gid = r.get("game_id")
         market = r.get("market")
