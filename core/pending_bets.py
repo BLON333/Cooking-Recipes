@@ -3,8 +3,34 @@ import json
 import time
 from datetime import datetime
 
-from core.utils import safe_load_json, now_eastern
+from core.utils import (
+    safe_load_json,
+    now_eastern,
+    parse_game_id,
+    EASTERN_TZ,
+)
+from core.time_utils import compute_hours_to_game
 from core.lock_utils import with_locked_file
+
+
+def _start_time_from_gid(game_id: str) -> datetime | None:
+    parts = parse_game_id(game_id)
+    date = parts.get("date")
+    time_part = parts.get("time", "")
+    if not date:
+        return None
+    if time_part.startswith("T"):
+        raw = time_part.split("-")[0][1:]
+        digits = "".join(c for c in raw if c.isdigit())[:4]
+        try:
+            dt = datetime.strptime(f"{date} {digits}", "%Y-%m-%d %H%M")
+            return dt.replace(tzinfo=EASTERN_TZ)
+        except Exception:
+            return None
+    try:
+        return datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=EASTERN_TZ)
+    except Exception:
+        return None
 
 PENDING_BETS_PATH = os.path.join('logs', 'pending_bets.json')
 
@@ -69,5 +95,16 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     bet_copy["logged"] = bool(existing.get("logged", False))
     if "logged_ts" in existing:
         bet_copy["logged_ts"] = existing["logged_ts"]
+
+    if "baseline_consensus_prob" not in bet_copy:
+        baseline = bet_copy.get("market_prob") or bet_copy.get("consensus_prob")
+        if baseline is not None:
+            bet_copy["baseline_consensus_prob"] = baseline
+
+    if "hours_to_game" not in bet_copy:
+        start_dt = _start_time_from_gid(bet_copy["game_id"])
+        if start_dt:
+            bet_copy["hours_to_game"] = round(compute_hours_to_game(start_dt), 2)
+
     pending[key] = bet_copy
     save_pending_bets(pending, path)
