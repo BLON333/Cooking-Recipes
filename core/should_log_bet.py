@@ -359,6 +359,12 @@ def should_log_bet(
     if existing_csv_stakes is not None:
         csv_stake = existing_csv_stakes.get((game_id, market, side), 0.0)
 
+    # When the row indicates it has not been logged and we do not see a matching
+    # entry in ``existing_csv_stakes``, treat it as a fresh bet regardless of any
+    # theme-level exposure that may exist.
+    if new_bet.get("logged") is False and csv_stake == 0:
+        theme_total = 0.0
+
     if theme_total >= stake and existing_csv_stakes is not None:
         csv_theme_total = _compute_csv_theme_total(
             game_id, theme_key, segment, existing_csv_stakes
@@ -368,7 +374,11 @@ def should_log_bet(
             existing_theme_stakes[exposure_key] = 0.0
             theme_total = 0.0
 
-    delta_base = theme_total
+    # ``delta_base`` represents the portion of stake already logged for this
+    # particular bet.  Theme totals are still tracked for informational purposes
+    # but we base delta calculations on the market-level CSV record when
+    # available.
+    delta_base = csv_stake if csv_stake > 0 else theme_total
     if theme_total >= stake and csv_stake == 0:
         print(
             f"⚠️ Theme stake exists ({theme_total}) but no CSV stake for {side}. Tracker may be stale."
@@ -463,6 +473,13 @@ def should_log_bet(
         new_bet["skip_reason"] = "below_min_topup_queued"
         _log_verbose(msg, verbose)
         return build_skipped_evaluation("below_min_topup_queued", game_id, new_bet)
+
+    if delta <= 0:
+        msg = "⛔ No additional stake required — already logged"
+        new_bet["entry_type"] = "none"
+        new_bet["skip_reason"] = SkipReason.ALREADY_LOGGED.value
+        _log_verbose(msg, verbose)
+        return build_skipped_evaluation(SkipReason.ALREADY_LOGGED.value, game_id, new_bet)
 
     msg = f"⛔ Delta stake {delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum"
     new_bet["entry_type"] = "none"
