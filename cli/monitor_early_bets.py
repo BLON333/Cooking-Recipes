@@ -276,17 +276,23 @@ def recheck_pending_bets(
                 session_exposure,
                 theme_stakes,
             )
-            if result and not result.get("skip_reason") and result.get("side"):
+            if result is None:
+                skip_reason = bet.get("skip_reason", "unknown")
+                logger.info(
+                    f"⏩ Bet skipped: {bet['game_id']} | {bet['market']} | {bet['side']} → reason: {skip_reason}"
+                )
+            elif result and not result.get("skip_reason") and result.get("side"):
                 record_successful_log(result, existing, theme_stakes)
                 save_theme_stakes(theme_stakes)
                 bet.update(result)
                 bet["logged"] = True
                 bet["logged_ts"] = datetime.now().isoformat()
             else:
-                logger.warning(
-                    "❌ Skipping tracker update: result was skipped or malformed → %s",
-                    result,
-                )
+                # logger.warning(
+                #     "❌ Skipping tracker update: result was skipped or malformed → %s",
+                #     result,
+                # )
+                pass
         updated[key] = bet
 
     if updated != pending:
