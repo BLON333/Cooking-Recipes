@@ -86,7 +86,6 @@ def load_latest_snapshot(folder: str = "backtest") -> list:
     return []
 
 
-
 def should_log_movement() -> bool:
     global movement_log_count
     movement_log_count += 1
@@ -115,7 +114,9 @@ def format_odds(val: Optional[float]) -> str:
         return str(val)
 
 
-def format_display(curr: Optional[float], prior: Optional[float], movement: str, mode: str = "percent") -> str:
+def format_display(
+    curr: Optional[float], prior: Optional[float], movement: str, mode: str = "percent"
+) -> str:
     """Return ``X → Y`` string for display based on movement."""
     fmt = format_percentage if mode == "percent" else format_odds
     if movement == "same" or prior is None:
@@ -192,7 +193,9 @@ def annotate_display_deltas(entry: Dict, prior: Optional[Dict]) -> None:
             prior_val = entry.get("prev_market_odds")
             movement = entry.get("odds_movement", "same")
         else:
-            prior_val = entry.get(f"prev_{field}") or (prior.get(field) if prior else None)
+            prior_val = entry.get(f"prev_{field}") or (
+                prior.get(field) if prior else None
+            )
             movement = entry.get(movement_fields.get(field, ("", ""))[0], "same")
 
         if field in movement_fields or field == "market_odds":
@@ -306,9 +309,7 @@ def _style_dataframe(df: pd.DataFrame) -> pd.io.formats.style.Styler:
 
     styled = df.style.set_caption(f"Generated: {timestamp}")
     if "odds_movement" in df.columns:
-        styled = styled.apply(
-            _apply_movement("Odds", "odds_movement"), subset=["Odds"]
-        )
+        styled = styled.apply(_apply_movement("Odds", "odds_movement"), subset=["Odds"])
     if "fv_movement" in df.columns:
         styled = styled.apply(
             _apply_movement("Fair Value", "fv_movement"),
@@ -461,7 +462,9 @@ def send_bet_snapshot_to_discord(
             market = row.get("Market") or row.get("market")
             side = row.get("Bet") or row.get("side")
             book = row.get("Book") or row.get("book")
-            stake_val = row.get("Stake") or row.get("stake") or row.get("snapshot_stake")
+            stake_val = (
+                row.get("Stake") or row.get("stake") or row.get("snapshot_stake")
+            )
             if stake_val is None:
                 stake_val = 0
             try:
@@ -480,13 +483,17 @@ def send_bet_snapshot_to_discord(
             sort_vals = sort_tmp.astype(float)
             df = df.assign(_ev_sort=sort_vals)
             if "cumulative_stake" in df.columns:
-                df = df.assign(_stake_sort=pd.to_numeric(df["cumulative_stake"], errors="coerce"))
+                df = df.assign(
+                    _stake_sort=pd.to_numeric(df["cumulative_stake"], errors="coerce")
+                )
                 df = df.sort_values(
                     by=["_ev_sort", "_stake_sort"],
                     ascending=[False, False],
                 ).drop(columns=["_ev_sort", "_stake_sort"])
             else:
-                df = df.sort_values("_ev_sort", ascending=False).drop(columns="_ev_sort")
+                df = df.sort_values("_ev_sort", ascending=False).drop(
+                    columns="_ev_sort"
+                )
         except Exception:
             by_cols = ["EV"]
             if "cumulative_stake" in df.columns:
@@ -495,7 +502,9 @@ def send_bet_snapshot_to_discord(
     else:
         by_cols = ["ev_percent"]
         if "cumulative_stake" in df.columns:
-            df = df.assign(_stake_sort=pd.to_numeric(df["cumulative_stake"], errors="coerce"))
+            df = df.assign(
+                _stake_sort=pd.to_numeric(df["cumulative_stake"], errors="coerce")
+            )
             by_cols.append("_stake_sort")
             df = df.sort_values(by=by_cols, ascending=False).drop(columns="_stake_sort")
         else:
@@ -629,11 +638,13 @@ def compare_and_flag_new_rows(
             or last_snapshot.get(key)
             or prior_data.get(key)
         )
-        entry.update({
-            "prev_sim_prob": (prior or {}).get("sim_prob"),
-            "prev_market_prob": (prior or {}).get("market_prob"),
-            "prev_blended_fv": (prior or {}).get("blended_fv"),
-        })
+        entry.update(
+            {
+                "prev_sim_prob": (prior or {}).get("sim_prob"),
+                "prev_market_prob": (prior or {}).get("market_prob"),
+                "prev_blended_fv": (prior or {}).get("blended_fv"),
+            }
+        )
         movement = track_and_update_market_movement(
             entry,
             MARKET_EVAL_TRACKER,
@@ -644,8 +655,9 @@ def compare_and_flag_new_rows(
             and key not in last_snapshot
             and key not in prior_data
         )
+        entry["blended_fv"] = 1 / entry["blended_prob"]
         annotate_display_deltas(entry, prior)
-        blended_fv = entry.get("blended_fv", entry.get("fair_odds"))
+        blended_fv = entry.get("blended_fv")
         market_odds = entry.get("market_odds")
         ev_pct = entry.get("ev_percent")
 
@@ -707,10 +719,8 @@ def format_table_with_highlights(entries: List[dict]) -> str:
         odds_sym = {"better": "", "worse": "", "same": ""}.get(
             e.get("odds_movement"), ""
         )
-        ev_sym = {"better": "", "worse": "", "same": ""}.get(
-            e.get("ev_movement"), ""
-        )
-        fair = e.get("blended_fv", e.get("fair_odds"))
+        ev_sym = {"better": "", "worse": "", "same": ""}.get(e.get("ev_movement"), "")
+        fair = e.get("blended_fv")
         if isinstance(fair, (int, float)):
             fair_str = f"{fair:+}"
         else:
@@ -910,7 +920,7 @@ def build_snapshot_rows(
             stake_fraction = 0.125 if market_class == "alternate" else 0.25
             raw_kelly = kelly_fraction(p_blended, price, fraction=stake_fraction)
 
-            stake = round(raw_kelly * (strength ** 1.5), 4)
+            stake = round(raw_kelly * (strength**1.5), 4)
 
             logger.debug(
                 "✓ %s | %s | %s → EV %.2f%% | Stake %.2fu | Source %s",
@@ -930,7 +940,7 @@ def build_snapshot_rows(
                 "sim_prob": round(sim_prob, 4),
                 "market_prob": round(p_market, 4),
                 "blended_prob": round(p_blended, 4),
-                "blended_fv": to_american_odds(p_blended),
+                "blended_fv": 1 / p_blended,
                 "market_odds": price,
                 "ev_percent": round(ev_pct, 2),
                 "stake": stake,
@@ -947,7 +957,9 @@ def build_snapshot_rows(
             }
             parsed = parse_game_id(str(game_id))
             row["Date"] = parsed.get("date", "")
-            row["Matchup"] = f"{parsed.get('away', '')} @ {parsed.get('home', '')}".strip()
+            row["Matchup"] = (
+                f"{parsed.get('away', '')} @ {parsed.get('home', '')}".strip()
+            )
             time_part = parsed.get("time")
             if time_part:
                 raw = time_part.split("-")[0][1:]
@@ -955,7 +967,11 @@ def build_snapshot_rows(
                     time_str = datetime.strptime(raw, "%H%M").strftime("%-I:%M %p")
                 except Exception:
                     try:
-                        time_str = datetime.strptime(raw, "%H%M").strftime("%I:%M %p").lstrip("0")
+                        time_str = (
+                            datetime.strptime(raw, "%H%M")
+                            .strftime("%I:%M %p")
+                            .lstrip("0")
+                        )
                     except Exception:
                         time_str = ""
                 if not time_str:
@@ -971,11 +987,13 @@ def build_snapshot_rows(
             row["_tracker_entry"] = prior_row
             row["_prior_snapshot"] = prior_row
 
-            row.update({
-                "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-                "prev_market_prob": (prior_row or {}).get("market_prob"),
-                "prev_blended_fv": (prior_row or {}).get("blended_fv"),
-            })
+            row.update(
+                {
+                    "prev_sim_prob": (prior_row or {}).get("sim_prob"),
+                    "prev_market_prob": (prior_row or {}).get("market_prob"),
+                    "prev_blended_fv": (prior_row or {}).get("blended_fv"),
+                }
+            )
 
             # Compute movement and update tracker
             movement = track_and_update_market_movement(
@@ -1027,7 +1045,9 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
     df["Matchup"] = tmp[1]
     time_from_gid = tmp[2]
     if "Time" in df.columns:
-        df["Time"] = df["Time"].where(df["Time"].astype(str).str.strip() != "", time_from_gid)
+        df["Time"] = df["Time"].where(
+            df["Time"].astype(str).str.strip() != "", time_from_gid
+        )
     else:
         df["Time"] = time_from_gid
     if df["Time"].eq("").all():
@@ -1075,6 +1095,7 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
     if "stake_display" in df.columns:
         df["Stake"] = df["stake_display"]
     elif "cumulative_stake" in df.columns:
+
         def _fmt_stake(row):
             try:
                 stake = float(row["stake"])
@@ -1093,6 +1114,7 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
         )
 
     if "snapshot_stake" in df.columns:
+
         def _apply_snapshot_stake(row):
             try:
                 val = float(row.get("stake", 0))
@@ -1208,7 +1230,7 @@ def build_display_block(row: dict) -> Dict[str, str]:
     if "fv_display" in row:
         fv_str = row.get("fv_display", "N/A")
     else:
-        fv = row.get("blended_fv", row.get("fair_odds"))
+        fv = row.get("blended_fv")
         fv_str = f"{round(fv)}" if isinstance(fv, (int, float)) else "N/A"
 
     if "ev_display" in row:
@@ -1299,22 +1321,24 @@ def expand_snapshot_rows_with_kelly(
     expanded: List[dict] = []
 
     for row in rows:
+        row["blended_fv"] = 1 / row["blended_prob"]
         per_book = row.get("_raw_sportsbook") or row.get("consensus_books", {})
         tracker_key = build_tracker_key(
             row.get("game_id"),
             row.get("market", ""),
             row.get("side", ""),
         )
-        prior_row = (
-            MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
-            or MARKET_EVAL_TRACKER.get(tracker_key)
-        )
+        prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(
+            tracker_key
+        ) or MARKET_EVAL_TRACKER.get(tracker_key)
 
-        row.update({
-            "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-            "prev_market_prob": (prior_row or {}).get("market_prob"),
-            "prev_blended_fv": (prior_row or {}).get("blended_fv"),
-        })
+        row.update(
+            {
+                "prev_sim_prob": (prior_row or {}).get("sim_prob"),
+                "prev_market_prob": (prior_row or {}).get("market_prob"),
+                "prev_blended_fv": (prior_row or {}).get("blended_fv"),
+            }
+        )
 
         row["book"] = row.get("book", row.get("best_book"))
 
@@ -1335,7 +1359,6 @@ def expand_snapshot_rows_with_kelly(
             expanded.append(row)
             continue
 
-
         expanded_any = False
         for book, odds in per_book.items():
             if allowed_books and book not in allowed_books:
@@ -1355,7 +1378,9 @@ def expand_snapshot_rows_with_kelly(
                 try:
                     odds_val = float(row.get("market_odds"))
                 except Exception:
-                    numeric = [o for o in per_book.values() if isinstance(o, (int, float))]
+                    numeric = [
+                        o for o in per_book.values() if isinstance(o, (int, float))
+                    ]
                     odds_val = min(numeric) if numeric else None
 
             if isinstance(odds_val, float) and odds_val.is_integer():
@@ -1376,6 +1401,7 @@ def expand_snapshot_rows_with_kelly(
             expanded_any = True
             expanded_row = row.copy()
             expanded_row["logged"] = bool(row.get("logged", False))
+            expanded_row["blended_fv"] = 1 / expanded_row["blended_prob"]
             expanded_row.update(
                 {
                     "best_book": book,
@@ -1389,7 +1415,10 @@ def expand_snapshot_rows_with_kelly(
                     "consensus_books": per_book,
                 }
             )
-            if expanded_row.get("stake", 0) == 0 and expanded_row.get("raw_kelly", 0) > 0:
+            if (
+                expanded_row.get("stake", 0) == 0
+                and expanded_row.get("raw_kelly", 0) > 0
+            ):
                 expanded_row["snapshot_stake"] = round(expanded_row["raw_kelly"], 2)
                 expanded_row["is_prospective"] = True
             else:
@@ -1405,15 +1434,16 @@ def expand_snapshot_rows_with_kelly(
                 expanded_row["market"],
                 expanded_row["side"],
             )
-            prior_row = (
-                MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
-                or MARKET_EVAL_TRACKER.get(tracker_key)
+            prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(
+                tracker_key
+            ) or MARKET_EVAL_TRACKER.get(tracker_key)
+            expanded_row.update(
+                {
+                    "prev_sim_prob": (prior_row or {}).get("sim_prob"),
+                    "prev_market_prob": (prior_row or {}).get("market_prob"),
+                    "prev_blended_fv": (prior_row or {}).get("blended_fv"),
+                }
             )
-            expanded_row.update({
-                "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-                "prev_market_prob": (prior_row or {}).get("market_prob"),
-                "prev_blended_fv": (prior_row or {}).get("blended_fv"),
-            })
             movement = track_and_update_market_movement(
                 expanded_row,
                 MARKET_EVAL_TRACKER,
@@ -1426,7 +1456,7 @@ def expand_snapshot_rows_with_kelly(
             expanded_row.update(movement)
             ensure_consensus_books(expanded_row)
             expanded.append(expanded_row)
-        
+
         if not expanded_any:
             row_copy = row.copy()
             row_copy["logged"] = bool(row.get("logged", False))
@@ -1461,7 +1491,9 @@ def expand_snapshot_rows_with_kelly(
             seen.add(key)
 
     if pending_bets:
-        bets_iter = pending_bets.values() if isinstance(pending_bets, dict) else pending_bets
+        bets_iter = (
+            pending_bets.values() if isinstance(pending_bets, dict) else pending_bets
+        )
         for bet in bets_iter:
             try:
                 ev = float(bet.get("ev_percent", 0))
@@ -1581,7 +1613,11 @@ def dispatch_snapshot_rows(
     # Role filter
     if role:
         if "snapshot_roles" in df.columns:
-            df = df[df["snapshot_roles"].apply(lambda r: role in r if isinstance(r, list) else False)]
+            df = df[
+                df["snapshot_roles"].apply(
+                    lambda r: role in r if isinstance(r, list) else False
+                )
+            ]
     counts["post_role"] = len(df)
 
     if counts["post_role"] == 0:
@@ -1610,7 +1646,11 @@ def send_snapshot_to_discord(df: pd.DataFrame) -> None:
             continue
         if "snapshot_roles" not in df.columns:
             continue
-        subset = df[df["snapshot_roles"].apply(lambda r: role in r if isinstance(r, list) else False)]
+        subset = df[
+            df["snapshot_roles"].apply(
+                lambda r: role in r if isinstance(r, list) else False
+            )
+        ]
         if subset.empty:
             continue
         label = role_labels.get(role, role)
