@@ -126,6 +126,12 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             rk = float(row.get("raw_kelly", 0))
         except Exception:
             continue
+        try:
+            hours = float(row.get("hours_to_game", 0))
+            if logged and hours < 0:
+                continue  # drop logged bets for games in the past
+        except Exception:
+            pass
         # Refresh logged bets each loop instead of discarding them
         if ev < 5.0 or rk < 1.0:
             continue  # Still filter weak edges

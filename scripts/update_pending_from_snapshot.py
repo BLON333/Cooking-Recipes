@@ -43,6 +43,12 @@ def filter_rows(rows: list) -> list:
             rk = float(row.get("raw_kelly", 0))
         except Exception:
             continue
+        try:
+            hours = float(row.get("hours_to_game", 0))
+            if logged and hours < 0:
+                continue  # drop logged bets for past games
+        except Exception:
+            pass
         # Allow logged bets so they remain in pending and stay refreshed
         if ev < 5.0 or rk < 1.0:
             continue  # Filter weak edges only
