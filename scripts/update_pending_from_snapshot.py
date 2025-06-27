@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 """Generate pending_bets.json from latest snapshot file."""
 
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import json
 import glob
 
@@ -15,7 +18,7 @@ PENDING_JSON = os.path.join("logs", "pending_bets.json")
 
 def load_latest_snapshot(directory: str = SNAPSHOT_DIR) -> tuple[list, str | None]:
     """Return rows from the most recent ``snapshot_*.json`` in ``directory``."""
-    pattern = os.path.join(directory, "snapshot_*.json")
+    pattern = os.path.join(directory, "market_snapshot_*.json")
     files = sorted(glob.glob(pattern))
     if not files:
         return [], None
