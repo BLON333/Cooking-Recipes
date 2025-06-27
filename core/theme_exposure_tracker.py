@@ -4,7 +4,7 @@ import ast
 from typing import Dict
 
 from .theme_key_utils import make_theme_key, parse_theme_key
-from core.should_log_bet import get_theme, get_theme_key, normalize_segment
+from core.theme_utils import get_theme, get_theme_key, normalize_segment
 
 from core.file_utils import with_locked_file
 
