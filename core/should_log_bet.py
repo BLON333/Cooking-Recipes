@@ -291,6 +291,7 @@ def should_log_bet(
     else:
         entry_type = "none"
         skip_reason = SkipReason.LOW_TOPUP.value
+    new_bet["entry_type"] = entry_type
     csv_stake = 0.0
     if existing_csv_stakes is not None:
         csv_stake = existing_csv_stakes.get((game_id, market, side), 0.0)
@@ -321,7 +322,9 @@ def should_log_bet(
         )
         delta_base = 0.0
     if new_bet.get("entry_type") in {"first", "top-up"} and new_bet.get("consensus_move", 0.0) < new_bet.get("required_move", 0.0):
-        return {"skip_reason": "not_confirmed", "stake": 0.0, **new_bet}
+        new_bet["skip_reason"] = "not_confirmed"
+        new_bet["stake"] = 0.0
+        return build_skipped_evaluation("not_confirmed", game_id, new_bet)
 
     tracker_key = f"{game_id}:{market}:{side}"
 
