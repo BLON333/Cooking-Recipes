@@ -19,11 +19,15 @@ from core.pending_bets import (
     PENDING_BETS_PATH,
 )
 from core.theme_exposure_tracker import load_tracker as load_theme_stakes, save_tracker as save_theme_stakes
-from core.market_eval_tracker import load_tracker as load_eval_tracker
+from core.market_eval_tracker import (
+    load_tracker as load_eval_tracker,
+    build_tracker_key,
+)
 from cli.log_betting_evals import (
     write_to_csv,
     load_existing_stakes,
     record_successful_log,
+    load_market_conf_tracker,
 )
 from core.should_log_bet import should_log_bet
 
@@ -109,6 +113,46 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
         bet["queued_ts"] = base.get("queued_ts", r.get("queued_ts"))
         merged[key] = bet
     return merged
+
+
+def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> None:
+    """Overwrite ``pending_bets.json`` with entries built from ``rows``."""
+    tracker = load_market_conf_tracker()
+    pending: dict = {}
+    for row in rows:
+        try:
+            logged = bool(row.get("logged"))
+            ev = float(row.get("ev_percent", 0))
+            rk = float(row.get("raw_kelly", 0))
+        except Exception:
+            continue
+        if logged or ev < 5.0 or rk < 1.0:
+            continue
+        key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
+        entry = {
+            "game_id": row.get("game_id"),
+            "market": row.get("market"),
+            "side": row.get("side"),
+            "ev_percent": row.get("ev_percent"),
+            "raw_kelly": row.get("raw_kelly"),
+            "market_odds": row.get("market_odds"),
+            "sim_prob": row.get("sim_prob"),
+            "market_prob": row.get("market_prob"),
+            "blended_fv": row.get("blended_fv"),
+            "book": row.get("book") or row.get("best_book"),
+            "date_simulated": row.get("date_simulated"),
+            "skip_reason": row.get("skip_reason"),
+            "logged": row.get("logged", False),
+        }
+        if key in tracker and isinstance(tracker[key], dict):
+            cp = tracker[key].get("consensus_prob")
+            if cp is not None:
+                entry["baseline_consensus_prob"] = cp
+        pending[key] = entry
+
+    if pending:
+        save_pending_bets(pending, path)
+
 
 
 def enrich_pending_row(row: dict) -> dict:

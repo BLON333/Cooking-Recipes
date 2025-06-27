@@ -33,7 +33,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from core.utils import now_eastern
 from core.odds_fetcher import fetch_all_market_odds, save_market_odds_to_file
-from cli.monitor_early_bets import recheck_pending_bets
+from cli.monitor_early_bets import recheck_pending_bets, update_pending_from_snapshot
+from core.snapshot_core import load_latest_snapshot
 
 EDGE_THRESHOLD = 0.05
 MIN_EV = 0.05
@@ -438,7 +439,14 @@ if initial_odds:
                 break
             time.sleep(0.2)
 
-        run_subprocess([PYTHON, "-m", "scripts.update_pending_from_snapshot"])
+        logger.info("\ud83d\udcc2 Updating pending bets from latest snapshot before recheck...")
+
+        # Load snapshot data
+        snapshot_rows = load_latest_snapshot()
+        # Update pending_bets.json in-place using snapshot
+        update_pending_from_snapshot(snapshot_rows)
+
+        logger.info("\u2705 Pending bets updated. Proceeding to recheck...")
         recheck_pending_bets()
 
 start_time = time.time()
@@ -510,7 +518,14 @@ while True:
                         break
                     time.sleep(0.2)
 
-                run_subprocess([PYTHON, "-m", "scripts.update_pending_from_snapshot"])
+                logger.info("\ud83d\udcc2 Updating pending bets from latest snapshot before recheck...")
+
+                # Load snapshot data
+                snapshot_rows = load_latest_snapshot()
+                # Update pending_bets.json in-place using snapshot
+                update_pending_from_snapshot(snapshot_rows)
+
+                logger.info("\u2705 Pending bets updated. Proceeding to recheck...")
                 recheck_pending_bets()
 
         last_log_time = now
