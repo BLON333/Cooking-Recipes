@@ -23,6 +23,8 @@ from core.logger import get_logger
 from core.should_log_bet import MAX_POSITIVE_ODDS, MIN_NEGATIVE_ODDS
 from core.book_helpers import parse_american_odds, filter_by_odds, ensure_side
 from core.book_whitelist import ALLOWED_BOOKS
+from core.pending_bets import load_pending_bets
+from core.market_eval_tracker import build_tracker_key
 
 # Subset of books to include when posting to the main FV Drop webhook
 FV_DROP_ALLOWED_BOOKS = [
@@ -81,6 +83,32 @@ def filter_main_lines(df: pd.DataFrame) -> pd.DataFrame:
     if "Market Class" in df.columns:
         return df[df["Market Class"] == "Main"]
     return df
+
+
+def apply_baseline_annotations(rows: list, pending: dict) -> None:
+    """Inject baseline consensus display strings into ``rows``."""
+    baseline_map = {
+        key: (bet.get("baseline_consensus_prob"))
+        for key, bet in pending.items()
+        if isinstance(bet, dict)
+    }
+
+    for r in rows:
+        key = build_tracker_key(r.get("game_id"), r.get("market"), r.get("side"))
+        baseline = baseline_map.get(key)
+        try:
+            curr = float(r.get("consensus_prob", r.get("market_prob")))
+        except Exception:
+            curr = None
+        try:
+            base_val = float(baseline) if baseline is not None else None
+        except Exception:
+            base_val = None
+
+        if base_val is not None and curr is not None:
+            r["mkt_prob_display"] = f"{base_val * 100:.1f}% → {curr * 100:.1f}%"
+        elif curr is not None:
+            r["mkt_prob_display"] = f"{curr * 100:.1f}%"
 
 
 def is_market_prob_increasing(val: str) -> bool:
@@ -170,6 +198,11 @@ def main() -> None:
             seen.add(key)
             deduped.append(r)
     rows = deduped
+
+    # Lookup baseline consensus probabilities from pending_bets.json
+    pending = load_pending_bets()
+    apply_baseline_annotations(rows, pending)
+
     logger.info(
         "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
         len(rows),
@@ -177,7 +210,7 @@ def main() -> None:
         args.max_ev,
     )
 
-    df = format_for_display(rows, include_movement=True)
+    df = format_for_display(rows, include_movement=False)
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     if "sim_prob_display" in df.columns:
