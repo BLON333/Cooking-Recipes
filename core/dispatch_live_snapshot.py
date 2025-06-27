@@ -145,6 +145,25 @@ def main() -> None:
         logger.warning("⚠️ 'Market' column missing — skipping live snapshot dispatch.")
         return
 
+    columns = [
+        "Date",
+        "Time",
+        "Matchup",
+        "Market Class",
+        "Market",
+        "Bet",
+        "Book",
+        "Odds",
+        "Sim %",
+        "Mkt %",
+        "FV",
+        "EV",
+        "Stake",
+        "Logged?",
+    ]
+    columns = [c for c in columns if c in df.columns]
+    df = df[columns]
+
     if args.output_discord:
         webhook_map = {
             "h2h": os.getenv("DISCORD_H2H_WEBHOOK_URL"),

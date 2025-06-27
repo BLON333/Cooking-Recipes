@@ -171,6 +171,25 @@ def main() -> None:
         )
         return
 
+    columns = [
+        "Date",
+        "Time",
+        "Matchup",
+        "Market Class",
+        "Market",
+        "Bet",
+        "Book",
+        "Odds",
+        "Sim %",
+        "Mkt %",
+        "FV",
+        "EV",
+        "Stake",
+        "Logged?",
+    ]
+    columns = [c for c in columns if c in df.columns]
+    df = df[columns]
+
     if args.output_discord:
         webhook = PERSONAL_WEBHOOK_URL
 

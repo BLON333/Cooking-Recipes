@@ -242,6 +242,26 @@ def main() -> None:
         logger.info("⚠️ No qualifying FV Drop rows with market movement to display.")
         return
 
+    columns = [
+        "Date",
+        "Time",
+        "Matchup",
+        "Market Class",
+        "Market",
+        "Bet",
+        "Book",
+        "Odds",
+        "Sim %",
+        "Mkt %",
+        "FV",
+        "EV",
+        "Stake",
+        "Logged?",
+    ]
+    columns = [c for c in columns if c in df_fv_filtered.columns]
+    df_fv_filtered = df_fv_filtered[columns]
+    df_fv_all = df_fv_all[columns]
+
     if args.output_discord:
         fv_drop_webhook = os.getenv("DISCORD_FV_DROP_WEBHOOK_URL")
         fv_drop_all_webhook = os.getenv("DISCORD_FV_DROP_ALL_WEBHOOK_URL")
