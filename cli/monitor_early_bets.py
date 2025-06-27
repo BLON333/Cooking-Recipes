@@ -277,9 +277,9 @@ def recheck_pending_bets(
                 theme_stakes,
             )
             if result is None:
-                skip_reason = bet.get("skip_reason", "unknown")
+                reason = bet.get("skip_reason", "unknown")
                 logger.info(
-                    f"⏩ Bet skipped: {bet['game_id']} | {bet['market']} | {bet['side']} → reason: {skip_reason}"
+                    f"⏩ Skipped: {bet['game_id']} | {bet['market']} | {bet['side']} → reason: {reason}"
                 )
             elif result and not result.get("skip_reason") and result.get("side"):
                 record_successful_log(result, existing, theme_stakes)
