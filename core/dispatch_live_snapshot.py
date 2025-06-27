@@ -8,6 +8,7 @@ from core.bootstrap import *  # noqa
 
 import json
 from core.utils import safe_load_json
+from theme_exposure_tracker import build_theme_key
 import argparse
 from dotenv import load_dotenv
 
@@ -26,7 +27,11 @@ logger.debug("✅ Loaded webhook: %s", os.getenv("DISCORD_SPREADS_WEBHOOK_URL"))
 
 def latest_snapshot_path(folder="backtest") -> str | None:
     files = sorted(
-        [f for f in os.listdir(folder) if f.startswith("market_snapshot_") and f.endswith(".json")],
+        [
+            f
+            for f in os.listdir(folder)
+            if f.startswith("market_snapshot_") and f.endswith(".json")
+        ],
         reverse=True,
     )
     return os.path.join(folder, files[0]) if files else None
@@ -81,7 +86,16 @@ def main() -> None:
         sys.exit(1)
 
     rows = load_rows(path)
+
+    try:
+        with open("logs/theme_exposure.json") as f:
+            theme_stakes = json.load(f)
+    except FileNotFoundError:
+        theme_stakes = {}
+
     for r in rows:
+        theme_key = build_theme_key(r)
+        r["total_stake"] = theme_stakes.get(theme_key, 0.0)
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
 
