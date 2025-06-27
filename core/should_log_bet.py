@@ -31,6 +31,7 @@ import csv
 import os
 
 from core.theme_key_utils import make_theme_key, theme_key_equals
+from core.theme_exposure_tracker import build_theme_key
 
 
 from core.utils import (
@@ -356,6 +357,18 @@ def should_log_bet(
     exposure_key = make_theme_key(game_id, theme_key, segment)
     tracker_has_key = exposure_key in existing_theme_stakes
     theme_total = existing_theme_stakes.get(exposure_key, 0.0)
+
+    # Determine entry type based solely on theme exposure
+    tracker_theme_key = build_theme_key(new_bet)
+    prior_stake = existing_theme_stakes.get(tracker_theme_key, 0.0)
+    delta = max(0.0, stake - prior_stake)
+    if prior_stake == 0.0:
+        entry_type = "first"
+    elif delta >= MIN_TOPUP_STAKE:
+        entry_type = "top-up"
+    else:
+        entry_type = "none"
+        skip_reason = SkipReason.LOW_TOPUP.value
     csv_stake = 0.0
     if existing_csv_stakes is not None:
         csv_stake = existing_csv_stakes.get((game_id, market, side), 0.0)
@@ -414,9 +427,10 @@ def should_log_bet(
         new_bet["skip_reason"] = "time_blocked"
         return build_skipped_evaluation("time_blocked", game_id, new_bet)
 
-    if not tracker_has_key:
+    rounded_delta = round_stake(delta)
+
+    if entry_type == "first":
         new_bet["stake"] = round_stake(stake)
-        new_bet["entry_type"] = "first"
         if new_bet["stake"] < MIN_FIRST_STAKE:
             _log_verbose(
                 f"⛔ Skipping bet — scaled stake {new_bet['stake']}u is below {MIN_FIRST_STAKE:.1f}u minimum",
@@ -452,22 +466,10 @@ def should_log_bet(
             **new_bet,
         }
 
-    # Round the delta once to avoid floating point drift across the pipeline
-    delta_raw = stake - delta_base
-    delta = round_stake(delta_raw)
-
-    if delta <= 0:
-        msg = "⛔ No additional stake required — already logged"
-        new_bet["entry_type"] = "none"
-        new_bet["skip_reason"] = SkipReason.ALREADY_LOGGED.value
-        _log_verbose(msg, verbose)
-        return build_skipped_evaluation(SkipReason.ALREADY_LOGGED.value, game_id, new_bet)
-
-    if delta > MIN_TOPUP_STAKE:
-        new_bet["stake"] = delta
-        new_bet["entry_type"] = "top-up"
+    if entry_type == "top-up":
+        new_bet["stake"] = rounded_delta
         _log_verbose(
-            f"🔼 should_log_bet: Top-up accepted → {side} | {theme_key} [{segment}] | Δ {delta:.2f}u",
+            f"🔼 should_log_bet: Top-up accepted → {side} | {theme_key} [{segment}] | Δ {rounded_delta:.2f}u",
             verbose,
         )
         for stale_key in [
@@ -483,17 +485,18 @@ def should_log_bet(
             "skip": False,
             "log": True,
             "entry_type": "top-up",
-            "stake": delta,
+            "stake": rounded_delta,
             "full_stake": stake,
-            "partial_stake": delta,
+            "partial_stake": rounded_delta,
             "ev": ev,
             "game_id": game_id,
             "side": new_bet["side"],
             **new_bet,
         }
 
-    msg = f"⛔ Delta stake {delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum"
+    # entry_type == "none"
+    msg = f"⛔ Delta stake {rounded_delta:.2f}u < {MIN_TOPUP_STAKE:.1f}u minimum"
     new_bet["entry_type"] = "none"
-    new_bet["skip_reason"] = SkipReason.LOW_TOPUP.value
+    new_bet["skip_reason"] = skip_reason
     _log_verbose(msg, verbose)
-    return build_skipped_evaluation(SkipReason.LOW_TOPUP.value, game_id, new_bet)
+    return build_skipped_evaluation(skip_reason, game_id, new_bet)
