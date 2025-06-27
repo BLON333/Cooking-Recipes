@@ -430,11 +430,15 @@ def should_log_bet(
             f"✅ should_log_bet: First bet → {side} | {theme_key} [{segment}] | Stake: {stake:.2f}u | EV: {ev:.2f}%",
             verbose,
         )
+        for k in ["skip", "log", "entry_type", "stake", "full_stake"]:
+            new_bet.pop(k, None)
         return {
             "skip": False,
+            "log": True,
+            "entry_type": "first",
+            "stake": stake,
             "full_stake": stake,
             "ev": ev,
-            "log": True,
             "game_id": game_id,
             "side": new_bet["side"],
             **new_bet,
@@ -450,12 +454,16 @@ def should_log_bet(
             f"🔼 should_log_bet: Top-up accepted → {side} | {theme_key} [{segment}] | Δ {delta:.2f}u",
             verbose,
         )
+        for k in ["skip", "log", "entry_type", "stake", "full_stake"]:
+            new_bet.pop(k, None)
         return {
             "skip": False,
+            "log": True,
+            "entry_type": "top-up",
+            "stake": delta,
             "full_stake": stake,
             "partial_stake": delta,
             "ev": ev,
-            "log": True,
             "game_id": game_id,
             "side": new_bet["side"],
             **new_bet,
