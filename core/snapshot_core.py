@@ -1070,7 +1070,8 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
         df["Stake"] = df.apply(_fmt_stake, axis=1)
     else:
         df["Stake"] = df.apply(
-            lambda row: f"{row.get('total_stake', row['stake']):.2f}u", axis=1
+            lambda row: f"{row.get('total_stake') or row.get('stake', 0.0):.2f}u",
+            axis=1,
         )
 
     if "snapshot_stake" in df.columns:
