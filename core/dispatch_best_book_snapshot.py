@@ -31,9 +31,7 @@ def load_pending_rows() -> list:
     """Return pending bets loaded from disk."""
     pending = load_pending_bets()
     rows = list(pending.values())
-    logger.info(
-        "📊 Rendering snapshot from %d entries in pending_bets.json", len(rows)
-    )
+    logger.info("📊 Rendering snapshot from %d entries in pending_bets.json", len(rows))
     for r in rows:
         ensure_side(r)
     return rows
@@ -81,8 +79,8 @@ def main() -> None:
 
     rows = load_pending_rows()
     if not rows:
-            logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
-            return
+        logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
+        return
 
     try:
         with open("logs/theme_exposure.json") as f:
@@ -97,13 +95,23 @@ def main() -> None:
             r["book"] = r["best_book"]
 
     rows = [r for r in rows if "best_book" in r.get("snapshot_roles", [])]
+    logger.info("🧾 Pending rows for role='best_book': %d", len(rows))
+    if not rows:
+        logger.warning("⚠️ No pending rows for role='best_book' — skipping dispatch")
+        return
+
     rows = filter_by_date(rows, args.date)
 
     df = format_for_display(rows, include_movement=True)
 
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
-        logger.info("🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f", len(df), args.min_ev, args.max_ev)
+        logger.info(
+            "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
+            len(df),
+            args.min_ev,
+            args.max_ev,
+        )
 
     if "total_stake" in df.columns:
         stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
@@ -134,15 +142,15 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
     if df.empty:
-            logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
-            return
+        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
+        return
 
     if "market" in df.columns:
         df["Market"] = df["market"].astype(str)
 
     if "Market" not in df.columns:
-            logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
-            return
+        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
+        return
 
     columns = [
         "Date",
@@ -162,19 +170,35 @@ def main() -> None:
     ]
     missing = [c for c in columns if c not in df.columns]
     if missing:
-            logger.warning(
-                        f"⚠️ Missing required columns: {missing} — skipping dispatch."
-        )
-            return
+        logger.warning(f"⚠️ Missing required columns: {missing} — skipping dispatch.")
+        return
     df = df[columns]
 
     if args.output_discord:
-        webhook = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL") or os.getenv("DISCORD_BEST_BOOK_ALT_WEBHOOK_URL")
-        if not webhook:
+        main_hook = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL")
+        alt_hook = os.getenv("DISCORD_BEST_BOOK_ALT_WEBHOOK_URL")
+
+        if not any([main_hook, alt_hook]):
             logger.warning("❌ No Discord webhook configured for best-book snapshots.")
             return
-        logger.info("📡 Dispatching unified best-book snapshot (%s rows)", df.shape[0])
-        send_bet_snapshot_to_discord(df, "Best Book Snapshot", webhook)
+
+        for label, hook in [("main", main_hook), ("alt", alt_hook)]:
+            subset = df[df["Market Class"].str.lower() == label]
+            logger.info(f"🧾 Snapshot rows for role='{label}': {subset.shape[0]}")
+            if subset.empty:
+                logger.warning(
+                    f"⚠️ No snapshot rows for role='{label}' — skipping dispatch."
+                )
+                continue
+            if not hook:
+                logger.warning(f"⚠️ Discord webhook for role='{label}' not configured")
+                continue
+            logger.info(
+                "📡 Dispatching %s best-book snapshot (%s rows)",
+                label,
+                subset.shape[0],
+            )
+            send_bet_snapshot_to_discord(subset, "Best Book Snapshot", hook)
     else:
         print(df.to_string(index=False))
 
