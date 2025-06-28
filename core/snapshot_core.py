@@ -1044,6 +1044,17 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
     if df.empty:
         return df
 
+    if "market" in df.columns and "Market" not in df.columns:
+        df["Market"] = df["market"].astype(str)
+    elif "Market" not in df.columns:
+        df["Market"] = "N/A"
+
+    if "market_class" not in df.columns:
+        df["market_class"] = "main"
+    df["Market Class"] = (
+        df["market_class"].map({"alternate": "Alt", "main": "Main"}).fillna("❓")
+    )
+
     if "label" not in df.columns:
         if "is_prospective" in df.columns:
             df["label"] = df["is_prospective"].apply(lambda x: "🔍" if x else "🟢")
@@ -1062,12 +1073,6 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
         df["Time"] = time_from_gid
     if df["Time"].eq("").all():
         df.drop(columns=["Time"], inplace=True)
-    if "market_class" not in df.columns:
-        df["market_class"] = "main"
-    df["Market Class"] = (
-        df["market_class"].map({"alternate": "Alt", "main": "Main"}).fillna("❓")
-    )
-    df["Market"] = df["market"]
     df["Bet"] = df["side"]
     if "book" in df.columns:
         df["Book"] = df["book"]
