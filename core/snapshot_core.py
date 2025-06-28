@@ -538,12 +538,14 @@ def send_bet_snapshot_to_discord(
     buf = io.BytesIO()
     try:
         dfi.export(styled, buf, table_conversion="chrome", max_rows=-1)
+        print(f"🧪 Chrome export buffer size: {buf.tell()} bytes")
     except Exception as e:
         print(f"❌ dfi.export failed: {e}")
         try:
             buf.seek(0)
             buf.truncate(0)
             dfi.export(styled, buf, table_conversion="matplotlib", max_rows=-1)
+            print(f"🧪 Matplotlib export buffer size: {buf.tell()} bytes")
         except Exception as e2:
             print(f"⚠️ Fallback export failed: {e2}")
             buf.close()
