@@ -559,6 +559,14 @@ def send_bet_snapshot_to_discord(
     )
 
     files = {"file": ("snapshot.png", buf, "image/png")}
+
+    # Ensure webhook waits for the message to complete so we get a response
+    if not webhook_url.endswith("?wait=true"):
+        webhook_url += "?wait=true"
+
+    print(
+        f"🧪 Posting snapshot to Discord (market_type={market_type}, rows={df.shape[0]})"
+    )
     try:
         resp = post_with_retries(
             webhook_url,

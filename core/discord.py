@@ -30,6 +30,8 @@ def post_with_retries(
     for attempt in range(attempts):
         try:
             resp = requests.post(url, **kwargs)
+            print(f"🧪 Discord response status: {resp.status_code}")
+            print(f"🧪 Discord response body: {resp.text[:300]}")
             if resp.status_code in (200, 204):
                 return resp
             if resp.status_code not in retry_statuses:
