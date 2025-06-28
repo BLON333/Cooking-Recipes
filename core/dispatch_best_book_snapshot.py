@@ -133,11 +133,11 @@ def main() -> None:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
 
-    if "market" in df.columns and "Market" not in df.columns:
-        df["Market"] = df["market"]
+    if "market" in df.columns:
+        df["Market"] = df["market"].astype(str)
 
     if "Market" not in df.columns:
-        logger.warning("⚠️ 'Market' column missing — cannot apply fallback filters.")
+        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
         return
 
     columns = [
@@ -156,7 +156,12 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
-    columns = [c for c in columns if c in df.columns]
+    missing = [c for c in columns if c not in df.columns]
+    if missing:
+        logger.warning(
+            f"⚠️ Missing required columns: {missing} — skipping dispatch."
+        )
+        return
     df = df[columns]
 
     if args.output_discord:
@@ -179,6 +184,7 @@ def main() -> None:
                         .str.lower()
                         .str.startswith(("h2h", "spreads", "totals"), na=False)
                     ]
+                logger.info(f"🧾 Snapshot rows for 'main': {subset.shape[0]}")
                 logger.info(
                     "📡 Evaluating snapshot for: main → %s rows", subset.shape[0]
                 )
@@ -203,6 +209,7 @@ def main() -> None:
                         .str.lower()
                         .str.startswith(("h2h", "spreads", "totals"), na=False)
                     ]
+                logger.info(f"🧾 Snapshot rows for 'alt': {subset.shape[0]}")
                 logger.info(
                     "📡 Evaluating snapshot for: alternate → %s rows", subset.shape[0]
                 )

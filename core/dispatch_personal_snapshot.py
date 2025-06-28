@@ -153,8 +153,12 @@ def main() -> None:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
 
-    if "market" in df.columns and "Market" not in df.columns:
-        df["Market"] = df["market"]
+    if "market" in df.columns:
+        df["Market"] = df["market"].astype(str)
+
+    if "Market" not in df.columns:
+        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
+        return
 
     if "Market Class" not in df.columns:
         logger.warning(
@@ -178,14 +182,21 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
-    columns = [c for c in columns if c in df.columns]
+    missing = [c for c in columns if c not in df.columns]
+    if missing:
+        logger.warning(
+            f"⚠️ Missing required columns: {missing} — skipping dispatch."
+        )
+        return
     df = df[columns]
 
     if args.output_discord:
         webhook = PERSONAL_WEBHOOK_URL
 
         main_df = df[df["Market Class"] == "Main"]
+        logger.info(f"🧾 Snapshot rows for 'main': {main_df.shape[0]}")
         alt_df = df[df["Market Class"] == "Alt"]
+        logger.info(f"🧾 Snapshot rows for 'alt': {alt_df.shape[0]}")
 
         if not main_df.empty:
             logger.info(
