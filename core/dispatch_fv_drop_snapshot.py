@@ -213,6 +213,17 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
 
+    if df.empty:
+        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
+        return
+
+    if "market" in df.columns:
+        df["Market"] = df["market"].astype(str)
+
+    if "Market" not in df.columns:
+        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
+        return
+
     # ✅ Filter to only show rows where market probability increased
     if "Mkt %" in df.columns:
         df = df[df["Mkt %"].apply(is_market_prob_increasing)]
@@ -227,7 +238,9 @@ def main() -> None:
 
     # Filter snapshot twice: primary books and all allowed books
     df_fv_filtered = filter_by_books(df_main, FV_DROP_ALLOWED_BOOKS)
+    logger.info(f"🧾 Snapshot rows for 'primary': {df_fv_filtered.shape[0]}")
     df_fv_all = filter_by_books(df_main, list(ALLOWED_BOOKS))
+    logger.info(f"🧾 Snapshot rows for 'all': {df_fv_all.shape[0]}")
 
     if df_fv_filtered.empty and df_fv_all.empty:
         logger.info("⚠️ No qualifying FV Drop rows with market movement to display.")
@@ -249,7 +262,12 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
-    columns = [c for c in columns if c in df_fv_filtered.columns]
+    missing = [c for c in columns if c not in df_fv_filtered.columns]
+    if missing:
+        logger.warning(
+            f"⚠️ Missing required columns: {missing} — skipping dispatch."
+        )
+        return
     df_fv_filtered = df_fv_filtered[columns]
     df_fv_all = df_fv_all[columns]
 
