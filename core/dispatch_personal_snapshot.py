@@ -111,32 +111,37 @@ def main() -> None:
 
     rows = filter_by_date(rows, args.date)
 
-    rows = [r for r in rows if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev]
+    df = format_for_display(rows, include_movement=True)
 
-    filtered = []
-    for r in rows:
-        stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
-        if stake_val < 1.0 and not r.get("is_prospective"):
-            continue
-        filtered.append(r)
-    rows = filtered
+    if "ev_percent" in df.columns:
+        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
 
-    seen = set()
-    deduped = []
-    for r in rows:
-        key = (r.get("game_id"), r.get("market"), r.get("side"), r.get("book"))
-        if key not in seen:
-            seen.add(key)
-            deduped.append(r)
-    rows = deduped
+    if "total_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
+    elif "stake" in df.columns:
+        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+    elif "snapshot_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["snapshot_stake"], errors="coerce")
+    else:
+        stake_vals = pd.Series([0] * len(df))
+    if "is_prospective" in df.columns:
+        mask = (stake_vals >= 1.0) | df["is_prospective"]
+    else:
+        mask = stake_vals >= 1.0
+    df = df[mask]
+
+    if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
+        df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
+
     logger.info(
         "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
-        len(rows),
+        len(df),
         args.min_ev,
         args.max_ev,
     )
 
-    df = format_for_display(rows, include_movement=True)
+    if "label" in df.columns and "Bet" in df.columns:
+        df["Bet"] = df["label"] + " " + df["Bet"]
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     allowed_books = list(ALLOWED_BOOKS)
@@ -192,29 +197,11 @@ def main() -> None:
 
     if args.output_discord:
         webhook = PERSONAL_WEBHOOK_URL
-
-        main_df = df[df["Market Class"] == "Main"]
-        logger.info(f"🧾 Snapshot rows for 'main': {main_df.shape[0]}")
-        alt_df = df[df["Market Class"] == "Alt"]
-        logger.info(f"🧾 Snapshot rows for 'alt': {alt_df.shape[0]}")
-
-        if not main_df.empty:
-            logger.info(
-                "📡 Dispatching Personal Snapshot → Main Markets (%s rows)",
-                main_df.shape[0],
-            )
-            send_bet_snapshot_to_discord(main_df, "Personal (Main)", webhook)
-        else:
-            logger.info("⚠️ No personal bets found for Main markets")
-
-        if not alt_df.empty:
-            logger.info(
-                "📡 Dispatching Personal Snapshot → Alt Markets (%s rows)",
-                alt_df.shape[0],
-            )
-            send_bet_snapshot_to_discord(alt_df, "Personal (Alt)", webhook)
-        else:
-            logger.info("⚠️ No personal bets found for Alt markets")
+        if not webhook:
+            logger.error("❌ PERSONAL_DISCORD_WEBHOOK_URL not configured")
+            return
+        logger.info("📡 Dispatching unified personal snapshot (%s rows)", df.shape[0])
+        send_bet_snapshot_to_discord(df, "Personal Snapshot", webhook)
     else:
         print(df.to_string(index=False))
 

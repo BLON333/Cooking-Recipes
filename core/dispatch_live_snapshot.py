@@ -16,7 +16,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from core.snapshot_core import format_for_display, send_bet_snapshot_to_discord
-from core.book_helpers import filter_snapshot_rows, ensure_side
+from core.book_helpers import ensure_side
+import pandas as pd
 from core.pending_bets import load_pending_bets
 from core.logger import get_logger
 
@@ -93,27 +94,28 @@ def main() -> None:
 
     rows = filter_by_date(rows, args.date)
 
-    rows = filter_snapshot_rows(rows, min_ev=args.min_ev)
-    logger.info("🧪 Dispatch filter: %d rows (min EV %.1f%%)", len(rows), args.min_ev)
-
-    filtered = []
-    for r in rows:
-        stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
-        if stake_val < 1.0 and not r.get("is_prospective"):
-            continue
-        filtered.append(r)
-    rows = filtered
-
-    seen = set()
-    deduped = []
-    for r in rows:
-        key = (r.get("game_id"), r.get("market"), r.get("side"), r.get("book"))
-        if key not in seen:
-            seen.add(key)
-            deduped.append(r)
-    rows = deduped
-
     df = format_for_display(rows, include_movement=True)
+
+    if "ev_percent" in df.columns:
+        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        logger.info("🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f", len(df), args.min_ev, args.max_ev)
+
+    if "total_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
+    elif "stake" in df.columns:
+        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+    elif "snapshot_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["snapshot_stake"], errors="coerce")
+    else:
+        stake_vals = pd.Series([0] * len(df))
+    if "is_prospective" in df.columns:
+        mask = (stake_vals >= 1.0) | df["is_prospective"]
+    else:
+        mask = stake_vals >= 1.0
+    df = df[mask]
+
+    if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
+        df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     if "sim_prob_display" in df.columns:
@@ -161,25 +163,17 @@ def main() -> None:
     df = df[columns]
 
     if args.output_discord:
-        webhook_map = {
-            "h2h": os.getenv("DISCORD_H2H_WEBHOOK_URL"),
-            "spreads": os.getenv("DISCORD_SPREADS_WEBHOOK_URL"),
-            "totals": os.getenv("DISCORD_TOTALS_WEBHOOK_URL"),
-        }
-        for label in ["h2h", "spreads", "totals"]:
-            subset = df[df["Market"].str.lower().str.startswith(label, na=False)]
-            logger.info(f"🧾 Snapshot rows for '{label}': {subset.shape[0]}")
-            webhook = webhook_map.get(label)
-            logger.info(
-                "📡 Evaluating snapshot for: %s → %s rows", label, subset.shape[0]
-            )
-            if subset.empty:
-                logger.warning("⚠️ No bets for %s", label)
-                continue
-            if webhook:
-                send_bet_snapshot_to_discord(subset, label, webhook)
-            else:
-                logger.warning("❌ Discord webhook not configured for %s", label)
+        webhook_url = (
+            os.getenv("DISCORD_LIVE_SNAPSHOT_WEBHOOK_URL")
+            or os.getenv("DISCORD_H2H_WEBHOOK_URL")
+            or os.getenv("DISCORD_SPREADS_WEBHOOK_URL")
+            or os.getenv("DISCORD_TOTALS_WEBHOOK_URL")
+        )
+        if not webhook_url:
+            logger.error("❌ No Discord webhook configured for live snapshot")
+            return
+        logger.info("📡 Dispatching unified live snapshot (%s rows)", df.shape[0])
+        send_bet_snapshot_to_discord(df, "Live Snapshot", webhook_url)
     else:
         print(df.to_string(index=False))
 
