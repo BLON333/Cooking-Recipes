@@ -36,13 +36,13 @@ def load_pending_rows() -> list:
     )
     for r in rows:
         ensure_side(r)
-            return rows
+    return rows
 
 
 def filter_by_date(rows: list, date_str: str | None) -> list:
     if not date_str:
-            return rows
-            return [
+        return rows
+    return [
         r
         for r in rows
         if parse_game_id(str(r.get("game_id", ""))).get("date") == date_str
@@ -175,8 +175,8 @@ def main() -> None:
             return
         logger.info("📡 Dispatching unified best-book snapshot (%s rows)", df.shape[0])
         send_bet_snapshot_to_discord(df, "Best Book Snapshot", webhook)
-else:
-    print(df.to_string(index=False))
+    else:
+        print(df.to_string(index=False))
 
 
 if __name__ == "__main__":
