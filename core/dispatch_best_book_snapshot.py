@@ -16,7 +16,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from core.snapshot_core import format_for_display, send_bet_snapshot_to_discord
-from core.book_helpers import filter_snapshot_rows, ensure_side
+from core.book_helpers import ensure_side
+import pandas as pd
 from core.pending_bets import load_pending_bets
 from core.logger import get_logger
 
@@ -35,13 +36,13 @@ def load_pending_rows() -> list:
     )
     for r in rows:
         ensure_side(r)
-    return rows
+            return rows
 
 
 def filter_by_date(rows: list, date_str: str | None) -> list:
     if not date_str:
-        return rows
-    return [
+            return rows
+            return [
         r
         for r in rows
         if parse_game_id(str(r.get("game_id", ""))).get("date") == date_str
@@ -80,8 +81,8 @@ def main() -> None:
 
     rows = load_pending_rows()
     if not rows:
-        logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
-        return
+            logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
+            return
 
     try:
         with open("logs/theme_exposure.json") as f:
@@ -98,27 +99,30 @@ def main() -> None:
     rows = [r for r in rows if "best_book" in r.get("snapshot_roles", [])]
     rows = filter_by_date(rows, args.date)
 
-    rows = filter_snapshot_rows(rows, min_ev=args.min_ev)
-    logger.info("🧪 Dispatch filter: %d rows (min EV %.1f%%)", len(rows), args.min_ev)
-
-    filtered = []
-    for r in rows:
-        stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
-        if stake_val < 1.0 and not r.get("is_prospective"):
-            continue
-        filtered.append(r)
-    rows = filtered
-
-    seen = set()
-    deduped = []
-    for r in rows:
-        key = (r.get("game_id"), r.get("market"), r.get("side"), r.get("book"))
-        if key not in seen:
-            seen.add(key)
-            deduped.append(r)
-    rows = deduped
-
     df = format_for_display(rows, include_movement=True)
+
+    if "ev_percent" in df.columns:
+        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        logger.info("🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f", len(df), args.min_ev, args.max_ev)
+
+    if "total_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
+    elif "stake" in df.columns:
+        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+    elif "snapshot_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["snapshot_stake"], errors="coerce")
+    else:
+        stake_vals = pd.Series([0] * len(df))
+    if "is_prospective" in df.columns:
+        mask = (stake_vals >= 1.0) | df["is_prospective"]
+    else:
+        mask = stake_vals >= 1.0
+    df = df[mask]
+
+    if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
+        df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
+
+    df = df.reset_index(drop=True)
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     if "sim_prob_display" in df.columns:
@@ -130,15 +134,15 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
     if df.empty:
-        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
-        return
+            logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
+            return
 
     if "market" in df.columns:
         df["Market"] = df["market"].astype(str)
 
     if "Market" not in df.columns:
-        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
-        return
+            logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
+            return
 
     columns = [
         "Date",
@@ -158,69 +162,21 @@ def main() -> None:
     ]
     missing = [c for c in columns if c not in df.columns]
     if missing:
-        logger.warning(
-            f"⚠️ Missing required columns: {missing} — skipping dispatch."
+            logger.warning(
+                        f"⚠️ Missing required columns: {missing} — skipping dispatch."
         )
-        return
+            return
     df = df[columns]
 
     if args.output_discord:
-        webhook_main = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL")
-        webhook_alt = os.getenv("DISCORD_BEST_BOOK_ALT_WEBHOOK_URL")
-        if webhook_main or webhook_alt:
-            if webhook_main:
-                if "Market Class" in df.columns:
-                    subset = df[df["Market Class"] == "Main"]
-                else:
-                    logger.warning("⚠️ 'Market Class' column missing — using fallback")
-                    subset = df[
-                        df["Market"]
-                        .str.lower()
-                        .str.startswith(("h2h", "spreads", "totals"), na=False)
-                    ]
-                if subset.empty:
-                    subset = df[
-                        df["Market"]
-                        .str.lower()
-                        .str.startswith(("h2h", "spreads", "totals"), na=False)
-                    ]
-                logger.info(f"🧾 Snapshot rows for 'main': {subset.shape[0]}")
-                logger.info(
-                    "📡 Evaluating snapshot for: main → %s rows", subset.shape[0]
-                )
-                if not subset.empty:
-                    send_bet_snapshot_to_discord(
-                        subset, "Best Book (Main)", webhook_main
-                    )
-                else:
-                    logger.warning("⚠️ No bets for main")
-            if webhook_alt:
-                if "Market Class" in df.columns:
-                    subset = df[df["Market Class"] == "Alt"]
-                else:
-                    subset = df[
-                        ~df["Market"]
-                        .str.lower()
-                        .str.startswith(("h2h", "spreads", "totals"), na=False)
-                    ]
-                if subset.empty:
-                    subset = df[
-                        ~df["Market"]
-                        .str.lower()
-                        .str.startswith(("h2h", "spreads", "totals"), na=False)
-                    ]
-                logger.info(f"🧾 Snapshot rows for 'alt': {subset.shape[0]}")
-                logger.info(
-                    "📡 Evaluating snapshot for: alternate → %s rows", subset.shape[0]
-                )
-                if not subset.empty:
-                    send_bet_snapshot_to_discord(subset, "Best Book (Alt)", webhook_alt)
-                else:
-                    logger.warning("⚠️ No bets for alternate")
-        else:
+        webhook = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL") or os.getenv("DISCORD_BEST_BOOK_ALT_WEBHOOK_URL")
+        if not webhook:
             logger.warning("❌ No Discord webhook configured for best-book snapshots.")
-    else:
-        print(df.to_string(index=False))
+            return
+        logger.info("📡 Dispatching unified best-book snapshot (%s rows)", df.shape[0])
+        send_bet_snapshot_to_discord(df, "Best Book Snapshot", webhook)
+else:
+    print(df.to_string(index=False))
 
 
 if __name__ == "__main__":
