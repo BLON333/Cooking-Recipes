@@ -20,6 +20,7 @@ from core.book_helpers import ensure_side
 import pandas as pd
 from core.pending_bets import load_pending_bets
 from core.logger import get_logger
+from collections import Counter
 
 logger = get_logger(__name__)
 
@@ -107,7 +108,31 @@ def main() -> None:
 
     rows = filter_by_date(rows, args.date)
 
-    df = format_for_display(rows, include_movement=True)
+    skip_counts = Counter()
+    filtered = []
+    for r in rows:
+        if r.get("logged"):
+            skip_counts["logged"] += 1
+            continue
+        try:
+            ev = float(r.get("ev_percent", 0))
+        except Exception:
+            ev = 0.0
+        try:
+            rk = float(r.get("raw_kelly", 0))
+        except Exception:
+            rk = 0.0
+        if ev < 5:
+            skip_counts["ev_lt_5"] += 1
+            continue
+        if rk < 1:
+            skip_counts["kelly_lt_1"] += 1
+            continue
+        filtered.append(r)
+    if skip_counts:
+        logger.info("⏭️ Filtered out rows: %s", dict(skip_counts))
+
+    df = format_for_display(filtered, include_movement=True)
 
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
@@ -146,6 +171,8 @@ def main() -> None:
         df["Odds"] = df["odds_display"]
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
     if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
