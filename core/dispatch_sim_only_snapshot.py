@@ -100,9 +100,9 @@ def _style_plain(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     return styled
 
 
-def send_snapshot(df: pd.DataFrame, webhook_url: str) -> None:
+def send_snapshot(df: pd.DataFrame, webhook_url: str, *, force_dispatch: bool = False) -> None:
     """Render and send the DataFrame image to Discord."""
-    if df.empty:
+    if df.empty and not force_dispatch:
         logger.info("No snapshot rows to send.")
         return
 
@@ -133,7 +133,10 @@ def send_snapshot(df: pd.DataFrame, webhook_url: str) -> None:
         return
     buf.seek(0)
 
-    caption = "📊 Simulation-Only Snapshot Feed (Mainlines Only)"
+    if force_dispatch:
+        caption = "📸 Snapshot Test Mode — Simulation-Only Snapshot Feed (Forced Dispatch)"
+    else:
+        caption = "📊 Simulation-Only Snapshot Feed (Mainlines Only)"
     files = {"file": ("snapshot.png", buf, "image/png")}
     try:
         resp = post_with_retries(
@@ -163,6 +166,11 @@ def main() -> None:
     parser.add_argument("--snapshot-path", default=None, help="Path to unified snapshot JSON")
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
+    parser.add_argument(
+        "--force-dispatch",
+        action="store_true",
+        help="Force image snapshot to Discord even if empty",
+    )
     parser.add_argument("--min-ev", type=float, default=10.0)
     parser.add_argument("--max-ev", type=float, default=20.0)
     parser.add_argument(
@@ -278,7 +286,11 @@ def main() -> None:
             return
         logger.info("📤 Using Discord webhook: %s", webhook)
         for start in range(0, len(df), 25):
-            send_snapshot(df.iloc[start : start + 25], webhook)
+            send_snapshot(
+                df.iloc[start : start + 25],
+                webhook,
+                force_dispatch=args.force_dispatch,
+            )
     else:
         print(df.to_string(index=False))
 
