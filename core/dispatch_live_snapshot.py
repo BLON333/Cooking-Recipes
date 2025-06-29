@@ -52,6 +52,11 @@ def main() -> None:
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
     parser.add_argument(
+        "--force-dispatch",
+        action="store_true",
+        help="Force image snapshot to Discord even if empty",
+    )
+    parser.add_argument(
         "--min-ev",
         type=float,
         default=5.0,
@@ -128,7 +133,7 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
 
-    if df.empty:
+    if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
 
@@ -165,7 +170,15 @@ def main() -> None:
         unified_hook = os.getenv("DISCORD_LIVE_SNAPSHOT_WEBHOOK_URL")
         if unified_hook:
             logger.info("📡 Dispatching unified live snapshot (%s rows)", df.shape[0])
-            send_bet_snapshot_to_discord(df, "Live Snapshot", unified_hook)
+            title = "Live Snapshot"
+            if args.force_dispatch:
+                title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
+            send_bet_snapshot_to_discord(
+                df,
+                title,
+                unified_hook,
+                force_dispatch=args.force_dispatch,
+            )
             return
 
         role_hooks = {
@@ -180,7 +193,7 @@ def main() -> None:
         for label, hook in role_hooks.items():
             subset = df[df["Market"].str.lower().str.startswith(label, na=False)]
             logger.info(f"🧾 Snapshot rows for role='{label}': {subset.shape[0]}")
-            if subset.empty:
+            if subset.empty and not args.force_dispatch:
                 logger.warning(
                     f"⚠️ No snapshot rows for role='{label}' — skipping dispatch."
                 )
@@ -191,7 +204,15 @@ def main() -> None:
             logger.info(
                 "📡 Dispatching %s live snapshot (%s rows)", label, subset.shape[0]
             )
-            send_bet_snapshot_to_discord(subset, "Live Snapshot", hook)
+            title = "Live Snapshot"
+            if args.force_dispatch:
+                title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
+            send_bet_snapshot_to_discord(
+                subset,
+                title,
+                hook,
+                force_dispatch=args.force_dispatch,
+            )
     else:
         print(df.to_string(index=False))
 

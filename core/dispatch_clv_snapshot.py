@@ -431,8 +431,14 @@ def send_empty_clv_notice(webhook_url: str, counts: dict | None = None) -> None:
         sys.exit(1)
 
 
-def send_snapshot(df: pd.DataFrame, webhook_url: str, counts: dict | None = None) -> None:
-    if df.empty:
+def send_snapshot(
+    df: pd.DataFrame,
+    webhook_url: str,
+    counts: dict | None = None,
+    *,
+    force_dispatch: bool = False,
+) -> None:
+    if df.empty and not force_dispatch:
         logger.info("⚠️ No qualifying open bets found.")
         if dfi is not None:
             send_empty_clv_notice(webhook_url, counts)
@@ -475,7 +481,10 @@ def send_snapshot(df: pd.DataFrame, webhook_url: str, counts: dict | None = None
             sys.exit(1)
         return
     buf.seek(0)
-    caption = "📊 **CLV Snapshot**"
+    if force_dispatch:
+        caption = "📸 Snapshot Test Mode — CLV Snapshot (Forced Dispatch)"
+    else:
+        caption = "📊 **CLV Snapshot**"
     files = {"file": ("snapshot.png", buf, "image/png")}
     try:
         resp = post_with_retries(
@@ -505,6 +514,11 @@ def main() -> None:
     parser.add_argument("--log-path", default="logs/market_evals.csv", help="Path to market_evals.csv")
     parser.add_argument("--odds-path", default=None, help="Path to odds snapshot JSON")
     parser.add_argument("--output-discord", action="store_true")
+    parser.add_argument(
+        "--force-dispatch",
+        action="store_true",
+        help="Force image snapshot to Discord even if empty",
+    )
     parser.add_argument(
         "--sort-by",
         choices=["clv", "profit"],
@@ -598,7 +612,12 @@ def main() -> None:
     df = df.drop(columns=[col for col in drop_cols if col in df.columns])
 
     if args.output_discord and WEBHOOK_URL:
-        send_snapshot(df, WEBHOOK_URL, counts)
+        send_snapshot(
+            df,
+            WEBHOOK_URL,
+            counts,
+            force_dispatch=args.force_dispatch,
+        )
     else:
         print(df.to_string(index=False))
 

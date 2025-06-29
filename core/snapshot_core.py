@@ -419,9 +419,10 @@ def send_bet_snapshot_to_discord(
     webhook_url: str,
     debug_counts: dict | None = None,
     role: str | None = None,
+    force_dispatch: bool = False,
 ) -> None:
     """Render a styled image and send it to a Discord webhook."""
-    if df is None or df.empty:
+    if (df is None or df.empty) and not force_dispatch:
         print("⚠️ No qualifying snapshot bets to dispatch")
         return
 
@@ -446,7 +447,7 @@ def send_bet_snapshot_to_discord(
     except Exception:
         pass
 
-    if df.empty:
+    if df.empty and not force_dispatch:
         print("⚠️ No qualifying snapshot bets to dispatch")
         return
 
@@ -474,7 +475,7 @@ def send_bet_snapshot_to_discord(
             print(f"{label} {matchup} | {market} | {side} | {stake_str} @ {book}")
     if dfi is None:
         print("⚠️ dataframe_image is not available. Sending text fallback.")
-        _send_table_text(df, market_type, webhook_url)
+        _send_table_text(df, market_type, webhook_url, force_dispatch=force_dispatch)
         return
 
     if "EV" in df.columns:
@@ -549,14 +550,23 @@ def send_bet_snapshot_to_discord(
         except Exception as e2:
             print(f"⚠️ Fallback export failed: {e2}")
             buf.close()
-            _send_table_text(df, market_type, webhook_url)
+            _send_table_text(
+                df, market_type, webhook_url, force_dispatch=force_dispatch
+            )
             return
     buf.seek(0)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M ET")
-    caption = (
-        f"📈 **Live Market Snapshot — {market_type}**\n" f"_Generated: {timestamp}_\n"
-    )
+    if force_dispatch:
+        caption = (
+            f"📸 **Snapshot Test Mode — {market_type} (Forced Dispatch)**\n"
+            f"_Generated: {timestamp}_\n"
+        )
+    else:
+        caption = (
+            f"📈 **Live Market Snapshot — {market_type}**\n"
+            f"_Generated: {timestamp}_\n"
+        )
 
     files = {"file": ("snapshot.png", buf, "image/png")}
 
@@ -582,10 +592,25 @@ def send_bet_snapshot_to_discord(
         buf.close()
 
 
-def _send_table_text(df: pd.DataFrame, market_type: str, webhook_url: str) -> None:
+def _send_table_text(
+    df: pd.DataFrame,
+    market_type: str,
+    webhook_url: str,
+    *,
+    force_dispatch: bool = False,
+) -> None:
     """Send the DataFrame as a Markdown code block to Discord."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M ET")
-    caption = f"📈 **Live Market Snapshot — {market_type}** (text fallback)\n_Generated: {timestamp}_"
+    if force_dispatch:
+        caption = (
+            f"📸 **Snapshot Test Mode — {market_type} (Forced Dispatch)**\n"
+            f"_Generated: {timestamp}_"
+        )
+    else:
+        caption = (
+            f"📈 **Live Market Snapshot — {market_type}** (text fallback)\n"
+            f"_Generated: {timestamp}_"
+        )
 
     try:
         table = df.to_markdown(index=False)

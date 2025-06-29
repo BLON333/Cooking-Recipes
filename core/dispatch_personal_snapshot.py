@@ -71,6 +71,11 @@ def main() -> None:
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
     parser.add_argument(
+        "--force-dispatch",
+        action="store_true",
+        help="Force image snapshot to Discord even if empty",
+    )
+    parser.add_argument(
         "--min-ev",
         type=float,
         default=5.0,
@@ -154,7 +159,7 @@ def main() -> None:
         df["Odds"] = df["odds_display"]
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
-    if df.empty:
+    if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
 
@@ -201,7 +206,15 @@ def main() -> None:
             logger.error("❌ PERSONAL_DISCORD_WEBHOOK_URL not configured")
             return
         logger.info("📡 Dispatching unified personal snapshot (%s rows)", df.shape[0])
-        send_bet_snapshot_to_discord(df, "Personal Snapshot", webhook)
+        title = "Personal Snapshot"
+        if args.force_dispatch:
+            title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
+        send_bet_snapshot_to_discord(
+            df,
+            title,
+            webhook,
+            force_dispatch=args.force_dispatch,
+        )
     else:
         print(df.to_string(index=False))
 

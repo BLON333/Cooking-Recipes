@@ -125,6 +125,11 @@ def main() -> None:
     parser.add_argument("--date", default=None, help="Filter by game date")
     parser.add_argument("--output-discord", action="store_true")
     parser.add_argument(
+        "--force-dispatch",
+        action="store_true",
+        help="Force image snapshot to Discord even if empty",
+    )
+    parser.add_argument(
         "--books",
         default=os.getenv("FV_DROP_BOOKS"),
         help="Comma-separated book keys to include",
@@ -213,7 +218,7 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
 
-    if df.empty:
+    if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
 
@@ -276,11 +281,15 @@ def main() -> None:
         fv_drop_all_webhook = os.getenv("DISCORD_FV_DROP_ALL_WEBHOOK_URL")
 
         if fv_drop_webhook:
-            if not df_fv_filtered.empty:
+            if not df_fv_filtered.empty or args.force_dispatch:
+                title = "FV Drop (Primary)"
+                if args.force_dispatch:
+                    title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
                 send_bet_snapshot_to_discord(
                     df_fv_filtered,
-                    "FV Drop (Primary)",
+                    title,
                     fv_drop_webhook,
+                    force_dispatch=args.force_dispatch,
                 )
             else:
                 logger.warning("⚠️ No FV Drop rows for primary books")
@@ -288,11 +297,15 @@ def main() -> None:
             logger.error("❌ DISCORD_FV_DROP_WEBHOOK_URL not configured")
 
         if fv_drop_all_webhook:
-            if not df_fv_all.empty:
+            if not df_fv_all.empty or args.force_dispatch:
+                title = "FV Drop (All Allowed Books)"
+                if args.force_dispatch:
+                    title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
                 send_bet_snapshot_to_discord(
                     df_fv_all,
-                    "FV Drop (All Allowed Books)",
+                    title,
                     fv_drop_all_webhook,
+                    force_dispatch=args.force_dispatch,
                 )
             else:
                 logger.warning("⚠️ No FV Drop rows for all allowed books")
