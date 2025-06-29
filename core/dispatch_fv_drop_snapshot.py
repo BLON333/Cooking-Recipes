@@ -11,6 +11,7 @@ from core.utils import parse_game_id
 from theme_exposure_tracker import build_theme_key
 import argparse
 from typing import List
+from collections import Counter
 import re
 import pandas as pd
 from dotenv import load_dotenv
@@ -174,14 +175,24 @@ def main() -> None:
             r["book"] = r["best_book"]
 
     # ✅ No role/movement filter — allow full snapshot set
+    skip_counts = Counter()
+
     rows = filter_by_date(rows, args.date)
 
-    rows = [r for r in rows if args.min_ev <= r.get("ev_percent", 0) <= args.max_ev]
+    ev_filtered = []
+    for r in rows:
+        ev = r.get("ev_percent", 0)
+        if args.min_ev <= ev <= args.max_ev:
+            ev_filtered.append(r)
+        else:
+            skip_counts["ev_range"] += 1
+    rows = ev_filtered
 
     filtered = []
     for r in rows:
         stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
         if stake_val < 1.0 and not r.get("is_prospective"):
+            skip_counts["stake_lt_1"] += 1
             continue
         filtered.append(r)
     rows = filtered
@@ -193,11 +204,16 @@ def main() -> None:
         if key not in seen:
             seen.add(key)
             deduped.append(r)
+        else:
+            skip_counts["duplicate"] += 1
     rows = deduped
 
     # Lookup baseline consensus probabilities from pending_bets.json
     pending = load_pending_bets()
     apply_baseline_annotations(rows, pending)
+
+    if skip_counts:
+        logger.info("⏭️ Skipped bets summary: %s", dict(skip_counts))
 
     logger.info(
         "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
@@ -207,6 +223,8 @@ def main() -> None:
     )
 
     df = format_for_display(rows, include_movement=False)
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     if "sim_prob_display" in df.columns:
@@ -247,7 +265,7 @@ def main() -> None:
     df_fv_all = filter_by_books(df_main, list(ALLOWED_BOOKS))
     logger.info(f"🧾 Snapshot rows for 'all': {df_fv_all.shape[0]}")
 
-    if df_fv_filtered.empty and df_fv_all.empty:
+    if df_fv_filtered.empty and df_fv_all.empty and not args.force_dispatch:
         logger.info("⚠️ No qualifying FV Drop rows with market movement to display.")
         return
 
