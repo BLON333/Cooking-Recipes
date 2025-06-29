@@ -586,6 +586,17 @@ def send_bet_snapshot_to_discord(
         )
         if resp:
             print(f"✅ Snapshot sent: {df.shape[0]} bets dispatched")
+            try:
+                data = resp.json()
+            except Exception:
+                data = {}
+            channel_id = data.get("channel_id")
+            message_id = data.get("id")
+            if channel_id:
+                print(f"🧩 Channel ID: {channel_id}")
+            if channel_id and message_id:
+                msg_url = f"https://discord.com/channels/{channel_id}/{message_id}"
+                print(f"🧩 Message URL: {msg_url}")
     except Exception as e:
         print(f"❌ Failed to send snapshot for {market_type}: {e}")
     finally:
