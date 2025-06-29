@@ -20,6 +20,7 @@ from core.book_helpers import ensure_side
 import pandas as pd
 from core.pending_bets import load_pending_bets
 from core.logger import get_logger
+from collections import Counter
 
 logger = get_logger(__name__)
 
@@ -95,7 +96,22 @@ def main() -> None:
 
     rows = filter_by_date(rows, args.date)
 
+
     df = format_for_display(rows, include_movement=True)
+
+    # Diagnostic summary of potential skip reasons
+    skip_counts = Counter()
+    for _, row in df.iterrows():
+        if row.get("logged"):
+            skip_counts["logged"] += 1
+        elif float(row.get("ev_percent", 0) or 0) < 5:
+            skip_counts["ev_below_5"] += 1
+        elif float(row.get("raw_kelly", 0) or 0) < 1:
+            skip_counts["kelly_below_1"] += 1
+        elif row.get("skip_reason"):
+            skip_counts["skipped_unknown"] += 1
+    if skip_counts:
+        logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
 
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
@@ -133,9 +149,21 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
 
-    if df.empty and not args.force_dispatch:
-        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
-        return
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "✅" if bool(x) else "")
+    elif "Logged?" not in df.columns:
+        df["Logged?"] = ""
+
+    if df.empty:
+        if args.force_dispatch:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — forcing dispatch due to --force-dispatch"
+            )
+        else:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — nothing to dispatch."
+            )
+            return
 
     if "market" in df.columns:
         df["Market"] = df["market"].astype(str)
@@ -190,14 +218,25 @@ def main() -> None:
             logger.error("❌ No Discord webhook configured for live snapshot")
             return
 
+        role_counts = {
+            label: df[df["Market"].str.lower().str.startswith(label, na=False)].shape[0]
+            for label in role_hooks
+        }
+        logger.info("🧮 Role row counts: %s", role_counts)
+
         for label, hook in role_hooks.items():
             subset = df[df["Market"].str.lower().str.startswith(label, na=False)]
             logger.info(f"🧾 Snapshot rows for role='{label}': {subset.shape[0]}")
-            if subset.empty and not args.force_dispatch:
-                logger.warning(
-                    f"⚠️ No snapshot rows for role='{label}' — skipping dispatch."
-                )
-                continue
+            if subset.empty:
+                if args.force_dispatch:
+                    logger.warning(
+                        f"⚠️ No snapshot rows for role='{label}' — forcing dispatch"
+                    )
+                else:
+                    logger.warning(
+                        f"⚠️ No snapshot rows for role='{label}' — skipping dispatch."
+                    )
+                    continue
             if not hook:
                 logger.warning(f"⚠️ Discord webhook for role='{label}' not configured")
                 continue

@@ -590,10 +590,13 @@ def send_bet_snapshot_to_discord(
                 data = resp.json()
             except Exception:
                 data = {}
+            print(f"🧪 Discord response: {data}")
             channel_id = data.get("channel_id")
             message_id = data.get("id")
             if channel_id:
                 print(f"🧩 Channel ID: {channel_id}")
+            if message_id:
+                print(f"🧩 Message ID: {message_id}")
             if channel_id and message_id:
                 msg_url = f"https://discord.com/channels/{channel_id}/{message_id}"
                 print(f"🧩 Message URL: {msg_url}")
