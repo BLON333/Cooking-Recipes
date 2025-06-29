@@ -363,8 +363,6 @@ def main() -> None:
         if fv_drop_webhook:
             if not df_fv_filtered.empty or args.force_dispatch:
                 title = "FV Drop (Primary)"
-                if args.force_dispatch:
-                    title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
                 send_bet_snapshot_to_discord(
                     df_fv_filtered,
                     title,
@@ -379,8 +377,6 @@ def main() -> None:
         if fv_drop_all_webhook:
             if not df_fv_all.empty or args.force_dispatch:
                 title = "FV Drop (All Allowed Books)"
-                if args.force_dispatch:
-                    title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
                 send_bet_snapshot_to_discord(
                     df_fv_all,
                     title,

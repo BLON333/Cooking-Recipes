@@ -238,8 +238,6 @@ def main() -> None:
                 subset.shape[0],
             )
             title = "Best Book Snapshot"
-            if args.force_dispatch:
-                title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
             send_bet_snapshot_to_discord(
                 subset,
                 title,

@@ -204,8 +204,6 @@ def main() -> None:
         if unified_hook:
             logger.info("📡 Dispatching unified live snapshot (%s rows)", df.shape[0])
             title = "Live Snapshot"
-            if args.force_dispatch:
-                title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
             send_bet_snapshot_to_discord(
                 df,
                 title,
@@ -249,8 +247,6 @@ def main() -> None:
                 "📡 Dispatching %s live snapshot (%s rows)", label, subset.shape[0]
             )
             title = "Live Snapshot"
-            if args.force_dispatch:
-                title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
             send_bet_snapshot_to_discord(
                 subset,
                 title,

@@ -232,8 +232,6 @@ def main() -> None:
             return
         logger.info("📡 Dispatching unified personal snapshot (%s rows)", df.shape[0])
         title = "Personal Snapshot"
-        if args.force_dispatch:
-            title = f"📸 Snapshot Test Mode — {title} (Forced Dispatch)"
         send_bet_snapshot_to_discord(
             df,
             title,
