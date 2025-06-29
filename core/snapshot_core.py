@@ -560,12 +560,12 @@ def send_bet_snapshot_to_discord(
     if force_dispatch:
         caption = (
             f"📸 **Snapshot Test Mode — {market_type} (Forced Dispatch)**\n"
-            f"_Generated: {timestamp}_\n"
+            f"_Generated: {timestamp}_"
         )
     else:
         caption = (
-            f"📈 **Live Market Snapshot — {market_type}**\n"
-            f"_Generated: {timestamp}_\n"
+            f"📈 **{market_type}**\n"
+            f"_Generated: {timestamp}_"
         )
 
     files = {"file": ("snapshot.png", buf, "image/png")}
