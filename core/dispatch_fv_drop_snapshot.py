@@ -212,9 +212,6 @@ def main() -> None:
     pending = load_pending_bets()
     apply_baseline_annotations(rows, pending)
 
-    if skip_counts:
-        logger.info("⏭️ Skipped bets summary: %s", dict(skip_counts))
-
     logger.info(
         "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
         len(rows),
@@ -223,8 +220,22 @@ def main() -> None:
     )
 
     df = format_for_display(rows, include_movement=False)
+
+    # Additional diagnostic counts after formatting
+    for _, row in df.iterrows():
+        if row.get("logged"):
+            skip_counts["logged"] += 1
+        elif row.get("skip_reason"):
+            skip_counts["skip_reason"] += 1
+
+    if skip_counts:
+        logger.info("⏭️ Skipped bets summary: %s", dict(skip_counts))
+
     if "logged" in df.columns and "Logged?" not in df.columns:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
+    elif "Logged?" not in df.columns:
+        df["Logged?"] = ""
+
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
     if "sim_prob_display" in df.columns:
@@ -236,9 +247,16 @@ def main() -> None:
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
 
-    if df.empty and not args.force_dispatch:
-        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
-        return
+    if df.empty:
+        if args.force_dispatch:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — forcing dispatch due to --force-dispatch"
+            )
+        else:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — nothing to dispatch."
+            )
+            return
 
     if "market" in df.columns:
         df["Market"] = df["market"].astype(str)
@@ -246,6 +264,28 @@ def main() -> None:
     if "Market" not in df.columns:
         logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
         return
+
+    columns = [
+        "Date",
+        "Time",
+        "Matchup",
+        "Market Class",
+        "Market",
+        "Bet",
+        "Book",
+        "Odds",
+        "Sim %",
+        "Mkt %",
+        "FV",
+        "EV",
+        "Stake",
+        "Logged?",
+    ]
+    missing = [c for c in columns if c not in df.columns]
+    if missing:
+        logger.warning(f"⚠️ Missing required columns: {missing} — skipping dispatch.")
+        return
+    df = df[columns]
 
     # ✅ Filter to only show rows where market probability increased
     if "Mkt %" in df.columns:
