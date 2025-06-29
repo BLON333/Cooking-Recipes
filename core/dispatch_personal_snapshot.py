@@ -11,6 +11,7 @@ from core.utils import parse_game_id
 from theme_exposure_tracker import build_theme_key
 import argparse
 from typing import List
+from collections import Counter
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -118,6 +119,20 @@ def main() -> None:
 
     df = format_for_display(rows, include_movement=True)
 
+    # Diagnostic summary of potential skip reasons
+    skip_counts = Counter()
+    for _, row in df.iterrows():
+        if row.get("logged"):
+            skip_counts["logged"] += 1
+        elif float(row.get("ev_percent", 0) or 0) < 5:
+            skip_counts["ev_below_5"] += 1
+        elif float(row.get("raw_kelly", 0) or 0) < 1:
+            skip_counts["kelly_below_1"] += 1
+        elif row.get("skip_reason"):
+            skip_counts["skipped_unknown"] += 1
+    if skip_counts:
+        logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
+
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
 
@@ -159,9 +174,20 @@ def main() -> None:
         df["Odds"] = df["odds_display"]
     if "fv_display" in df.columns:
         df["FV"] = df["fv_display"]
-    if df.empty and not args.force_dispatch:
-        logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
-        return
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "✅" if bool(x) else "")
+    elif "Logged?" not in df.columns:
+        df["Logged?"] = ""
+    if df.empty:
+        if args.force_dispatch:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — forcing dispatch due to --force-dispatch"
+            )
+        else:
+            logger.warning(
+                "⚠️ Snapshot DataFrame is empty — nothing to dispatch."
+            )
+            return
 
     if "market" in df.columns:
         df["Market"] = df["market"].astype(str)
