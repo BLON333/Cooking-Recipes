@@ -179,20 +179,27 @@ def main() -> None:
 
     rows = filter_by_date(rows, args.date)
 
-    ev_filtered = []
-    for r in rows:
-        ev = r.get("ev_percent", 0)
-        if args.min_ev <= ev <= args.max_ev:
-            ev_filtered.append(r)
-        else:
-            skip_counts["ev_range"] += 1
-    rows = ev_filtered
-
     filtered = []
     for r in rows:
-        stake_val = r.get("total_stake", r.get("stake") or r.get("snapshot_stake") or 0)
-        if stake_val < 1.0 and not r.get("is_prospective"):
-            skip_counts["stake_lt_1"] += 1
+        if r.get("logged"):
+            skip_counts["logged"] += 1
+            continue
+        try:
+            ev = float(r.get("ev_percent", 0) or 0)
+        except Exception:
+            ev = 0.0
+        if ev < 5:
+            skip_counts["ev_below_5"] += 1
+            continue
+        try:
+            rk = float(r.get("raw_kelly", 0) or 0)
+        except Exception:
+            rk = 0.0
+        if rk < 1:
+            skip_counts["kelly_below_1"] += 1
+            continue
+        if r.get("skip_reason"):
+            skip_counts["skipped_unknown"] += 1
             continue
         filtered.append(r)
     rows = filtered
@@ -204,32 +211,42 @@ def main() -> None:
         if key not in seen:
             seen.add(key)
             deduped.append(r)
-        else:
-            skip_counts["duplicate"] += 1
     rows = deduped
 
     # Lookup baseline consensus probabilities from pending_bets.json
     pending = load_pending_bets()
     apply_baseline_annotations(rows, pending)
 
-    logger.info(
-        "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
-        len(rows),
-        args.min_ev,
-        args.max_ev,
-    )
-
     df = format_for_display(rows, include_movement=False)
 
-    # Additional diagnostic counts after formatting
-    for _, row in df.iterrows():
-        if row.get("logged"):
-            skip_counts["logged"] += 1
-        elif row.get("skip_reason"):
-            skip_counts["skip_reason"] += 1
-
     if skip_counts:
-        logger.info("⏭️ Skipped bets summary: %s", dict(skip_counts))
+        logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
+
+    if "ev_percent" in df.columns:
+        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        logger.info(
+            "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
+            len(df),
+            args.min_ev,
+            args.max_ev,
+        )
+
+    if "total_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
+    elif "stake" in df.columns:
+        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+    elif "snapshot_stake" in df.columns:
+        stake_vals = pd.to_numeric(df["snapshot_stake"], errors="coerce")
+    else:
+        stake_vals = pd.Series([0] * len(df))
+    if "is_prospective" in df.columns:
+        mask = (stake_vals >= 1.0) | df["is_prospective"]
+    else:
+        mask = stake_vals >= 1.0
+    df = df[mask]
+
+    if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
+        df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
 
     if "logged" in df.columns and "Logged?" not in df.columns:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
@@ -258,11 +275,16 @@ def main() -> None:
             )
             return
 
-    if "market" in df.columns:
+    if "market" in df.columns and "Market" not in df.columns:
         df["Market"] = df["market"].astype(str)
 
-    if "Market" not in df.columns:
-        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
+    if "market_class" in df.columns and "Market Class" not in df.columns:
+        df["Market Class"] = df["market_class"]
+
+    if "Market" not in df.columns or "Market Class" not in df.columns:
+        logger.warning(
+            "⚠️ 'Market' or 'Market Class' column missing — skipping dispatch."
+        )
         return
 
     columns = [
