@@ -123,14 +123,14 @@ def main() -> None:
         except Exception:
             rk = 0.0
         if ev < 5:
-            skip_counts["ev_lt_5"] += 1
+            skip_counts["ev_below_5"] += 1
             continue
         if rk < 1:
-            skip_counts["kelly_lt_1"] += 1
+            skip_counts["kelly_below_1"] += 1
             continue
         filtered.append(r)
     if skip_counts:
-        logger.info("⏭️ Filtered out rows: %s", dict(skip_counts))
+        logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
 
     df = format_for_display(filtered, include_movement=True)
 
@@ -173,6 +173,8 @@ def main() -> None:
         df["FV"] = df["fv_display"]
     if "logged" in df.columns and "Logged?" not in df.columns:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
+    elif "Logged?" not in df.columns:
+        df["Logged?"] = ""
     if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
