@@ -189,16 +189,15 @@ def main() -> None:
             )
             return
 
-    if "market" in df.columns:
+    if "market" in df.columns and "Market" not in df.columns:
         df["Market"] = df["market"].astype(str)
 
-    if "Market" not in df.columns:
-        logger.warning("⚠️ 'Market' column missing — skipping dispatch.")
-        return
+    if "market_class" in df.columns and "Market Class" not in df.columns:
+        df["Market Class"] = df["market_class"]
 
-    if "Market Class" not in df.columns:
+    if "Market" not in df.columns or "Market Class" not in df.columns:
         logger.warning(
-            "⚠️ 'Market Class' column missing — cannot dispatch personal main/alt splits."
+            "⚠️ 'Market' or 'Market Class' column missing — cannot dispatch personal main/alt splits."
         )
         return
 
