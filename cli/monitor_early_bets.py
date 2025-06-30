@@ -109,6 +109,17 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
         key = f"{gid}:{market}:{side}"
         base = merged.get(key, {})
         bet = _clean_snapshot_row(r)
+        # Assign snapshot role if missing
+        if "snapshot_role" not in bet:
+            bet["snapshot_role"] = _assign_snapshot_role(bet)
+
+        # Assign snapshot_roles list
+        roles = set(bet.get("snapshot_roles", []))
+        roles.add(bet["snapshot_role"])
+        if "best_book" not in roles:
+            roles.add("best_book")
+        bet["snapshot_roles"] = sorted(roles)
+
         baseline = base.get("baseline_consensus_prob")
         if baseline is None:
             baseline = bet.get("market_prob") or bet.get("consensus_prob")
@@ -358,6 +369,18 @@ def recheck_pending_bets(
                 # )
                 pass
         updated[key] = bet
+
+    # Ensure every pending entry has snapshot role metadata
+    for k, v in updated.items():
+        if "snapshot_role" not in v:
+            v["snapshot_role"] = _assign_snapshot_role(v)
+        if "snapshot_roles" not in v:
+            v["snapshot_roles"] = [v["snapshot_role"], "best_book"]
+        elif v["snapshot_role"] not in v["snapshot_roles"]:
+            v["snapshot_roles"].append(v["snapshot_role"])
+        if "best_book" not in v.get("snapshot_roles", []):
+            v["snapshot_roles"].append("best_book")
+        v["snapshot_roles"] = sorted(set(v["snapshot_roles"]))
 
     if updated != pending:
         # Format fields before saving
