@@ -1206,6 +1206,8 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
         "mkt_prob_display",
         "odds_display",
         "fv_display",
+        "ev_percent",
+        "raw_kelly",
         "sim_prob",
         "market_prob",
         "market_odds",
