@@ -422,6 +422,7 @@ def send_bet_snapshot_to_discord(
     force_dispatch: bool = False,
 ) -> None:
     """Render a styled image and send it to a Discord webhook."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     if (df is None or df.empty) and not force_dispatch:
         print("⚠️ No qualifying snapshot bets to dispatch")
         return
@@ -555,8 +556,6 @@ def send_bet_snapshot_to_discord(
             )
             return
     buf.seek(0)
-
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     if force_dispatch:
         caption = (
             f"📸 **Snapshot Test Mode — {market_type} (Forced Dispatch)**\n"
