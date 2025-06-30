@@ -11,4 +11,5 @@ class SkipReason(Enum):
     NO_CONSENSUS = "no_consensus"
     NO_WEBHOOK = "no_webhook"
     ODDS_WORSENED = "odds_worsened"
+    QUIET_HOURS = "quiet_hours"
     UNKNOWN = "skipped"
