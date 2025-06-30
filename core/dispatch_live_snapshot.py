@@ -123,19 +123,20 @@ def main() -> None:
             args.max_ev,
         )
 
+    df["__stake_check"] = 0.0
     if "total_stake" in df.columns:
-        stake_vals = pd.to_numeric(df["total_stake"], errors="coerce")
+        df["__stake_check"] = pd.to_numeric(df["total_stake"], errors="coerce")
     elif "stake" in df.columns:
-        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+        df["__stake_check"] = pd.to_numeric(df["stake"], errors="coerce")
     elif "snapshot_stake" in df.columns:
-        stake_vals = pd.to_numeric(df["snapshot_stake"], errors="coerce")
-    else:
-        stake_vals = pd.Series([0] * len(df))
+        df["__stake_check"] = pd.to_numeric(df["snapshot_stake"], errors="coerce")
+
     if "is_prospective" in df.columns:
-        mask = (stake_vals >= 1.0) | df["is_prospective"]
+        df = df[(df["__stake_check"] >= 1.0) | df["is_prospective"]]
     else:
-        mask = stake_vals >= 1.0
-    df = df[mask]
+        df = df[df["__stake_check"] >= 1.0]
+
+    df.drop(columns=["__stake_check"], inplace=True)
 
     if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
         df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
