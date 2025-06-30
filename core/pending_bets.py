@@ -11,6 +11,7 @@ from core.utils import (
 )
 from core.time_utils import compute_hours_to_game
 from core.lock_utils import with_locked_file
+from core.snapshot_core import _assign_snapshot_role
 
 
 def _start_time_from_gid(game_id: str) -> datetime | None:
@@ -105,6 +106,21 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
         start_dt = _start_time_from_gid(bet_copy["game_id"])
         if start_dt:
             bet_copy["hours_to_game"] = round(compute_hours_to_game(start_dt), 2)
+
+    # Assign snapshot role information
+    role = _assign_snapshot_role(bet_copy)
+    bet_copy["snapshot_role"] = role
+    existing_roles = []
+    if isinstance(existing.get("snapshot_roles"), list):
+        existing_roles.extend(existing["snapshot_roles"])
+    if isinstance(bet_copy.get("snapshot_roles"), list):
+        for r in bet_copy["snapshot_roles"]:
+            if r not in existing_roles:
+                existing_roles.append(r)
+    for r in [role, "best_book"]:
+        if r not in existing_roles:
+            existing_roles.append(r)
+    bet_copy["snapshot_roles"] = existing_roles
 
     pending[key] = bet_copy
     save_pending_bets(pending, path)

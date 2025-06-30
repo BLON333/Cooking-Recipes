@@ -18,6 +18,7 @@ from core.pending_bets import (
     save_pending_bets,
     PENDING_BETS_PATH,
 )
+from core.snapshot_core import _assign_snapshot_role
 from core.theme_exposure_tracker import load_tracker as load_theme_stakes, save_tracker as save_theme_stakes
 from core.market_eval_tracker import (
     load_tracker as load_eval_tracker,
@@ -81,7 +82,9 @@ def _clean_snapshot_row(row: dict) -> dict:
     """Return a sanitized pending bet dict from ``row``."""
     allowed: dict = {}
     for k, v in row.items():
-        if k.startswith("_") or k.startswith("snapshot_") or k.endswith("_display"):
+        if k.startswith("_") or (
+            k.startswith("snapshot_") and k not in {"snapshot_role", "snapshot_roles"}
+        ) or k.endswith("_display"):
             continue
         allowed[k] = v
     return allowed
@@ -151,6 +154,16 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
         }
+        role = _assign_snapshot_role(entry)
+        entry["snapshot_role"] = role
+        roles = []
+        if isinstance(row.get("snapshot_roles"), list):
+            roles.extend(row["snapshot_roles"])
+        if role not in roles:
+            roles.append(role)
+        if "best_book" not in roles:
+            roles.append("best_book")
+        entry["snapshot_roles"] = roles
         if key in tracker and isinstance(tracker[key], dict):
             cp = tracker[key].get("consensus_prob")
             if cp is not None:

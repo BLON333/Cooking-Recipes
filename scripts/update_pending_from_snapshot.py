@@ -10,6 +10,7 @@ import glob
 
 from core.market_eval_tracker import build_tracker_key
 from core.utils import safe_load_json
+from core.snapshot_core import _assign_snapshot_role
 from cli.log_betting_evals import load_market_conf_tracker
 
 SNAPSHOT_DIR = os.path.join("backtest")
@@ -76,6 +77,16 @@ def build_pending(rows: list, tracker: dict) -> dict:
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
         }
+        role = _assign_snapshot_role(entry)
+        entry["snapshot_role"] = role
+        roles = []
+        if isinstance(row.get("snapshot_roles"), list):
+            roles.extend(row["snapshot_roles"])
+        if role not in roles:
+            roles.append(role)
+        if "best_book" not in roles:
+            roles.append("best_book")
+        entry["snapshot_roles"] = roles
         if key in tracker and isinstance(tracker[key], dict):
             cp = tracker[key].get("consensus_prob")
             if cp is not None:
