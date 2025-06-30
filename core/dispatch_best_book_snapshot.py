@@ -8,7 +8,7 @@ from core.bootstrap import *  # noqa
 
 import json
 from core.utils import parse_game_id
-from theme_exposure_tracker import build_theme_key
+from core.theme_exposure_tracker import build_theme_key
 import argparse
 from dotenv import load_dotenv
 
