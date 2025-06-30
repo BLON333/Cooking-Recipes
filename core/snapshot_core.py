@@ -556,48 +556,46 @@ def send_bet_snapshot_to_discord(
             )
             return
     buf.seek(0)
-    if force_dispatch:
-        caption = (
-            f"📸 **Snapshot Test Mode — {market_type} (Forced Dispatch)**\n"
-            f"_Generated: {timestamp}_"
-        )
-    else:
-        caption = (
-            f"📈 **{market_type}**\n"
-            f"_Generated: {timestamp}_"
-        )
-
     files = {"file": ("snapshot.png", buf, "image/png")}
 
     # Ensure webhook waits for the message to complete so we get a response
     if not webhook_url.endswith("?wait=true"):
         webhook_url += "?wait=true"
 
-    print(
-        f"🧪 Posting snapshot to Discord (market_type={market_type}, rows={df.shape[0]})"
+    content = f"📈 **{market_type}**"
+    if force_dispatch:
+        content += " (Forced Dispatch)"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M ET")
+    content += f"\n_Generated: {timestamp}_"
+
+    logger.info(
+        "🧪 Posting snapshot to Discord (market_type=%s, rows=%s)",
+        market_type,
+        df.shape[0],
     )
     try:
+        payload = {
+            "payload_json": json.dumps({"content": content})
+        }
         resp = post_with_retries(
             webhook_url,
-            data={"payload_json": json.dumps({"content": caption})},
+            data=payload,
             files=files,
             timeout=10,
         )
         if resp:
-            print(f"✅ Snapshot sent: {df.shape[0]} bets dispatched")
-            print(f"🧪 Discord response status: {resp.status_code}")
-            print(f"🧪 Discord response body: {resp.text[:500]}")
+            logger.info("✅ Snapshot sent: %s bets dispatched", df.shape[0])
             try:
-                data = resp.json()
-            except Exception:
-                data = {}
-            print(f"🧪 Discord Channel ID: {data.get('channel_id')}")
-            print(
-                f"🧪 Message URL: https://discord.com/channels/@me/{data.get('id')}"
-            )
+                rj = resp.json()
+                logger.info("🧪 Discord Channel ID: %s", rj.get("channel_id"))
+                logger.info(
+                    "🧪 Message URL: https://discord.com/channels/@me/%s",
+                    rj.get("id"),
+                )
+            except Exception as e:
+                logger.warning("⚠️ Could not parse Discord response JSON: %s", e)
     except Exception as e:
-        print(f"❌ Failed to send snapshot for {market_type}: {e}")
-        _send_table_text(df, market_type, webhook_url)
+        logger.error("❌ Failed to send snapshot for %s: %s", market_type, e)
     finally:
         buf.close()
 
