@@ -597,6 +597,7 @@ def send_bet_snapshot_to_discord(
             )
     except Exception as e:
         print(f"❌ Failed to send snapshot for {market_type}: {e}")
+        _send_table_text(df, market_type, webhook_url)
     finally:
         buf.close()
 
@@ -625,6 +626,9 @@ def _send_table_text(
         table = df.to_markdown(index=False)
     except Exception:
         table = df.to_string(index=False)
+
+    if len(table) > 1900:
+        table = table[:1900] + "\n...(truncated)"
 
     message = f"{caption}\n```\n{table}\n```"
     try:
