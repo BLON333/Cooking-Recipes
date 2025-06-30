@@ -114,7 +114,8 @@ def main() -> None:
         logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
 
     if "ev_percent" in df.columns:
-        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        if not args.force_dispatch:
+            df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
         logger.info(
             "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
             len(df),
