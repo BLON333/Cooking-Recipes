@@ -134,6 +134,12 @@ def main() -> None:
 
     df = format_for_display(filtered, include_movement=True)
 
+    # Ensure a valid market class column exists before any role filtering
+    if "market_class" not in df.columns:
+        df["market_class"] = "main"
+    if "Market Class" not in df.columns and "market_class" in df.columns:
+        df["Market Class"] = df["market_class"]
+
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
         logger.info(
