@@ -76,8 +76,9 @@ def build_pending(rows: list, tracker: dict) -> dict:
             "date_simulated": row.get("date_simulated"),
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
+            "market_class": row.get("market_class") or "main",
         }
-        role = _assign_snapshot_role(entry)
+        role = _assign_snapshot_role(row)
         entry["snapshot_role"] = role
         roles = []
         if isinstance(row.get("snapshot_roles"), list):
