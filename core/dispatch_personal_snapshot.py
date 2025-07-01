@@ -142,20 +142,9 @@ def main() -> None:
     if "ev_percent" in df.columns:
         df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
 
-    df["__stake_check"] = 0.0
-    if "total_stake" in df.columns:
-        df["__stake_check"] = pd.to_numeric(df["total_stake"], errors="coerce")
-    elif "stake" in df.columns:
-        df["__stake_check"] = pd.to_numeric(df["stake"], errors="coerce")
-    elif "snapshot_stake" in df.columns:
-        df["__stake_check"] = pd.to_numeric(df["snapshot_stake"], errors="coerce")
-
-    if "is_prospective" in df.columns:
-        df = df[(df["__stake_check"] >= 1.0) | df["is_prospective"]]
-    else:
-        df = df[df["__stake_check"] >= 1.0]
-
-    df.drop(columns=["__stake_check"], inplace=True)
+    if "raw_kelly" in df.columns:
+        stake_vals = pd.to_numeric(df["raw_kelly"], errors="coerce")
+        df = df[stake_vals >= 1.0]
 
     if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
         df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
