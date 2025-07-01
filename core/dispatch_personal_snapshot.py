@@ -119,6 +119,12 @@ def main() -> None:
 
     df = format_for_display(rows, include_movement=True)
 
+    # Ensure a valid market class column exists before any role filtering
+    if "market_class" not in df.columns:
+        df["market_class"] = "main"
+    if "Market Class" not in df.columns and "market_class" in df.columns:
+        df["Market Class"] = df["market_class"]
+
     # Diagnostic summary of potential skip reasons
     skip_counts = Counter()
     for _, row in df.iterrows():
