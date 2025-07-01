@@ -17,6 +17,7 @@ from core.pending_bets import (
     load_pending_bets,
     save_pending_bets,
     PENDING_BETS_PATH,
+    validate_pending_bets,
 )
 from core.snapshot_core import _assign_snapshot_role
 from core.theme_exposure_tracker import load_tracker as load_theme_stakes, save_tracker as save_theme_stakes
@@ -183,6 +184,7 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
 
     if pending:
         save_pending_bets(pending, path)
+        validate_pending_bets(pending)
 
 
 

@@ -5,13 +5,15 @@ from datetime import datetime
 
 from core.utils import (
     safe_load_json,
-    now_eastern,
     parse_game_id,
     EASTERN_TZ,
 )
+from core.logger import get_logger
 from core.time_utils import compute_hours_to_game
 from core.lock_utils import with_locked_file
 from core.snapshot_core import _assign_snapshot_role
+
+logger = get_logger(__name__)
 
 
 def _start_time_from_gid(game_id: str) -> datetime | None:
@@ -134,3 +136,23 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
 
     pending[key] = bet_copy
     save_pending_bets(pending, path)
+    validate_pending_bets(pending)
+
+
+def validate_pending_bets(pending: dict) -> None:
+    """Log a warning if any pending row is missing required fields."""
+    missing_roles = 0
+    missing_class = 0
+    for row in pending.values():
+        if not row.get("snapshot_roles"):
+            missing_roles += 1
+        if "market_class" not in row:
+            missing_class += 1
+
+    if missing_roles or missing_class:
+        parts = []
+        if missing_roles:
+            parts.append(f"{missing_roles} rows missing snapshot_roles")
+        if missing_class:
+            parts.append(f"{missing_class} rows missing market_class")
+        logger.warning("⚠️ pending_bets.json has %s", ", ".join(parts))
