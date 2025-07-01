@@ -91,6 +91,16 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
         for k, v in bet.items()
         if not k.startswith("_") and k != "adjusted_kelly"
     }
+
+    # Ensure required snapshot metadata is present
+    if "market_class" not in bet_copy:
+        bet_copy["market_class"] = "main"
+    role = _assign_snapshot_role(bet_copy)
+    bet_copy["snapshot_role"] = role
+    roles = set(bet_copy.get("snapshot_roles") or [])
+    roles.add("best_book")
+    roles.add(role)
+    bet_copy["snapshot_roles"] = sorted(roles)
     existing = pending.get(key, {})
     bet_copy["queued_ts"] = existing.get("queued_ts", datetime.now().isoformat())
     bet_copy["logged"] = bool(existing.get("logged", False))
@@ -107,8 +117,8 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
         if start_dt:
             bet_copy["hours_to_game"] = round(compute_hours_to_game(start_dt), 2)
 
-    # Assign snapshot role information
-    role = _assign_snapshot_role(bet_copy)
+    # Merge snapshot role information with any existing entry
+    role = bet_copy.get("snapshot_role") or _assign_snapshot_role(bet_copy)
     bet_copy["snapshot_role"] = role
     existing_roles = []
     if isinstance(existing.get("snapshot_roles"), list):
