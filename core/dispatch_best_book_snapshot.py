@@ -219,6 +219,12 @@ def main() -> None:
         return
     df = df[columns]
 
+    # Debug: inspect market class values before role filtering
+    try:
+        print(df[["Market", "market_class", "Market Class"]].drop_duplicates())
+    except Exception as e:
+        print(f"Debug print failed: {e}")
+
     if args.output_discord:
         main_hook = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL")
         alt_hook = os.getenv("DISCORD_BEST_BOOK_ALT_WEBHOOK_URL")
