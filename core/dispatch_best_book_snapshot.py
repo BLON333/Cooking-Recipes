@@ -35,6 +35,8 @@ def load_pending_rows() -> list:
     logger.info("📊 Rendering snapshot from %d entries in pending_bets.json", len(rows))
     for r in rows:
         ensure_side(r)
+        if "market_class" not in r:
+            r["market_class"] = "main"
     return rows
 
 
@@ -219,11 +221,12 @@ def main() -> None:
         return
     df = df[columns]
 
-    # Debug: inspect market class values before role filtering
+    # Debug: inspect values before role filtering
     try:
-        print(df[["Market", "market_class", "Market Class"]].drop_duplicates())
+        print(df[["Market", "Market Class", "EV", "Stake"]].head())
     except Exception as e:
-        print(f"Debug print failed: {e}")
+        logger.warning(f"Debug print failed: {e}")
+        print(df.head(1).to_dict())
 
     if args.output_discord:
         main_hook = os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL")
