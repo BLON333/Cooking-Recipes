@@ -237,9 +237,19 @@ def main() -> None:
             args.max_ev,
         )
 
-    if "raw_kelly" in df.columns:
-        stake_vals = pd.to_numeric(df["raw_kelly"], errors="coerce")
-        df = df[stake_vals >= 1.0]
+    print(f"🧪 Pre-stake filter row count: {df.shape[0]}")
+    try:
+        print(df[["market", "side", "ev_percent", "raw_kelly"]].head())
+    except Exception:
+        pass
+    stake_vals = pd.to_numeric(df.get("raw_kelly", 0), errors="coerce").fillna(0)
+    mask = (stake_vals >= 1.0) | df.get("is_prospective", False)
+    df = df[mask]
+    print(f"🧪 Post-stake filter row count: {df.shape[0]}")
+    try:
+        print(df[["market", "side", "ev_percent", "raw_kelly"]].head())
+    except Exception:
+        pass
 
     if all(c in df.columns for c in ["game_id", "market", "side", "book"]):
         df = df.drop_duplicates(subset=["game_id", "market", "side", "book"])
