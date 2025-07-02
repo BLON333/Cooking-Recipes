@@ -1088,7 +1088,7 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
     if "market_class" not in df.columns:
         df["market_class"] = "main"
     df["Market Class"] = (
-        df["market_class"].map({"alternate": "Alt", "main": "Main"}).fillna("❓")
+        df["market_class"].str.lower().map({"alternate": "Alt", "main": "Main"}).fillna("❓")
     )
 
     if "label" not in df.columns:
