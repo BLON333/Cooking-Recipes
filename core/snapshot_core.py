@@ -1143,43 +1143,23 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
     else:
         df["EV"] = df["ev_percent"].map("{:+.1f}%".format)
 
-    if "stake_display" in df.columns:
+    if "stake_display" in df.columns and "Stake" not in df.columns:
         df["Stake"] = df["stake_display"]
-    elif "cumulative_stake" in df.columns:
 
-        def _fmt_stake(row):
-            try:
-                stake = float(row["stake"])
-                total = float(row["cumulative_stake"])
-                if stake != total:
-                    return f"{stake:.2f}u ({total:.2f}u)"
-                return f"{stake:.2f}u"
-            except Exception:
-                return f"{row.get('stake', 'N/A')}"
-
-        df["Stake"] = df.apply(_fmt_stake, axis=1)
-    else:
-        df["Stake"] = df.apply(
-            lambda row: f"{row.get('total_stake') or row.get('stake', 0.0):.2f}u",
-            axis=1,
-        )
-
-    if "snapshot_stake" in df.columns:
+    if "snapshot_stake" in df.columns and "Stake" not in df.columns:
 
         def _apply_snapshot_stake(row):
             try:
-                val = float(row.get("stake", 0))
+                val = float(row.get("snapshot_stake", 0))
             except Exception:
                 val = 0.0
-            if not val and row.get("snapshot_stake"):
-                try:
-                    val = float(row["snapshot_stake"])
-                except Exception:
-                    pass
-            text = f"{val:.2f}u"
-            return text
+            return f"{val:.2f}u"
 
         df["Stake"] = df.apply(_apply_snapshot_stake, axis=1)
+
+    # Derive Stake from raw_kelly
+    if "raw_kelly" in df.columns and "Stake" not in df.columns:
+        df["Stake"] = df["raw_kelly"].round(2).astype(str) + "u"
 
     required_cols = ["Date"]
     if "Time" in df.columns:
