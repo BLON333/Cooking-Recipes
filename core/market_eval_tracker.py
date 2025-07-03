@@ -55,11 +55,12 @@ def load_tracker(path: str = TRACKER_PATH) -> Dict[str, dict]:
                 recovery = json.load(f)
         except json.JSONDecodeError as e:
             logger.error(
-                "❌ Failed to parse recovery tracker — skipping merge (%s line %s column %s)",
+                "❌ Failed to parse recovery tracker — deleting corrupted file (%s line %s column %s)",
                 recovery_path,
                 e.lineno,
                 e.colno,
             )
+            os.remove(recovery_path)
         except Exception as e:  # Catch other unexpected errors
             logger.error("❌ Failed to merge recovery tracker: %s", e)
         else:
