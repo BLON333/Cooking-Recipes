@@ -128,7 +128,14 @@ def main() -> None:
         print(df[["market", "side", "ev_percent", "raw_kelly"]].head())
     except Exception:
         pass
-    stake_vals = pd.to_numeric(df.get("raw_kelly", 0), errors="coerce").fillna(0)
+    # Stake filtering (fallback from stake to raw_kelly)
+    if "stake" in df.columns:
+        stake_vals = pd.to_numeric(df["stake"], errors="coerce")
+    elif "raw_kelly" in df.columns:
+        stake_vals = pd.to_numeric(df["raw_kelly"], errors="coerce")
+    else:
+        stake_vals = pd.Series([0] * len(df))
+
     mask = (stake_vals >= 1.0) | df.get("is_prospective", False)
     df = df[mask]
     print(f"🧪 Post-stake filter row count: {df.shape[0]}")
