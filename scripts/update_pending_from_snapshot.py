@@ -11,7 +11,7 @@ import glob
 from core.market_eval_tracker import build_tracker_key
 from core.utils import safe_load_json
 from core.snapshot_core import _assign_snapshot_role
-from core.pending_bets import infer_market_class
+from core.market_normalizer import normalize_market_key
 from cli.log_betting_evals import load_market_conf_tracker
 
 SNAPSHOT_DIR = os.path.join("backtest")
@@ -79,7 +79,8 @@ def build_pending(rows: list, tracker: dict) -> dict:
             "logged": row.get("logged", False),
         }
         if "market_class" not in entry:
-            entry["market_class"] = infer_market_class(entry.get("market"))
+            meta = normalize_market_key(entry.get("market", ""))
+            entry["market_class"] = meta.get("market_class", "main")
         role = _assign_snapshot_role(entry)
         entry["snapshot_role"] = role
         roles = []
