@@ -105,7 +105,7 @@ def main() -> None:
     for r in rows:
         if r.get("logged"):
             skip_counts["logged"] += 1
-            continue
+            # Logged bets should still flow through remaining filters
         try:
             ev = float(r.get("ev_percent", 0))
         except Exception:
