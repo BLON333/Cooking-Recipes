@@ -101,11 +101,14 @@ def required_market_move(
         else:
             base_threshold *= 0.50
 
-    # Volatile segments like first inning or team totals require more movement
+    # Volatile segments require more movement for confirmation
     if market and (
         "1st_3" in market or "1st_7" in market or "team_totals" in market
     ):
         base_threshold *= 1.5
+    elif market and "1st_5" in market:
+        # Slight bump for first-5 markets to tighten confirmation
+        base_threshold *= 1.25
 
     # EV adjustments – very high EV loosens, middling EV tightens slightly
     if ev_percent is not None:
