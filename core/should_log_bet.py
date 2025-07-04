@@ -174,6 +174,7 @@ def theme_already_logged_in_csv(
 def should_log_bet(
     new_bet: dict,
     existing_theme_stakes: dict,
+    csv_exposure: dict | None = None,
     verbose: bool = True,
     min_ev: float = 0.05,
     min_stake: float = MIN_FIRST_STAKE,
@@ -190,6 +191,10 @@ def should_log_bet(
         Mapping of previously logged stakes keyed by ``(game_id, market, side)``.
         When provided, the function treats missing entries as no prior stake for
         that specific market even if theme exposure exists.
+    csv_exposure : dict | None, optional
+        Theme exposure loaded from ``market_evals.csv`` keyed by
+        ``game_id:theme_key:segment``.  When provided, tracker exposure is
+        ignored and this mapping is used exclusively.
 
     The optional ``eval_tracker`` should contain previous market evaluations
     keyed by ``game_id:market:side:book`` so line movement can be enforced for
@@ -277,18 +282,25 @@ def should_log_bet(
     theme = get_theme({"side": side, "market": base_market})
     theme_key = get_theme_key(base_market, theme)
     exposure_key = make_theme_key(game_id, theme_key, segment)
-    tracker_has_key = exposure_key in existing_theme_stakes
-    theme_total = existing_theme_stakes.get(exposure_key, 0.0)
+    theme_total = 0.0
+    if csv_exposure is not None:
+        theme_total = csv_exposure.get(exposure_key, 0.0)
 
-    # Determine entry type based solely on theme exposure
     tracker_theme_key = build_theme_key(new_bet)
-    prior_stake = existing_theme_stakes.get(tracker_theme_key, 0.0)
+    prior_stake = 0.0
+    if csv_exposure is not None:
+        prior_stake = csv_exposure.get(tracker_theme_key, 0.0)
+
+    entry_type = "top-up" if prior_stake > 0 else "first"
     delta = max(0.0, stake - prior_stake)
-    if prior_stake == 0.0:
-        entry_type = "first"
-    elif delta >= MIN_TOPUP_STAKE:
-        entry_type = "top-up"
-    else:
+
+    print(f"[DEBUG] Evaluating exposure for {theme_key}")
+    print(f"  CSV Exposure: {prior_stake}")
+    print(f"  Target Stake: {stake}")
+    print(f"  Stake Delta: {stake - prior_stake}")
+    print(f"  Entry Type: {'top-up' if prior_stake > 0 else 'first'}")
+
+    if entry_type == "top-up" and delta < MIN_TOPUP_STAKE:
         entry_type = "none"
         skip_reason = SkipReason.LOW_TOPUP.value
     new_bet["entry_type"] = entry_type
@@ -307,8 +319,6 @@ def should_log_bet(
             game_id, theme_key, segment, existing_csv_stakes
         )
         if csv_theme_total == 0:
-            # Tracker likely stale; reset exposure
-            existing_theme_stakes[exposure_key] = 0.0
             theme_total = 0.0
 
     # ``delta_base`` represents the portion of stake already logged for this
