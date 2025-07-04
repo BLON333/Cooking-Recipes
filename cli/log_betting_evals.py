@@ -323,10 +323,6 @@ from core.market_movement_tracker import (
     track_and_update_market_movement,
     detect_market_movement,
 )
-from core.theme_exposure_tracker import (
-    load_tracker as load_theme_stakes,
-    save_tracker as save_theme_stakes,
-)
 from core.book_whitelist import ALLOWED_BOOKS
 from core.format_utils import format_market_odds_and_roles
 import pandas as pd
@@ -1018,19 +1014,15 @@ def decimal_odds(american):
     )
 
 
-def record_successful_log(row: dict, existing: dict, theme_stakes: dict | None) -> None:
+def record_successful_log(row: dict, existing: dict, exposure: dict | None) -> None:
     """Update exposure trackers after a confirmed CSV write."""
     key = (row["game_id"], row["market"], row["side"])
     stake_val = round_stake(row["stake"])
     existing[key] = existing.get(key, 0.0) + stake_val
-    if theme_stakes is not None:
-        exposure_key = get_exposure_key(row)
-        theme_stakes[exposure_key] = theme_stakes.get(exposure_key, 0.0) + stake_val
-        if "PYTEST_CURRENT_TEST" not in os.environ:
-            try:
-                save_theme_stakes(theme_stakes)
-            except Exception as e:  # pragma: no cover - unexpected save failure
-                logger.warning("⚠️ Failed to persist theme exposure: %s", e)
+    if exposure is not None:
+        theme_key = get_exposure_key(row)
+        exposure[theme_key] = exposure.get(theme_key, 0.0) + stake_val
+        print(f"[DEBUG] Updated session exposure for {theme_key}: {exposure[theme_key]}")
 
 
 def calculate_market_fv(sim_prob, market_odds):
@@ -1424,7 +1416,7 @@ def write_to_csv(
     path,
     existing,
     session_exposure,
-    existing_theme_stakes,
+    existing_exposure,
     dry_run=False,
     force_log=False,
 ): 
@@ -1441,7 +1433,7 @@ def write_to_csv(
 
     Parameters
     ----------
-    existing_theme_stakes : dict
+    existing_exposure : dict
         Mutable mapping tracking theme exposure in-memory. This function only
         updates the provided dict. Persisting the updated exposure data is
         handled by the caller.
@@ -2634,8 +2626,8 @@ def run_batch_logging(
         return start_times
 
     existing = load_existing_stakes("logs/market_evals.csv")
-    theme_stakes_from_json = load_theme_stakes()
     market_evals_path = "logs/market_evals.csv"
+    existing_exposure = build_theme_exposure_tracker(market_evals_path)
     if os.path.exists(market_evals_path):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -2719,8 +2711,7 @@ def run_batch_logging(
                     f"EV {row['ev_percent']} not better than current {current_best['ev_percent']}"
                 )
 
-    # 🆕 Load theme exposure tracker from JSON
-    existing_theme_stakes = theme_stakes_from_json
+
 
     odds_start_times = extract_start_times(all_market_odds)
 
@@ -2763,7 +2754,7 @@ def run_batch_logging(
 
     process_theme_logged_bets(
         theme_logged=theme_logged,
-        existing_theme_stakes=existing_theme_stakes,
+        existing_exposure=existing_exposure,
         existing=existing,
         session_exposure=session_exposure,
         dry_run=dry_run,
@@ -2793,7 +2784,7 @@ def run_batch_logging(
 
 def process_theme_logged_bets(
     theme_logged,
-    existing_theme_stakes,
+    existing_exposure,
     existing,
     session_exposure,
     dry_run,
@@ -2877,7 +2868,7 @@ def process_theme_logged_bets(
                 proposed_stake = round(float(row.get("full_stake", 0)), 2)
                 key = (row["game_id"], row["market"], row["side"])
                 line_key = (row["market"], row["side"])
-                theme_total = existing_theme_stakes.get(exposure_key, 0.0)
+                theme_total = existing_exposure.get(exposure_key, 0.0)
                 is_initial_bet = theme_total == 0.0
 
                 skip_reason = None
@@ -2938,7 +2929,8 @@ def process_theme_logged_bets(
 
                 evaluated = should_log_bet(
                     row_copy,
-                    existing_theme_stakes,
+                    {},
+                    csv_exposure=existing_exposure,
                     verbose=config.VERBOSE_MODE,
                     eval_tracker=MARKET_EVAL_TRACKER,
                     existing_csv_stakes=existing,
@@ -3028,7 +3020,7 @@ def process_theme_logged_bets(
                 "logs/market_evals.csv",
                 existing,
                 session_exposure,
-                existing_theme_stakes,
+                existing_exposure,
                 dry_run=dry_run,
                 force_log=force_log,
             )
@@ -3051,7 +3043,7 @@ def process_theme_logged_bets(
                 skipped_bets.append(best_row)
 
             if not result.get("skip_reason") and result.get("side"):
-                record_successful_log(result, existing, existing_theme_stakes)
+                record_successful_log(result, existing, existing_exposure)
             else:
                 logger.warning(
                     "❌ Skipping tracker update: result was skipped or malformed → %s",
@@ -3106,9 +3098,6 @@ def process_theme_logged_bets(
             upload_summary_image_to_discord(output_path, webhook_url)
 
     if not dry_run:
-        # Persist updated theme exposure once per batch
-        save_theme_stakes(existing_theme_stakes)
-
         try:
             save_tracker(MARKET_EVAL_TRACKER)
             logger.info(
