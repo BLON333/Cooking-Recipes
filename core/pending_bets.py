@@ -12,6 +12,7 @@ from core.logger import get_logger
 from core.time_utils import compute_hours_to_game
 from core.lock_utils import with_locked_file
 from core.snapshot_core import _assign_snapshot_role
+from core.market_normalizer import normalize_market_key
 
 
 def infer_market_class(market: str) -> str:
@@ -113,7 +114,8 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
 
     # Ensure required snapshot metadata is present
     if "market_class" not in bet_copy:
-        bet_copy["market_class"] = infer_market_class(bet_copy.get("market"))
+        meta = normalize_market_key(bet_copy.get("market", ""))
+        bet_copy["market_class"] = meta.get("market_class", "main")
     role = _assign_snapshot_role(bet_copy)
     bet_copy["snapshot_role"] = role
     roles = set(bet_copy.get("snapshot_roles") or [])
