@@ -198,6 +198,13 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             if baseline is not None:
                 entry["baseline_consensus_prob"] = baseline
 
+        # Fallback to market_prob or consensus_prob when no baseline is present
+        baseline = entry.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = row.get("market_prob") or row.get("consensus_prob")
+            if baseline is not None:
+                entry["baseline_consensus_prob"] = baseline
+
         pending[key] = entry
 
     if pending:
