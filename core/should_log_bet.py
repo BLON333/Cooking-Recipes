@@ -31,7 +31,7 @@ import csv
 import os
 
 from core.theme_key_utils import make_theme_key, theme_key_equals
-from cli.log_betting_evals import get_exposure_key
+from core.exposure_utils import get_exposure_key
 from core.theme_utils import (
     normalize_market_key,
     parse_team_total_side,
