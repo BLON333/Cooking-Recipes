@@ -9,7 +9,7 @@ from typing import Dict
 
 from core.theme_key_utils import make_theme_key
 
-from cli.log_betting_evals import get_exposure_key
+from core.exposure_utils import get_exposure_key
 from core.theme_exposure_tracker import TRACKER_PATH, load_tracker, save_tracker
 
 CSV_PATH = os.path.join("logs", "market_evals.csv")

@@ -19,6 +19,7 @@ from core.should_log_bet import (
     normalize_segment,
 )
 from core.theme_key_utils import make_theme_key
+from core.exposure_utils import get_exposure_key
 from dotenv import load_dotenv
 
 from core.market_eval_tracker import (
@@ -1384,31 +1385,6 @@ def send_discord_notification(row, skipped_bets=None):
             print(f"🔍 Message that failed: {message}")
 
 
-def get_exposure_key(row):
-    market = row["market"]
-    game_id = row["game_id"]
-    side = remap_side_key(row["side"])
-
-    market_type = normalize_market_key(market)
-    if market_type not in {"total", "spread", "h2h"}:
-        market_type = "other"
-
-    segment = normalize_segment(market)
-
-    for team in TEAM_NAME_TO_ABBR:
-        if side.startswith(team):
-            theme = team
-            break
-    else:
-        if "Over" in side:
-            theme = "Over"
-        elif "Under" in side:
-            theme = "Under"
-        else:
-            theme = "Other"
-
-    theme_key = f"{theme}_{market_type}"
-    return make_theme_key(game_id, theme_key, segment)
 
 
 def write_to_csv(
