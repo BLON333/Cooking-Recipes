@@ -31,7 +31,7 @@ import csv
 import os
 
 from core.theme_key_utils import make_theme_key, theme_key_equals
-from core.theme_exposure_tracker import build_theme_key
+from cli.log_betting_evals import get_exposure_key
 from core.theme_utils import (
     normalize_market_key,
     parse_team_total_side,
@@ -286,7 +286,7 @@ def should_log_bet(
     if csv_exposure is not None:
         theme_total = csv_exposure.get(exposure_key, 0.0)
 
-    tracker_theme_key = build_theme_key(new_bet)
+    tracker_theme_key = get_exposure_key(new_bet)
     prior_stake = 0.0
     if csv_exposure is not None:
         prior_stake = csv_exposure.get(tracker_theme_key, 0.0)

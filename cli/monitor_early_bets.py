@@ -20,7 +20,6 @@ from core.pending_bets import (
     validate_pending_bets,
 )
 from core.snapshot_core import _assign_snapshot_role
-from core.theme_exposure_tracker import load_tracker as load_theme_stakes, save_tracker as save_theme_stakes
 from core.market_eval_tracker import (
     load_tracker as load_eval_tracker,
     build_tracker_key,
@@ -30,6 +29,7 @@ from cli.log_betting_evals import (
     load_existing_stakes,
     record_successful_log,
     load_market_conf_tracker,
+    build_theme_exposure_tracker,
 )
 from core.should_log_bet import should_log_bet
 
@@ -236,7 +236,7 @@ def recheck_pending_bets(
 
     existing = load_existing_stakes("logs/market_evals.csv")
     session_exposure = defaultdict(set)
-    theme_stakes = load_theme_stakes()
+    theme_stakes = build_theme_exposure_tracker("logs/market_evals.csv")
     eval_tracker = load_eval_tracker()
     snapshot_index = {
         (
@@ -360,7 +360,6 @@ def recheck_pending_bets(
                 )
             elif result and not result.get("skip_reason") and result.get("side"):
                 record_successful_log(result, existing, theme_stakes)
-                save_theme_stakes(theme_stakes)
                 bet.update(result)
                 bet["logged"] = True
                 bet["logged_ts"] = datetime.now().isoformat()
