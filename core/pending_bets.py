@@ -13,6 +13,23 @@ from core.time_utils import compute_hours_to_game
 from core.lock_utils import with_locked_file
 from core.snapshot_core import _assign_snapshot_role
 
+
+def infer_market_class(market: str) -> str:
+    """Return market class inferred from ``market``."""
+    if not isinstance(market, str):
+        return "unknown"
+    market = market.lower()
+    if market.startswith("totals"):
+        return "totals"
+    elif market.startswith("spreads"):
+        return "spreads"
+    elif market == "h2h":
+        return "h2h"
+    elif market == "team_totals":
+        return "totals"
+    else:
+        return "unknown"
+
 logger = get_logger(__name__)
 
 
@@ -96,7 +113,7 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
 
     # Ensure required snapshot metadata is present
     if "market_class" not in bet_copy:
-        bet_copy["market_class"] = "main"
+        bet_copy["market_class"] = infer_market_class(bet_copy.get("market"))
     role = _assign_snapshot_role(bet_copy)
     bet_copy["snapshot_role"] = role
     roles = set(bet_copy.get("snapshot_roles") or [])

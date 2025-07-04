@@ -18,6 +18,7 @@ from core.pending_bets import (
     save_pending_bets,
     PENDING_BETS_PATH,
     validate_pending_bets,
+    infer_market_class,
 )
 from core.snapshot_core import _assign_snapshot_role
 from core.market_eval_tracker import (
@@ -110,6 +111,8 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
         key = f"{gid}:{market}:{side}"
         base = merged.get(key, {})
         bet = _clean_snapshot_row(r)
+        if "market_class" not in bet:
+            bet["market_class"] = infer_market_class(market)
         # Assign snapshot role if missing
         if "snapshot_role" not in bet:
             bet["snapshot_role"] = _assign_snapshot_role(bet)
@@ -167,6 +170,8 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
         }
+        if "market_class" not in entry:
+            entry["market_class"] = infer_market_class(entry.get("market"))
         role = _assign_snapshot_role(entry)
         entry["snapshot_role"] = role
         roles = []
