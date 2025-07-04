@@ -1,3 +1,6 @@
+# DEPRECATED: theme_exposure.json is no longer used in the exposure evaluation pipeline.
+# All exposure tracking is now based on market_evals.csv + session memory.
+
 import os
 import json
 import ast

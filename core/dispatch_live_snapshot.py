@@ -5,10 +5,8 @@ import sys
 from core.bootstrap import *  # noqa
 
 """Dispatch live snapshot from pending_bets.json."""
-
-import json
 from core.utils import parse_game_id
-from core.theme_exposure_tracker import build_theme_key
+
 import argparse
 from dotenv import load_dotenv
 
@@ -82,15 +80,7 @@ def main() -> None:
         logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
         return
 
-    try:
-        with open("logs/theme_exposure.json") as f:
-            theme_stakes = json.load(f)
-    except FileNotFoundError:
-        theme_stakes = {}
-
     for r in rows:
-        theme_key = build_theme_key(r)
-        r["total_stake"] = theme_stakes.get(theme_key, 0.0)
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
 
