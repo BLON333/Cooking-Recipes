@@ -12,6 +12,7 @@ from core.market_eval_tracker import build_tracker_key
 from core.utils import safe_load_json
 from core.snapshot_core import _assign_snapshot_role
 from core.market_normalizer import normalize_market_key
+from core.pending_bets import infer_market_class
 from cli.log_betting_evals import load_market_conf_tracker
 
 SNAPSHOT_DIR = os.path.join("backtest")
@@ -78,6 +79,7 @@ def build_pending(rows: list, tracker: dict) -> dict:
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
         }
+        entry["market_group"] = infer_market_class(entry.get("market"))
         if "market_class" not in entry:
             meta = normalize_market_key(entry.get("market", ""))
             entry["market_class"] = meta.get("market_class", "main")

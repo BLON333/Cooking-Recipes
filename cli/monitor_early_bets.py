@@ -18,6 +18,7 @@ from core.pending_bets import (
     save_pending_bets,
     PENDING_BETS_PATH,
     validate_pending_bets,
+    infer_market_class,
 )
 from core.market_normalizer import normalize_market_key
 from core.snapshot_core import _assign_snapshot_role
@@ -114,6 +115,7 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
         if "market_class" not in bet:
             meta = normalize_market_key(market or "")
             bet["market_class"] = meta.get("market_class", "main")
+        bet["market_group"] = infer_market_class(market)
         # Assign snapshot role if missing
         if "snapshot_role" not in bet:
             bet["snapshot_role"] = _assign_snapshot_role(bet)
@@ -171,6 +173,7 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
         }
+        entry["market_group"] = infer_market_class(entry.get("market"))
         if "market_class" not in entry:
             meta = normalize_market_key(entry.get("market", ""))
             entry["market_class"] = meta.get("market_class", "main")

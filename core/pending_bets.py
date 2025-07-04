@@ -116,6 +116,8 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     if "market_class" not in bet_copy:
         meta = normalize_market_key(bet_copy.get("market", ""))
         bet_copy["market_class"] = meta.get("market_class", "main")
+    if "market_group" not in bet_copy:
+        bet_copy["market_group"] = infer_market_class(bet_copy.get("market"))
     role = _assign_snapshot_role(bet_copy)
     bet_copy["snapshot_role"] = role
     roles = set(bet_copy.get("snapshot_roles") or [])
