@@ -133,6 +133,7 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
 def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> None:
     """Overwrite ``pending_bets.json`` with entries built from ``rows``."""
     tracker = load_market_conf_tracker()
+    existing = load_pending_bets(path)
     pending: dict = {}
     for row in rows:
         try:
@@ -180,6 +181,13 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
             cp = tracker[key].get("consensus_prob")
             if cp is not None:
                 entry["baseline_consensus_prob"] = cp
+
+        existing_row = existing.get(key)
+        if existing_row:
+            baseline = existing_row.get("baseline_consensus_prob")
+            if baseline is not None:
+                entry["baseline_consensus_prob"] = baseline
+
         pending[key] = entry
 
     if pending:
