@@ -6,7 +6,7 @@ from core.bootstrap import *  # noqa
 
 """Dispatch personal-book snapshot from pending_bets.json."""
 from core.utils import parse_game_id
-from cli.log_betting_evals import get_exposure_key, build_theme_exposure_tracker
+
 import argparse
 from typing import List
 from collections import Counter
@@ -101,11 +101,7 @@ def main() -> None:
         )
         return
 
-    theme_stakes = build_theme_exposure_tracker("logs/market_evals.csv")
-
     for r in rows:
-        theme_key = get_exposure_key(r)
-        r["total_stake"] = theme_stakes.get(theme_key, 0.0)
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
 
