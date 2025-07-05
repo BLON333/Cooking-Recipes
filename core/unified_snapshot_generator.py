@@ -113,12 +113,20 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
             continue
 
         try:
-            ev = float(bet.get("ev_percent", 0))
-            rk = float(bet.get("raw_kelly", 0))
+            ev = float(bet.get("ev_percent", 0) or 0)
         except Exception:
-            continue
+            ev = 0.0
+        try:
+            rk = float(bet.get("raw_kelly", 0) or 0)
+        except Exception:
+            rk = 0.0
+        try:
+            stake_val = float(bet.get("stake", rk) or rk)
+        except Exception:
+            stake_val = rk
 
-        if ev < min_ev or rk < 1.0:
+        # Skip if EV is below threshold and both Kelly and stake are < 1u
+        if ev < 5.0 and rk < 1.0 and stake_val < 1.0:
             continue
 
         row = bet.copy()
