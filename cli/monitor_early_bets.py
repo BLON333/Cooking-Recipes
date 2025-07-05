@@ -34,6 +34,7 @@ from cli.log_betting_evals import (
     build_theme_exposure_tracker,
 )
 from core.should_log_bet import should_log_bet
+import pytz
 
 logger = get_logger(__name__)
 
@@ -127,10 +128,27 @@ def merge_snapshot_pending(pending: dict, rows: list) -> dict:
             roles.add("best_book")
         bet["snapshot_roles"] = sorted(roles)
 
+        game_parts = parse_game_id(bet.get("game_id", ""))
+        date = game_parts.get("date")
+        time_str = game_parts.get("time", "").replace("T", "")
+        if date and time_str:
+            try:
+                dt = datetime.strptime(f"{date} {time_str}", "%Y-%m-%d %H%M")
+                dt = dt.replace(tzinfo=pytz.timezone("US/Eastern"))
+                bet["hours_to_game"] = round(compute_hours_to_game(dt), 2)
+            except Exception:
+                pass
+
         baseline = base.get("baseline_consensus_prob")
         if baseline is None:
-            baseline = bet.get("market_prob") or bet.get("consensus_prob")
-        bet["baseline_consensus_prob"] = baseline
+            baseline = bet.get("baseline_consensus_prob")
+        if baseline is None:
+            fallback = bet.get("market_prob")
+            if fallback is not None:
+                baseline = fallback
+        if baseline is not None:
+            bet["baseline_consensus_prob"] = baseline
+
         bet["queued_ts"] = base.get("queued_ts", r.get("queued_ts"))
         merged[key] = bet
     return merged
