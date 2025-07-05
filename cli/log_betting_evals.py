@@ -42,6 +42,7 @@ from core.dispatch_clv_snapshot import parse_start_time
 from core.book_helpers import ensure_consensus_books
 from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
+from core.pending_bets import load_pending_bets
 import re
 import warnings
 from core.snapshot_tracker_loader import (
@@ -2678,6 +2679,17 @@ def run_batch_logging(
         MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(tracker_snapshot_path)
     else:
         MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
+
+    # ------------------------------------------------------------------
+    # Fallback to pending bets for missing tracker entries
+    # ------------------------------------------------------------------
+    PENDING_BETS = load_pending_bets()
+    for key, row in PENDING_BETS.items():
+        if key not in MARKET_EVAL_TRACKER_BEFORE_UPDATE:
+            baseline = row.get("baseline_consensus_prob")
+            if baseline is not None:
+                MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {"consensus_prob": baseline}
+                print(f"🔁 Tracker fallback for {key} → {baseline:.4f}")
 
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
