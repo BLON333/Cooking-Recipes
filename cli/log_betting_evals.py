@@ -1457,8 +1457,14 @@ def write_to_csv(
         new_conf_val = None
 
     prev_conf_val = None
-    if isinstance(MARKET_CONF_TRACKER.get(tracker_key), dict):
-        prev_conf_val = MARKET_CONF_TRACKER[tracker_key].get("consensus_prob")
+    baseline_tracker = MARKET_CONF_TRACKER
+    if tracker_key in baseline_tracker:
+        if "consensus_prob" not in baseline_tracker[tracker_key]:
+            print(f"\u26A0\uFE0F Tracker entry for {tracker_key} exists but has no consensus_prob")
+        else:
+            prev_conf_val = baseline_tracker[tracker_key].get("consensus_prob")
+    else:
+        print(f"\u274C Tracker key missing: {tracker_key}")
 
     if new_conf_val is None:
         print(f"  ⛔ No valid consensus_prob for {tracker_key} — skipping")
