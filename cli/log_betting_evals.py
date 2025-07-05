@@ -138,6 +138,7 @@ def save_market_conf_tracker(tracker: dict, path: str = MARKET_CONF_TRACKER_PATH
 
 import copy
 from datetime import datetime
+from core.market_conf_tracker import save_tracker as save_conf_tracker
 
 # Load market confirmation tracker
 MARKET_CONF_TRACKER = load_market_conf_tracker()
@@ -1570,11 +1571,18 @@ def write_to_csv(
                 current_consensus_prob = (
                     new_conf_val if new_conf_val is not None else new_prob
                 )
-                MARKET_CONF_TRACKER[tracker_key] = {
-                    "consensus_prob": current_consensus_prob,
-                    "status": "pending",
-                    "timestamp": datetime.now().isoformat(),
-                }
+                if (
+                    current_consensus_prob is not None
+                    and baseline_tracker.get(tracker_key, {}).get("consensus_prob") is None
+                ):
+                    baseline_tracker[tracker_key] = {
+                        "consensus_prob": current_consensus_prob,
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                    save_conf_tracker(baseline_tracker)
+                    print(
+                        f"🆕 Baseline stored for {tracker_key} → {current_consensus_prob:.4f}"
+                    )
             movement = track_and_update_market_movement(
                 row,
                 MARKET_EVAL_TRACKER,
