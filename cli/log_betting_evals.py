@@ -2668,27 +2668,38 @@ def run_batch_logging(
     # ------------------------------------------------------------------
     # Snapshot tracker baseline
     # ------------------------------------------------------------------
-    try:
-        date_str = os.path.basename(os.path.normpath(eval_folder))
-        game_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    except Exception:
-        game_date = None
+    MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
 
-    if game_date:
-        tracker_snapshot_path = find_latest_snapshot_tracker_path(game_date)
-        MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(tracker_snapshot_path)
-    else:
-        MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
+    # 📂 Load from latest snapshot first
+    snapshot_path = find_latest_market_snapshot_path()
+    if snapshot_path:
+        try:
+            with open(snapshot_path, "r") as f:
+                snapshot_rows = json.load(f)
+            for row in snapshot_rows:
+                key = build_tracker_key(
+                    row.get("game_id"), row.get("market"), row.get("side")
+                )
+                baseline = row.get("baseline_consensus_prob")
+                if baseline is not None:
+                    MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {
+                        "market_prob": baseline
+                    }
+            print(
+                f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
+            )
+        except Exception as e:
+            print(f"❌ Failed to parse snapshot tracker {snapshot_path}: {e}")
 
-    # ------------------------------------------------------------------
-    # Fallback to pending bets for missing tracker entries
-    # ------------------------------------------------------------------
+    # 🔁 Fallback to pending if missing
+    from core.pending_bets import load_pending_bets
+
     PENDING_BETS = load_pending_bets()
     for key, row in PENDING_BETS.items():
         if key not in MARKET_EVAL_TRACKER_BEFORE_UPDATE:
             baseline = row.get("baseline_consensus_prob")
             if baseline is not None:
-                MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {"consensus_prob": baseline}
+                MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {"market_prob": baseline}
                 print(f"🔁 Tracker fallback for {key} → {baseline:.4f}")
 
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
