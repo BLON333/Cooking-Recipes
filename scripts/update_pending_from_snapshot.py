@@ -142,6 +142,14 @@ def main() -> None:
 
     save_pending_bets(existing, PENDING_JSON)
 
+    missing_baseline = [k for k, v in existing.items() if v.get("baseline_consensus_prob") is None]
+    if missing_baseline:
+        print(f"⚠️ {len(missing_baseline)} bets missing baseline_consensus_prob")
+        for k in missing_baseline[:5]:
+            print(f"  - {k}")
+    else:
+        print("✅ All pending bets include baseline_consensus_prob.")
+
     print(f"✅ Saved {len(existing)} entries from {os.path.basename(snap)}")
 
 
