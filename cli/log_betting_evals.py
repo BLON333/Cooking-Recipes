@@ -44,7 +44,10 @@ from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
 import re
 import warnings
-from core.snapshot_tracker_loader import find_latest_snapshot_tracker_path
+from core.snapshot_tracker_loader import (
+    find_latest_snapshot_tracker_path,
+    find_latest_market_snapshot_path,
+)
 
 load_dotenv()
 from core.logger import get_logger, set_log_level
@@ -202,8 +205,11 @@ def latest_snapshot_path(folder="backtest"):
 MARKET_EVAL_TRACKER = load_eval_tracker()
 
 # Load most recent snapshot file for movement comparison
-# Disabled snapshot loading – use current tracker state only
-SNAPSHOT_PATH_USED = None
+SNAPSHOT_PATH_USED = find_latest_market_snapshot_path()
+if SNAPSHOT_PATH_USED:
+    print(f"📄 Snapshot File Used     : {SNAPSHOT_PATH_USED}")
+else:
+    print("📄 Snapshot File Used     : [Not found]")
 STALE_SNAPSHOT = False
 MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
 
@@ -2553,7 +2559,7 @@ def run_batch_logging(
 
     load_dotenv()
 
-    global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE, SNAPSHOT_PATH_USED
+    global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE
     from core.market_conf_tracker import clean_stale_tracker_entries
 
     # Clean broken or stale tracker entries before loading
@@ -2661,7 +2667,6 @@ def run_batch_logging(
     # ------------------------------------------------------------------
     # Snapshot tracker baseline
     # ------------------------------------------------------------------
-    global SNAPSHOT_PATH_USED
     try:
         date_str = os.path.basename(os.path.normpath(eval_folder))
         game_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -2669,10 +2674,9 @@ def run_batch_logging(
         game_date = None
 
     if game_date:
-        SNAPSHOT_PATH_USED = find_latest_snapshot_tracker_path(game_date)
-        MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(SNAPSHOT_PATH_USED)
+        tracker_snapshot_path = find_latest_snapshot_tracker_path(game_date)
+        MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(tracker_snapshot_path)
     else:
-        SNAPSHOT_PATH_USED = None
         MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
 
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
