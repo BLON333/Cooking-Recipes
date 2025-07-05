@@ -27,6 +27,7 @@ from core.snapshot_core import (
     MARKET_EVAL_TRACKER_BEFORE_UPDATE,
     expand_snapshot_rows_with_kelly,
     _assign_snapshot_role,
+    ensure_baseline_consensus_prob,
 )
 from core.market_eval_tracker import load_tracker, save_tracker
 from core.pending_bets import load_pending_bets
@@ -351,6 +352,8 @@ def main() -> None:
         out_dir = "backtest"
         final_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.json")
         tmp_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.tmp")
+
+        ensure_baseline_consensus_prob(all_rows)
 
         os.makedirs(out_dir, exist_ok=True)
         with open(tmp_path, "w") as f:
