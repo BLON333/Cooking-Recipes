@@ -5,18 +5,24 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import json
 import glob
 
 from core.market_eval_tracker import build_tracker_key
 from core.utils import safe_load_json
 from core.snapshot_core import _assign_snapshot_role
 from core.market_normalizer import normalize_market_key
-from core.pending_bets import infer_market_class
+from core.pending_bets import (
+    infer_market_class,
+    load_pending_bets,
+    save_pending_bets,
+)
 from cli.log_betting_evals import load_market_conf_tracker
 
 SNAPSHOT_DIR = os.path.join("backtest")
 PENDING_JSON = os.path.join("logs", "pending_bets.json")
+
+# Load current pending bets to merge with snapshot rows
+existing = load_pending_bets(PENDING_JSON)
 
 
 def load_latest_snapshot(directory: str = SNAPSHOT_DIR) -> tuple[list, str | None]:
@@ -101,15 +107,6 @@ def build_pending(rows: list, tracker: dict) -> dict:
     return pending
 
 
-def save_pending_bets(pending: dict, path: str = PENDING_JSON) -> None:
-    """Atomically write ``pending`` to ``path``."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = f"{path}.tmp"
-    with open(tmp, "w") as f:
-        json.dump(pending, f, indent=2)
-    os.replace(tmp, path)
-
-
 def main() -> None:
     rows, snap = load_latest_snapshot()
     if snap is None or not rows:
@@ -118,10 +115,20 @@ def main() -> None:
 
     tracker = load_market_conf_tracker()
     filtered = filter_rows(rows)
-    pending = build_pending(filtered, tracker)
-    save_pending_bets(pending, PENDING_JSON)
+    new_rows = build_pending(filtered, tracker)
 
-    print(f"✅ Saved {len(pending)} entries from {os.path.basename(snap)}")
+    for key, row in new_rows.items():
+        existing_row = existing.get(key, {})
+        if "baseline_consensus_prob" in existing_row:
+            row["baseline_consensus_prob"] = existing_row["baseline_consensus_prob"]
+        for field in ["queued_ts", "logged", "entry_type"]:
+            if field in existing_row and field not in row:
+                row[field] = existing_row[field]
+        existing[key] = row
+
+    save_pending_bets(existing, PENDING_JSON)
+
+    print(f"✅ Saved {len(existing)} entries from {os.path.basename(snap)}")
 
 
 if __name__ == "__main__":
