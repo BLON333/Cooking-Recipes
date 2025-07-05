@@ -135,13 +135,18 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     if "logged_ts" in existing:
         bet_copy["logged_ts"] = existing["logged_ts"]
 
-    baseline = bet_copy.get("baseline_consensus_prob")
-    if baseline is None:
-        baseline = bet_copy.get("market_prob") or bet_copy.get("consensus_prob")
-        if baseline is not None:
-            bet_copy["baseline_consensus_prob"] = baseline
+    existing_bets = load_pending_bets()
+    existing_row = existing_bets.get(key)
+
+    if "baseline_consensus_prob" not in bet_copy:
+        if existing_row and "baseline_consensus_prob" in existing_row:
+            bet_copy["baseline_consensus_prob"] = existing_row["baseline_consensus_prob"]
         else:
-            print(f"⚠️ Warning: Missing baseline_consensus_prob for {key}")
+            baseline = bet_copy.get("market_prob") or bet_copy.get("consensus_prob")
+            if baseline is not None:
+                bet_copy["baseline_consensus_prob"] = baseline
+            else:
+                print(f"⚠️ Warning: Missing baseline_consensus_prob for {key}")
 
     if "hours_to_game" not in bet_copy:
         start_dt = _start_time_from_gid(bet_copy["game_id"])
