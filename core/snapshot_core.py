@@ -720,6 +720,8 @@ def compare_and_flag_new_rows(
                 "prev_blended_fv": (prior or {}).get("blended_fv"),
             }
         )
+        # Ensure baseline market probability persists for display
+        entry["prev_market_prob"] = (prior or {}).get("market_prob")
         movement = track_and_update_market_movement(
             entry,
             MARKET_EVAL_TRACKER,
@@ -1069,6 +1071,7 @@ def build_snapshot_rows(
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
+            row["prev_market_prob"] = (prior_row or {}).get("market_prob")
 
             # Compute movement and update tracker
             movement = track_and_update_market_movement(
@@ -1401,6 +1404,7 @@ def expand_snapshot_rows_with_kelly(
                 "prev_blended_fv": (prior_row or {}).get("blended_fv"),
             }
         )
+        row["prev_market_prob"] = (prior_row or {}).get("market_prob")
 
         row["book"] = row.get("book", row.get("best_book"))
 
@@ -1506,6 +1510,7 @@ def expand_snapshot_rows_with_kelly(
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
+            expanded_row["prev_market_prob"] = (prior_row or {}).get("market_prob")
             movement = track_and_update_market_movement(
                 expanded_row,
                 MARKET_EVAL_TRACKER,
