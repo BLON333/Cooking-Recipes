@@ -150,8 +150,8 @@ def track_and_update_market_movement(
     entry.update(movement)
     entry["prev_market_odds"] = prev_market_odds
 
-    # Only update tracker if a meaningful change occurred
-    if movement.get("mkt_movement") == "same" and all(
+    # Only update tracker if a meaningful change occurred for existing entries
+    if prior is not None and movement.get("mkt_movement") == "same" and all(
         movement.get(k) == "same"
         for k in [
             "ev_movement",
