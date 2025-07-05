@@ -9,7 +9,7 @@ import glob
 
 from core.market_eval_tracker import build_tracker_key
 from core.utils import safe_load_json
-from core.snapshot_core import _assign_snapshot_role
+from core.snapshot_core import _assign_snapshot_role, ensure_baseline_consensus_prob
 from core.market_normalizer import normalize_market_key
 from core.pending_bets import (
     infer_market_class,
@@ -99,10 +99,14 @@ def build_pending(rows: list, tracker: dict) -> dict:
         if "best_book" not in roles:
             roles.append("best_book")
         entry["snapshot_roles"] = roles
+        if "baseline_consensus_prob" in row and row["baseline_consensus_prob"] is not None:
+            entry["baseline_consensus_prob"] = row["baseline_consensus_prob"]
         if key in tracker and isinstance(tracker[key], dict):
             cp = tracker[key].get("consensus_prob")
             if cp is not None:
-                entry["baseline_consensus_prob"] = cp
+                entry.setdefault("baseline_consensus_prob", cp)
+        if "baseline_consensus_prob" not in entry or entry["baseline_consensus_prob"] is None:
+            entry["baseline_consensus_prob"] = row.get("consensus_prob") or row.get("market_prob")
         pending[key] = entry
     return pending
 
@@ -115,6 +119,7 @@ def main() -> None:
 
     tracker = load_market_conf_tracker()
     filtered = filter_rows(rows)
+    ensure_baseline_consensus_prob(filtered)
     new_rows = build_pending(filtered, tracker)
 
     for key, row in new_rows.items():

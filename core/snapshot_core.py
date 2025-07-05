@@ -117,6 +117,14 @@ def warn_missing_baselines(rows: list) -> None:
             pass
 
 
+def ensure_baseline_consensus_prob(rows: list) -> None:
+    """Populate ``baseline_consensus_prob`` when missing."""
+    for row in rows:
+        key = f"{row.get('game_id')}:{row.get('market')}:{row.get('side')}"
+        if "baseline_consensus_prob" not in row or row["baseline_consensus_prob"] is None:
+            row["baseline_consensus_prob"] = row.get("consensus_prob") or row.get("market_prob")
+
+
 def format_percentage(val: Optional[float]) -> str:
     """Return a percentage string like ``41.2%`` or ``–``."""
     try:
@@ -1609,6 +1617,7 @@ def expand_snapshot_rows_with_kelly(
                 deduped.append(row)
                 seen.add(key)
 
+    ensure_baseline_consensus_prob(deduped)
     warn_missing_baselines(deduped)
     save_tracker(MARKET_EVAL_TRACKER)
     return deduped
