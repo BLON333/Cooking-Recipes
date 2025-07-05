@@ -48,20 +48,25 @@ def filter_rows(rows: list) -> list:
     for row in rows:
         try:
             logged = bool(row.get("logged"))
-            ev = float(row.get("ev_percent", 0))
-            rk = float(row.get("raw_kelly", 0))
+            ev = float(row.get("ev_percent", 0) or 0)
+            rk = float(row.get("raw_kelly", 0) or 0)
+            stake = float(row.get("stake", row.get("full_stake", 0)) or 0)
         except Exception:
             continue
+
         try:
-            hours = float(row.get("hours_to_game", 0))
+            hours = float(row.get("hours_to_game", 0) or 0)
             if logged and hours < 0:
                 continue  # drop logged bets for past games
         except Exception:
             pass
-        # Allow logged bets so they remain in pending and stay refreshed
-        if ev < 5.0 or rk < 1.0:
+
+        # Skip only if all metrics fail their thresholds
+        if ev < 5.0 and rk < 1.0 and stake < 1.0:
             continue  # Filter weak edges only
+
         filtered.append(row)
+
     return filtered
 
 
