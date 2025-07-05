@@ -36,3 +36,25 @@ def find_latest_snapshot_tracker_path(game_date: date | str, directory: str = SN
 
     # Final fallback to the live tracker
     return TRACKER_PATH
+
+
+def find_latest_market_snapshot_path(backtest_dir: str = "backtest") -> str | None:
+    """Return the most recently modified market snapshot file.
+
+    Parameters
+    ----------
+    backtest_dir : str, optional
+        Directory containing ``market_snapshot_*.json`` files.
+
+    Returns
+    -------
+    str | None
+        Path to the latest snapshot file or ``None`` if none found.
+    """
+
+    pattern = os.path.join(backtest_dir, "market_snapshot_*.json")
+    matches = glob.glob(pattern)
+    if not matches:
+        return None
+    return max(matches, key=os.path.getmtime)
+
