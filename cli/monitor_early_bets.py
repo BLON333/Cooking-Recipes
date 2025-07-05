@@ -173,7 +173,13 @@ def update_pending_from_snapshot(rows: list, path: str = PENDING_BETS_PATH) -> N
         except Exception:
             pass
         # Refresh logged bets each loop instead of discarding them
-        if ev < 5.0 or rk < 1.0:
+        try:
+            stake = float(row.get("stake", row.get("full_stake", 0)) or 0)
+        except Exception:
+            stake = 0.0
+
+        # Skip only if all metrics fail their thresholds
+        if ev < 5.0 and rk < 1.0 and stake < 1.0:
             continue  # Still filter weak edges
         key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
         entry = {
