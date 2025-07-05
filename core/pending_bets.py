@@ -66,6 +66,11 @@ def load_pending_bets(path: str = PENDING_BETS_PATH) -> dict:
 
 def save_pending_bets(pending: dict, path: str = PENDING_BETS_PATH) -> None:
     """Persist ``pending`` to ``path`` atomically using a lock."""
+    from core.market_normalizer import normalize_market_key
+
+    for row in pending.values():
+        market = row.get("market", "")
+        row["market_class"] = normalize_market_key(market).get("market_class", "main")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     lock = f"{path}.lock"
     tmp = f"{path}.tmp"
