@@ -96,6 +96,27 @@ def should_log_movement() -> bool:
     return False
 
 
+def warn_missing_baselines(rows: list) -> None:
+    """Print diagnostics for rows missing ``baseline_consensus_prob``."""
+    missing = [r for r in rows if r.get("baseline_consensus_prob") is None]
+    for r in missing:
+        key = f"{r.get('game_id')}:{r.get('market')}:{r.get('side')}"
+        print(
+            f"⚠️ MISSING BASELINE → {key} | consensus_prob = {r.get('consensus_prob')}"
+        )
+    if missing:
+        print(f"⚠️ {len(missing)} snapshot rows missing baseline_consensus_prob")
+        try:
+            os.makedirs("logs/debug", exist_ok=True)
+            with open("logs/debug/missing_baseline_keys.txt", "w") as f:
+                for row in missing:
+                    f.write(
+                        f"{row.get('game_id')}:{row.get('market')}:{row.get('side')}\n"
+                    )
+        except Exception:
+            pass
+
+
 def format_percentage(val: Optional[float]) -> str:
     """Return a percentage string like ``41.2%`` or ``–``."""
     try:
@@ -1588,6 +1609,7 @@ def expand_snapshot_rows_with_kelly(
                 deduped.append(row)
                 seen.add(key)
 
+    warn_missing_baselines(deduped)
     save_tracker(MARKET_EVAL_TRACKER)
     return deduped
 
@@ -1652,6 +1674,8 @@ def dispatch_snapshot_rows(
                 )
             ]
     counts["post_role"] = len(df)
+
+    warn_missing_baselines(df.to_dict("records"))
 
     if counts["post_role"] == 0:
         send_bet_snapshot_to_discord(
