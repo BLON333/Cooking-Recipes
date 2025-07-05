@@ -2553,6 +2553,12 @@ def run_batch_logging(
     load_dotenv()
 
     global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE
+    from core.market_conf_tracker import clean_stale_tracker_entries
+
+    # Clean broken or stale tracker entries before loading
+    removed_count = clean_stale_tracker_entries(max_age_days=5)
+    if removed_count:
+        print(f"🧹 Tracker cleanup removed {removed_count} stale entries")
     min_odds, max_odds = MIN_NEGATIVE_ODDS, MAX_POSITIVE_ODDS
     min_ev_pct = round(min_ev * 100, 2)
     LOGGER_CONFIG = (
