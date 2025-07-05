@@ -226,6 +226,12 @@ def _game_id_display_fields(game_id: str) -> tuple[str, str, str]:
     return date, matchup, time
 
 
+def print_tracker_snapshot_keys(tracker):
+    print(f"📋 Tracker snapshot keys ({len(tracker)} entries):")
+    for key in tracker:
+        print(f" - {key}")
+
+
 def get_closest_odds(game_id: str, market_odds: dict):
     """Return odds for ``game_id`` with fuzzy suffix matching.
 
@@ -1442,6 +1448,7 @@ def write_to_csv(
     row["Time"] = time_formatted
     key = (row["game_id"], row["market"], row["side"])
     tracker_key = build_tracker_key(row["game_id"], row["market"], row["side"])
+    print(f"🔍 Evaluating key: {tracker_key}")
 
     new_conf = row.get("consensus_prob")
     try:
@@ -1673,7 +1680,7 @@ def write_to_csv(
             # Wrap any problematic strings with quotes to avoid malformed CSV rows
             for k, v in row_to_write.items():
                 if isinstance(v, str) and ("," in v or "\n" in v):
-                    row_to_write[k] = f'"{str(v).replace("\"", "'")}"'
+                    row_to_write[k] = '"' + str(v).replace('"', "'") + '"'
 
             writer.writerow(row_to_write)
 
@@ -2629,6 +2636,7 @@ def run_batch_logging(
     MARKET_EVAL_TRACKER.clear()
     MARKET_EVAL_TRACKER.update(load_eval_tracker())
     MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
+    print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
     # ✅ Ensure all required columns exist for downstream filters like should_log_bet
     required_cols = [
