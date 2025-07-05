@@ -70,6 +70,23 @@ def build_pending(rows: list, tracker: dict) -> dict:
     pending: dict = {}
     for row in rows:
         key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
+
+        baseline = None
+        if key in existing and isinstance(existing[key], dict):
+            baseline = existing[key].get("baseline_consensus_prob")
+
+        if baseline is None and "baseline_consensus_prob" in row:
+            baseline = row["baseline_consensus_prob"]
+
+        if baseline is None and key in tracker and isinstance(tracker[key], dict):
+            baseline = tracker[key].get("consensus_prob")
+
+        if baseline is None:
+            baseline = row.get("consensus_prob") or row.get("market_prob")
+
+        if baseline is not None:
+            row["baseline_consensus_prob"] = baseline
+
         entry = {
             "game_id": row.get("game_id"),
             "market": row.get("market"),
@@ -101,12 +118,6 @@ def build_pending(rows: list, tracker: dict) -> dict:
         entry["snapshot_roles"] = roles
         if "baseline_consensus_prob" in row and row["baseline_consensus_prob"] is not None:
             entry["baseline_consensus_prob"] = row["baseline_consensus_prob"]
-        if key in tracker and isinstance(tracker[key], dict):
-            cp = tracker[key].get("consensus_prob")
-            if cp is not None:
-                entry.setdefault("baseline_consensus_prob", cp)
-        if "baseline_consensus_prob" not in entry or entry["baseline_consensus_prob"] is None:
-            entry["baseline_consensus_prob"] = row.get("consensus_prob") or row.get("market_prob")
         pending[key] = entry
     return pending
 
@@ -124,8 +135,6 @@ def main() -> None:
 
     for key, row in new_rows.items():
         existing_row = existing.get(key, {})
-        if "baseline_consensus_prob" in existing_row:
-            row["baseline_consensus_prob"] = existing_row["baseline_consensus_prob"]
         for field in ["queued_ts", "logged", "entry_type"]:
             if field in existing_row and field not in row:
                 row[field] = existing_row[field]
