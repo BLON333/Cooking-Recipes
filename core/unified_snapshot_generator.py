@@ -29,7 +29,11 @@ from core.snapshot_core import (
     _assign_snapshot_role,
     ensure_baseline_consensus_prob,
 )
-from core.market_eval_tracker import load_tracker, save_tracker
+from core.market_eval_tracker import (
+    load_tracker,
+    save_tracker,
+    build_tracker_key,
+)
 from core.pending_bets import load_pending_bets
 from core.book_helpers import ensure_consensus_books
 
@@ -352,6 +356,18 @@ def main() -> None:
         out_dir = "backtest"
         final_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.json")
         tmp_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.tmp")
+
+        # ---------------------------------------------------------------
+        # Preserve baseline consensus probability
+        # ---------------------------------------------------------------
+        pending_bets = load_pending_bets()
+        for row in all_rows:
+            key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
+            baseline = pending_bets.get(key, {}).get("baseline_consensus_prob")
+            if baseline is None:
+                baseline = row.get("market_prob") or row.get("consensus_prob")
+            if baseline is not None:
+                row["baseline_consensus_prob"] = round(baseline, 4)
 
         ensure_baseline_consensus_prob(all_rows)
 
