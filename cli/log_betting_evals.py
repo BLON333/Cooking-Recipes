@@ -2672,24 +2672,11 @@ def run_batch_logging(
 
     # 📂 Load from latest snapshot first
     snapshot_path = find_latest_market_snapshot_path()
+    MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(snapshot_path)
     if snapshot_path:
-        try:
-            with open(snapshot_path, "r") as f:
-                snapshot_rows = json.load(f)
-            for row in snapshot_rows:
-                key = build_tracker_key(
-                    row.get("game_id"), row.get("market"), row.get("side")
-                )
-                baseline = row.get("baseline_consensus_prob")
-                if baseline is not None:
-                    MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {
-                        "market_prob": baseline
-                    }
-            print(
-                f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
-            )
-        except Exception as e:
-            print(f"❌ Failed to parse snapshot tracker {snapshot_path}: {e}")
+        print(
+            f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
+        )
 
     # 🔁 Fallback to pending if missing
     from core.pending_bets import load_pending_bets
