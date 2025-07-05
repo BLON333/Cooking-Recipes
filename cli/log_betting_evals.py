@@ -2531,7 +2531,7 @@ def run_batch_logging(
 
     load_dotenv()
 
-    global LOGGER_CONFIG
+    global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE
     min_odds, max_odds = MIN_NEGATIVE_ODDS, MAX_POSITIVE_ODDS
     min_ev_pct = round(min_ev * 100, 2)
     LOGGER_CONFIG = (
@@ -2628,6 +2628,7 @@ def run_batch_logging(
 
     MARKET_EVAL_TRACKER.clear()
     MARKET_EVAL_TRACKER.update(load_eval_tracker())
+    MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
 
     # ✅ Ensure all required columns exist for downstream filters like should_log_bet
     required_cols = [
