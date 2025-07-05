@@ -44,6 +44,7 @@ from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
 import re
 import warnings
+from core.snapshot_tracker_loader import find_latest_snapshot_tracker_path
 
 load_dotenv()
 from core.logger import get_logger, set_log_level
@@ -2552,7 +2553,7 @@ def run_batch_logging(
 
     load_dotenv()
 
-    global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE
+    global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE, SNAPSHOT_PATH_USED
     from core.market_conf_tracker import clean_stale_tracker_entries
 
     # Clean broken or stale tracker entries before loading
@@ -2653,9 +2654,27 @@ def run_batch_logging(
     else:
         market_evals_df = pd.DataFrame()
 
+    # Load the live tracker and snapshot baseline
     MARKET_EVAL_TRACKER.clear()
     MARKET_EVAL_TRACKER.update(load_eval_tracker())
-    MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
+
+    # ------------------------------------------------------------------
+    # Snapshot tracker baseline
+    # ------------------------------------------------------------------
+    global SNAPSHOT_PATH_USED
+    try:
+        date_str = os.path.basename(os.path.normpath(eval_folder))
+        game_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        game_date = None
+
+    if game_date:
+        SNAPSHOT_PATH_USED = find_latest_snapshot_tracker_path(game_date)
+        MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(SNAPSHOT_PATH_USED)
+    else:
+        SNAPSHOT_PATH_USED = None
+        MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
+
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
     # ✅ Ensure all required columns exist for downstream filters like should_log_bet
