@@ -331,10 +331,17 @@ def should_log_bet(
             f"⚠️ Theme stake exists ({theme_total}) but no CSV stake for {side}. Tracker may be stale."
         )
         delta_base = 0.0
-    if new_bet.get("entry_type") in {"first", "top-up"} and new_bet.get("consensus_move", 0.0) < new_bet.get("required_move", 0.0):
-        new_bet["skip_reason"] = "not_confirmed"
+
+    consensus_move = float(new_bet.get("consensus_move", 0.0) or 0.0)
+    required_move = float(new_bet.get("required_move", 0.0) or 0.0)
+
+    if consensus_move >= required_move and not new_bet.get("movement_confirmed"):
+        new_bet["movement_confirmed"] = True
+
+    if not new_bet.get("movement_confirmed") and new_bet.get("entry_type") in {"first", "top-up"} and consensus_move < required_move:
+        new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
         new_bet["stake"] = 0.0
-        return build_skipped_evaluation("not_confirmed", game_id, new_bet)
+        return build_skipped_evaluation(SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet)
 
     tracker_key = f"{game_id}:{market}:{side}"
 
@@ -353,7 +360,14 @@ def should_log_bet(
             from core.pending_bets import queue_pending_bet
 
             baseline = new_bet.get("consensus_prob") or new_bet.get("market_prob")
-            queue_pending_bet({**new_bet, "baseline_consensus_prob": baseline})
+            queued = {
+                **new_bet,
+                "baseline_consensus_prob": baseline,
+                "last_skip_reason": "time_blocked",
+            }
+            if consensus_move >= required_move:
+                queued["movement_confirmed"] = True
+            queue_pending_bet(queued)
         except Exception:
             pass
         if verbose:
