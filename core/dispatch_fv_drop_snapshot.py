@@ -171,9 +171,6 @@ def main() -> None:
 
     filtered = []
     for r in rows:
-        if r.get("logged"):
-            skip_counts["logged"] += 1
-            # Logged bets should still flow through remaining filters
         try:
             ev = float(r.get("ev_percent", 0) or 0)
         except Exception:
@@ -181,16 +178,20 @@ def main() -> None:
         if ev < 5:
             skip_counts["ev_below_5"] += 1
             continue
+
+        base = r.get("baseline_consensus_prob")
+        curr = r.get("market_prob") or r.get("consensus_prob")
         try:
-            rk = float(r.get("raw_kelly", 0) or 0)
+            if base is not None and curr is not None and float(base) >= float(curr):
+                skip_counts["market_not_moved"] += 1
+                continue
         except Exception:
-            rk = 0.0
-        if rk < 1:
-            skip_counts["kelly_below_1"] += 1
+            pass
+
+        if r.get("logged") or r.get("visible_in_snapshot") is False:
+            skip_counts["hidden_or_logged"] += 1
             continue
-        if r.get("skip_reason"):
-            skip_counts["skipped_unknown"] += 1
-            continue
+
         filtered.append(r)
     rows = filtered
 

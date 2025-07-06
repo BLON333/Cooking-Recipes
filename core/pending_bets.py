@@ -71,6 +71,8 @@ def save_pending_bets(pending: dict, path: str = PENDING_BETS_PATH) -> None:
     for row in pending.values():
         market = row.get("market", "")
         row["market_class"] = normalize_market_key(market).get("market_class", "main")
+        # Strip transient skip_reason before persisting
+        row.pop("skip_reason", None)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     lock = f"{path}.lock"
     tmp = f"{path}.tmp"
@@ -114,7 +116,7 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     bet_copy = {
         k: v
         for k, v in bet.items()
-        if not k.startswith("_") and k != "adjusted_kelly"
+        if not k.startswith("_") and k not in {"adjusted_kelly", "skip_reason"}
     }
 
     # Ensure required snapshot metadata is present
@@ -134,6 +136,12 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
     bet_copy["logged"] = bool(existing.get("logged", False))
     if "logged_ts" in existing:
         bet_copy["logged_ts"] = existing["logged_ts"]
+
+    # Preserve and initialize expanded pending state fields
+    bet_copy["movement_confirmed"] = existing.get("movement_confirmed", False)
+    bet_copy["visible_in_snapshot"] = existing.get("visible_in_snapshot", True)
+    if "last_skip_reason" in existing:
+        bet_copy["last_skip_reason"] = existing["last_skip_reason"]
 
     existing_bets = load_pending_bets()
     existing_row = existing_bets.get(key)
@@ -167,6 +175,9 @@ def queue_pending_bet(bet: dict, path: str = PENDING_BETS_PATH) -> None:
         if r not in existing_roles:
             existing_roles.append(r)
     bet_copy["snapshot_roles"] = existing_roles
+
+    # Remove transient fields before saving
+    bet_copy.pop("skip_reason", None)
 
     pending[key] = bet_copy
     save_pending_bets(pending, path)
