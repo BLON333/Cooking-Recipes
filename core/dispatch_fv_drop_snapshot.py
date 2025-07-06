@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 from core.config import DEBUG_MODE, VERBOSE_MODE
 import os
-import sys
 from core.bootstrap import *  # noqa
 
-"""Dispatch FV drop snapshot (market probability increases) from pending_bets.json."""
-from core.utils import parse_game_id
+"""Dispatch FV drop snapshot (market probability increases) using the latest snapshot."""
+from core.utils import parse_game_id, safe_load_json
 
 import argparse
 from typing import List
 from collections import Counter
-import re
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -20,10 +18,9 @@ load_dotenv()
 from core.snapshot_core import format_for_display, send_bet_snapshot_to_discord
 from core.logger import get_logger
 from core.should_log_bet import MAX_POSITIVE_ODDS, MIN_NEGATIVE_ODDS
-from core.book_helpers import parse_american_odds, filter_by_odds, ensure_side
+from core.book_helpers import filter_by_odds, ensure_side
 from core.book_whitelist import ALLOWED_BOOKS
-from core.pending_bets import load_pending_bets
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 
 # Subset of books to include when posting to the main FV Drop webhook
 FV_DROP_ALLOWED_BOOKS = [
@@ -39,13 +36,11 @@ logger = get_logger(__name__)
 logger.debug("✅ Loaded webhook: %s", os.getenv("DISCORD_FV_DROP_WEBHOOK_URL"))
 
 
-def load_pending_rows() -> list:
-    """Return pending bets loaded from disk."""
-    pending = load_pending_bets()
-    rows = list(pending.values())
-    logger.info(
-        "📊 Rendering snapshot from %d entries in pending_bets.json", len(rows)
-    )
+def load_latest_snapshot_rows() -> list:
+    """Return snapshot rows from the most recent snapshot file."""
+    path = find_latest_market_snapshot_path("backtest")
+    rows = safe_load_json(path) if path else []
+    logger.info("📊 Loaded %d snapshot rows from %s", len(rows), path)
     for r in rows:
         ensure_side(r)
     return rows
@@ -77,31 +72,6 @@ def filter_main_lines(df: pd.DataFrame) -> pd.DataFrame:
         return df[df["Market Class"] == "Main"]
     return df
 
-
-def apply_baseline_annotations(rows: list, pending: dict) -> None:
-    """Inject baseline consensus display strings into ``rows``."""
-    baseline_map = {
-        key: (bet.get("baseline_consensus_prob"))
-        for key, bet in pending.items()
-        if isinstance(bet, dict)
-    }
-
-    for r in rows:
-        key = build_tracker_key(r.get("game_id"), r.get("market"), r.get("side"))
-        baseline = baseline_map.get(key)
-        try:
-            curr = float(r.get("consensus_prob", r.get("market_prob")))
-        except Exception:
-            curr = None
-        try:
-            base_val = float(baseline) if baseline is not None else None
-        except Exception:
-            base_val = None
-
-        if base_val is not None and curr is not None:
-            r["mkt_prob_display"] = f"{base_val * 100:.1f}% → {curr * 100:.1f}%"
-        elif curr is not None:
-            r["mkt_prob_display"] = f"{curr * 100:.1f}%"
 
 
 def is_market_prob_increasing(val: str) -> bool:
@@ -153,11 +123,15 @@ def main() -> None:
     if args.min_ev > args.max_ev:
         args.max_ev = args.min_ev
 
-    rows = load_pending_rows()
+    rows = load_latest_snapshot_rows()
     if not rows:
-        logger.warning(
-            "⚠️ pending_bets.json empty or not found – skipping dispatch"
-        )
+        logger.warning("⚠️ No snapshot rows found – skipping dispatch")
+        return
+
+    rows = [r for r in rows if "fv_drop" in (r.get("snapshot_roles") or [])]
+    logger.info("🧾 Snapshot rows for role='fv_drop': %d", len(rows))
+    if not rows:
+        logger.warning("⚠️ No snapshot rows for role='fv_drop' — skipping dispatch")
         return
 
     for r in rows:
@@ -209,10 +183,6 @@ def main() -> None:
             seen.add(key)
             deduped.append(r)
     rows = deduped
-
-    # Lookup baseline consensus probabilities from pending_bets.json
-    pending = load_pending_bets()
-    apply_baseline_annotations(rows, pending)
 
     df = format_for_display(rows, include_movement=False)
 

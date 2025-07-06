@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 from core import config
 import os
-import sys
 from core.bootstrap import *  # noqa
 
-"""Dispatch best-book snapshot from pending_bets.json."""
-from core.utils import parse_game_id
+"""Dispatch best-book snapshot using the latest snapshot file."""
+from core.utils import parse_game_id, safe_load_json
 
 import argparse
 from dotenv import load_dotenv
@@ -16,7 +15,7 @@ load_dotenv()
 from core.snapshot_core import format_for_display, send_bet_snapshot_to_discord
 from core.book_helpers import ensure_side
 import pandas as pd
-from core.pending_bets import load_pending_bets
+from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.logger import get_logger
 from collections import Counter
 
@@ -26,11 +25,11 @@ logger = get_logger(__name__)
 logger.debug("✅ Loaded webhook: %s", os.getenv("DISCORD_BEST_BOOK_MAIN_WEBHOOK_URL"))
 
 
-def load_pending_rows() -> list:
-    """Return pending bets loaded from disk."""
-    pending = load_pending_bets()
-    rows = list(pending.values())
-    logger.info("📊 Rendering snapshot from %d entries in pending_bets.json", len(rows))
+def load_latest_snapshot_rows() -> list:
+    """Return snapshot rows from the most recent snapshot file."""
+    path = find_latest_market_snapshot_path("backtest")
+    rows = safe_load_json(path) if path else []
+    logger.info("📊 Loaded %d snapshot rows from %s", len(rows), path)
     for r in rows:
         ensure_side(r)
         if "market_class" not in r:
@@ -83,9 +82,9 @@ def main() -> None:
     if args.min_ev > args.max_ev:
         args.max_ev = args.min_ev
 
-    rows = load_pending_rows()
+    rows = load_latest_snapshot_rows()
     if not rows:
-        logger.warning("⚠️ pending_bets.json empty or not found – skipping dispatch")
+        logger.warning("⚠️ No snapshot rows found – skipping dispatch")
         return
 
     for r in rows:
@@ -93,9 +92,9 @@ def main() -> None:
             r["book"] = r["best_book"]
 
     rows = [r for r in rows if "best_book" in r.get("snapshot_roles", [])]
-    logger.info("🧾 Pending rows for role='best_book': %d", len(rows))
+    logger.info("🧾 Snapshot rows for role='best_book': %d", len(rows))
     if not rows:
-        logger.warning("⚠️ No pending rows for role='best_book' — skipping dispatch")
+        logger.warning("⚠️ No snapshot rows for role='best_book' — skipping dispatch")
         return
 
     rows = filter_by_date(rows, args.date)
