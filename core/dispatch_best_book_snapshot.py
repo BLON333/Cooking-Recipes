@@ -103,9 +103,12 @@ def main() -> None:
     skip_counts = Counter()
     filtered = []
     for r in rows:
+        if r.get("logged") and float(r.get("hours_to_game", 0)) > 0:
+            filtered.append(r)
+            skip_counts["logged"] += 1
+            continue
         if r.get("logged"):
             skip_counts["logged"] += 1
-            # Logged bets should still flow through remaining filters
         try:
             ev = float(r.get("ev_percent", 0))
         except Exception:
@@ -133,7 +136,12 @@ def main() -> None:
         df["Market Class"] = df["market_class"]
 
     if "ev_percent" in df.columns:
-        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        mask_ev = (df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)
+        if "logged" in df.columns and "hours_to_game" in df.columns:
+            logged_mask = df["logged"] & (df["hours_to_game"] > 0)
+            df = df[mask_ev | logged_mask]
+        else:
+            df = df[mask_ev]
         logger.info(
             "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
             len(df),
@@ -155,6 +163,8 @@ def main() -> None:
         stake_vals = pd.Series([0] * len(df))
 
     mask = (stake_vals >= 1.0) | df.get("is_prospective", False)
+    if "logged" in df.columns and "hours_to_game" in df.columns:
+        mask = mask | (df["logged"] & (df["hours_to_game"] > 0))
     df = df[mask]
     print(f"🧪 Post-stake filter row count: {df.shape[0]}")
     try:
@@ -180,6 +190,8 @@ def main() -> None:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
     elif "Logged?" not in df.columns:
         df["Logged?"] = ""
+    if "logged" in df.columns and "Status" not in df.columns:
+        df["Status"] = df["logged"].apply(lambda x: "🟢 LOGGED" if bool(x) else "")
     if df.empty and not args.force_dispatch:
         logger.warning("⚠️ Snapshot DataFrame is empty — nothing to dispatch.")
         return
@@ -212,6 +224,8 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
+    if "Status" in df.columns:
+        columns.append("Status")
     missing = [c for c in columns if c not in df.columns]
     if missing:
         logger.warning(f"⚠️ Missing required columns: {missing} — skipping dispatch.")

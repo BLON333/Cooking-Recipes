@@ -175,6 +175,10 @@ def main() -> None:
             ev = float(r.get("ev_percent", 0) or 0)
         except Exception:
             ev = 0.0
+        if r.get("logged") and float(r.get("hours_to_game", 0)) > 0:
+            filtered.append(r)
+            skip_counts["logged"] += 1
+            continue
         if ev < 5:
             skip_counts["ev_below_5"] += 1
             continue
@@ -188,10 +192,12 @@ def main() -> None:
         except Exception:
             pass
 
-        if r.get("logged") or r.get("visible_in_snapshot") is False:
+        if r.get("visible_in_snapshot") is False:
             skip_counts["hidden_or_logged"] += 1
             continue
-
+    
+        if r.get("logged"):
+            skip_counts["logged"] += 1
         filtered.append(r)
     rows = filtered
 
@@ -220,7 +226,12 @@ def main() -> None:
         logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
 
     if "ev_percent" in df.columns:
-        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        mask_ev = (df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)
+        if "logged" in df.columns and "hours_to_game" in df.columns:
+            logged_mask = df["logged"] & (df["hours_to_game"] > 0)
+            df = df[mask_ev | logged_mask]
+        else:
+            df = df[mask_ev]
         logger.info(
             "🧪 Dispatch filter: %d rows with %.1f ≤ EV%% ≤ %.1f",
             len(df),
@@ -242,6 +253,8 @@ def main() -> None:
         stake_vals = pd.Series([0] * len(df))
 
     mask = (stake_vals >= 1.0) | df.get("is_prospective", False)
+    if "logged" in df.columns and "hours_to_game" in df.columns:
+        mask = mask | (df["logged"] & (df["hours_to_game"] > 0))
     df = df[mask]
     print(f"🧪 Post-stake filter row count: {df.shape[0]}")
     try:
@@ -256,6 +269,8 @@ def main() -> None:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
     elif "Logged?" not in df.columns:
         df["Logged?"] = ""
+    if "logged" in df.columns and "Status" not in df.columns:
+        df["Status"] = df["logged"].apply(lambda x: "🟢 LOGGED" if bool(x) else "")
 
     if "label" in df.columns and "Bet" in df.columns:
         df["Bet"] = df["label"] + " " + df["Bet"]
@@ -307,6 +322,12 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
+    if "Status" in df_fv_all.columns:
+        columns.append("Status")
+    if "Status" in df_fv_filtered.columns:
+        columns.append("Status")
+    if "Status" in df.columns:
+        columns.append("Status")
     missing = [c for c in columns if c not in df.columns]
     if missing:
         logger.warning(f"⚠️ Missing required columns: {missing} — skipping dispatch.")
@@ -315,7 +336,12 @@ def main() -> None:
 
     # ✅ Filter to only show rows where market probability increased
     if "Mkt %" in df.columns:
-        df = df[df["Mkt %"].apply(is_market_prob_increasing)]
+        inc_mask = df["Mkt %"].apply(is_market_prob_increasing)
+        if "logged" in df.columns and "hours_to_game" in df.columns:
+            logged_mask = df["logged"] & (df["hours_to_game"] > 0)
+            df = df[inc_mask | logged_mask]
+        else:
+            df = df[inc_mask]
 
     # Prepare DataFrame copies for sending to the different Discord channels
     df_main = filter_main_lines(df.copy())
@@ -352,9 +378,15 @@ def main() -> None:
         "Logged?",
     ]
     missing = [c for c in columns if c not in df_fv_filtered.columns]
+    missing_all = [c for c in columns if c not in df_fv_all.columns]
     if missing:
         logger.warning(
             f"⚠️ Missing required columns: {missing} — skipping dispatch."
+        )
+        return
+    if missing_all:
+        logger.warning(
+            f"⚠️ Missing required columns in all-books view: {missing_all} — skipping dispatch."
         )
         return
     df_fv_filtered = df_fv_filtered[columns]

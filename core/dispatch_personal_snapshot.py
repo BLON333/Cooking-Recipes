@@ -130,7 +130,12 @@ def main() -> None:
         logger.info("⏭️ Skip diagnostics: %s", dict(skip_counts))
 
     if "ev_percent" in df.columns:
-        df = df[(df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)]
+        mask_ev = (df["ev_percent"] >= args.min_ev) & (df["ev_percent"] <= args.max_ev)
+        if "logged" in df.columns and "hours_to_game" in df.columns:
+            logged_mask = df["logged"] & (df["hours_to_game"] > 0)
+            df = df[mask_ev | logged_mask]
+        else:
+            df = df[mask_ev]
 
     print(f"🧪 Pre-stake filter row count: {df.shape[0]}")
     try:
@@ -146,6 +151,8 @@ def main() -> None:
         stake_vals = pd.Series([0] * len(df))
 
     mask = (stake_vals >= 1.0) | df.get("is_prospective", False)
+    if "logged" in df.columns and "hours_to_game" in df.columns:
+        mask = mask | (df["logged"] & (df["hours_to_game"] > 0))
     df = df[mask]
     print(f"🧪 Post-stake filter row count: {df.shape[0]}")
     try:
@@ -181,6 +188,8 @@ def main() -> None:
         df["Logged?"] = df["logged"].apply(lambda x: "✅" if bool(x) else "")
     elif "Logged?" not in df.columns:
         df["Logged?"] = ""
+    if "logged" in df.columns and "Status" not in df.columns:
+        df["Status"] = df["logged"].apply(lambda x: "🟢 LOGGED" if bool(x) else "")
     if df.empty:
         if args.force_dispatch:
             logger.warning(
@@ -220,6 +229,8 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
+    if "Status" in df.columns:
+        columns.append("Status")
     missing = [c for c in columns if c not in df.columns]
     if missing:
         logger.warning(
