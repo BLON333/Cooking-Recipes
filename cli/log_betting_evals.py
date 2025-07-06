@@ -1607,7 +1607,7 @@ def write_to_csv(
             annotate_display_deltas(row, prior_row)
             row["_movement_str"] = row.get("mkt_prob_display")
             row["_movement"] = movement
-            row["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
         elif new_prob <= prior_prob:
             print("⛔ Market probability did not improve — skipping.")
@@ -1624,7 +1624,7 @@ def write_to_csv(
                     "status": "pending",
                     "timestamp": datetime.now().isoformat(),
                 }
-            row["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
         elif (new_prob - prior_prob) < threshold:
             delta = new_prob - prior_prob
@@ -1644,7 +1644,7 @@ def write_to_csv(
                     "status": "pending",
                     "timestamp": datetime.now().isoformat(),
                 }
-            row["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
 
     # Clean up non-persistent keys
