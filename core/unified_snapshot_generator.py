@@ -36,6 +36,7 @@ from core.market_eval_tracker import (
 )
 from core.pending_bets import load_pending_bets
 from core.book_helpers import ensure_consensus_books
+from core.market_pricer import kelly_fraction
 
 logger = get_logger(__name__)
 
@@ -180,6 +181,88 @@ def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
     return rows
 
 
+def _enrich_snapshot_row(row: dict) -> None:
+    """Populate enrichment fields on a snapshot row."""
+    # 🧩 Enrich: baseline
+    baseline = row.get("baseline_consensus_prob")
+    if baseline is None:
+        baseline = row.get("market_prob") or row.get("consensus_prob")
+    row["baseline_consensus_prob"] = baseline
+
+    curr = row.get("market_prob") or row.get("consensus_prob")
+
+    # 🧩 Enrich: movement
+    movement = "same"
+    if baseline is not None and curr is not None:
+        try:
+            diff = float(curr) - float(baseline)
+            if abs(diff) < 1e-6:
+                movement = "same"
+            elif diff > 0:
+                movement = "up"
+            else:
+                movement = "down"
+        except Exception:
+            movement = "same"
+    row["mkt_movement"] = movement
+
+    if baseline is not None and curr is not None and movement != "same":
+        row["mkt_prob_display"] = f"{baseline * 100:.1f}% → {curr * 100:.1f}%"
+    elif curr is not None:
+        row["mkt_prob_display"] = f"{curr * 100:.1f}%"
+    else:
+        row["mkt_prob_display"] = "-"
+
+    # 🧩 Enrich: stake
+    if row.get("stake") is None:
+        prob = row.get("blended_prob") or row.get("sim_prob")
+        odds = row.get("market_odds")
+        if prob is not None and odds is not None:
+            fraction = 0.125 if row.get("market_class") == "alternate" else 0.25
+            stake_val = kelly_fraction(prob, float(odds), fraction=fraction)
+            row["stake"] = stake_val
+            row["raw_kelly"] = stake_val
+
+    row["snapshot_stake"] = round(float(row.get("stake", 0)), 2)
+    row["is_prospective"] = row.get("stake", 0) == 0 and row.get("raw_kelly", 0) > 0
+
+    # 🧩 Enrich: FV tier
+    fv = row.get("blended_fv")
+    if fv is None:
+        p = row.get("blended_prob") or row.get("sim_prob")
+        if p:
+            fv = 1 / p
+            row["blended_fv"] = fv
+    if fv is not None:
+        if abs(fv) >= 150:
+            tier = "A"
+        elif abs(fv) >= 120:
+            tier = "B"
+        else:
+            tier = "C"
+        row["fv_tier"] = tier
+
+    # 🧩 Enrich: roles
+    roles = list(row.get("snapshot_roles") or [])
+    role = _assign_snapshot_role(row)
+    if role not in roles:
+        roles.append(role)
+    if is_live_snapshot_row(row) and "live" not in roles:
+        roles.append("live")
+    if is_personal_book_row(row) and "personal" not in roles:
+        roles.append("personal")
+    row["snapshot_role"] = role
+    row["snapshot_roles"] = list(dict.fromkeys(roles))
+
+    # 🧩 Enrich: stake visibility
+    visible = False
+    if row.get("logged") and row.get("hours_to_game", 0) > 0:
+        visible = True
+    elif roles:
+        visible = True
+    row["visible_in_snapshot"] = visible
+
+
 def build_snapshot_for_date(
     date_str: str,
     odds_data: dict | None,
@@ -224,20 +307,12 @@ def build_snapshot_for_date(
         len(rows),
     )
 
-    # 📦 Assign snapshot roles (include all rows)
+    # 📦 Assign snapshot roles and enrich rows
     snapshot_rows = []
     best_book_tracker: dict[tuple[str, str, str], dict] = {}
 
     for row in rows:
-        row["snapshot_roles"] = []
-
-        if is_live_snapshot_row(row):
-            row["snapshot_roles"].append("live")
-        if is_personal_book_row(row):
-            row["snapshot_roles"].append("personal")
-        role = _assign_snapshot_role(row)
-        row["snapshot_role"] = role
-        row["snapshot_roles"].append(role)
+        _enrich_snapshot_row(row)
 
         if is_best_book_row(row):
             key = (row.get("game_id"), row.get("market"), row.get("side"))
@@ -365,18 +440,7 @@ def main() -> None:
         final_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.json")
         tmp_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.tmp")
 
-        # ---------------------------------------------------------------
-        # Preserve baseline consensus probability
-        # ---------------------------------------------------------------
-        pending_bets = load_pending_bets()
-        for row in all_rows:
-            key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
-            baseline = pending_bets.get(key, {}).get("baseline_consensus_prob")
-            if baseline is None:
-                baseline = row.get("market_prob") or row.get("consensus_prob")
-            if baseline is not None:
-                row["baseline_consensus_prob"] = round(baseline, 4)
-
+        # 🧩 Enrich: baseline
         ensure_baseline_consensus_prob(all_rows)
 
         os.makedirs(out_dir, exist_ok=True)
