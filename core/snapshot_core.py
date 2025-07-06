@@ -473,6 +473,8 @@ def send_bet_snapshot_to_discord(
             mask = stake_vals >= min_stake
             if "is_prospective" in df.columns:
                 mask = mask | df["is_prospective"]
+            if "logged" in df.columns and "hours_to_game" in df.columns:
+                mask = mask | (df["logged"] & (df["hours_to_game"] > 0))
             df = df[mask]
     except Exception:
         pass
@@ -485,6 +487,8 @@ def send_bet_snapshot_to_discord(
 
     if "logged" in df.columns and "Logged?" not in df.columns:
         df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
+    if "logged" in df.columns and "Status" not in df.columns:
+        df["Status"] = df["logged"].apply(lambda x: "🟢 LOGGED" if bool(x) else "")
 
     if debug_counts is not None:
         for _, row in df.iterrows():
@@ -1032,6 +1036,9 @@ def build_snapshot_rows(
                 "logged": bool(entry.get("logged", False)),
                 "skip_reason": entry.get("skip_reason"),
             }
+            # \U0001f4cc Persisting logged bets until game start
+            if row.get("logged") and row.get("hours_to_game", 0) > 0:
+                row["snapshot_force_include"] = True
             parsed = parse_game_id(str(game_id))
             row["Date"] = parsed.get("date", "")
             row["Matchup"] = (
@@ -1189,6 +1196,11 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
 
         df["Stake"] = df.apply(_apply_snapshot_stake, axis=1)
 
+    if "logged" in df.columns and "Logged?" not in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
+    if "logged" in df.columns and "Status" not in df.columns:
+        df["Status"] = df["logged"].apply(lambda x: "🟢 LOGGED" if bool(x) else "")
+
     # Derive Stake from raw_kelly
     if "raw_kelly" in df.columns and "Stake" not in df.columns:
         df["Stake"] = df["raw_kelly"].round(2).astype(str) + "u"
@@ -1208,6 +1220,8 @@ def format_for_display(rows: list, include_movement: bool = False) -> pd.DataFra
         "FV",
         "EV",
         "Stake",
+        "Logged?",
+        "Status",
     ]
     for col in required_cols:
         if col not in df.columns:
@@ -1481,6 +1495,8 @@ def expand_snapshot_rows_with_kelly(
                     "consensus_books": per_book,
                 }
             )
+            if expanded_row.get("logged") and expanded_row.get("hours_to_game", 0) > 0:
+                expanded_row["snapshot_force_include"] = True
             if (
                 expanded_row.get("stake", 0) == 0
                 and expanded_row.get("raw_kelly", 0) > 0
@@ -1527,6 +1543,8 @@ def expand_snapshot_rows_with_kelly(
         if not expanded_any:
             row_copy = row.copy()
             row_copy["logged"] = bool(row.get("logged", False))
+            if row_copy.get("logged") and row_copy.get("hours_to_game", 0) > 0:
+                row_copy["snapshot_force_include"] = True
             if allowed_books:
                 row_copy["skip_reason"] = "book_filter"
             elif row.get("market_odds") is None:
@@ -1607,6 +1625,8 @@ def expand_snapshot_rows_with_kelly(
             row["label"] = "🔍" if row.get("is_prospective") else "🟢"
             row["skip_reason"] = bet.get("skip_reason", None)
             row["logged"] = bet.get("logged", False)
+            if row.get("logged") and row.get("hours_to_game", 0) > 0:
+                row["snapshot_force_include"] = True
             row["movement_confirmed"] = bet.get("movement_confirmed", False)
             row["visible_in_snapshot"] = bet.get("visible_in_snapshot", True)
             if "last_skip_reason" in bet:
@@ -1657,9 +1677,16 @@ def dispatch_snapshot_rows(
         tmp = df["EV"].astype(str).str.replace("%", "", regex=False)
         with pd.option_context("mode.use_inf_as_na", True):
             ev_vals = pd.to_numeric(tmp, errors="coerce")
-        df = df[(ev_vals >= ev_range[0]) & (ev_vals <= ev_range[1])]
+        mask_ev = (ev_vals >= ev_range[0]) & (ev_vals <= ev_range[1])
     elif "ev_percent" in df.columns:
-        df = df[(df["ev_percent"] >= ev_range[0]) & (df["ev_percent"] <= ev_range[1])]
+        mask_ev = (df["ev_percent"] >= ev_range[0]) & (df["ev_percent"] <= ev_range[1])
+    else:
+        mask_ev = pd.Series([True] * len(df), index=df.index)
+    if "logged" in df.columns and "hours_to_game" in df.columns:
+        logged_mask = df["logged"] & (df["hours_to_game"] > 0)
+        df = df[mask_ev | logged_mask]
+    else:
+        df = df[mask_ev]
     counts["post_ev"] = len(df)
 
     # Stake filter (prospective bets bypass minimum)
