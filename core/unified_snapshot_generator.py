@@ -29,6 +29,7 @@ from core.snapshot_core import (
     _assign_snapshot_role,
     ensure_baseline_consensus_prob,
 )
+from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.market_eval_tracker import (
     load_tracker,
     save_tracker,
@@ -263,6 +264,59 @@ def _enrich_snapshot_row(row: dict) -> None:
     row["visible_in_snapshot"] = visible
 
 
+def _load_prior_snapshot_map(directory: str = "backtest") -> dict:
+    """Return map of snapshot key to prior row."""
+    path = find_latest_market_snapshot_path(directory)
+    if not path or not os.path.exists(path):
+        return {}
+    data = safe_load_json(path)
+    if not isinstance(data, list):
+        return {}
+    mapping = {}
+    for r in data:
+        key = (r.get("game_id"), r.get("market"), r.get("side"))
+        mapping[key] = r
+    return mapping
+
+
+def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
+    """Merge persistent state fields from ``prior_map`` into ``rows``."""
+    fields = [
+        "logged",
+        "logged_ts",
+        "queued",
+        "queued_ts",
+        "skip_reason",
+        "baseline_consensus_prob",
+        "snapshot_roles",
+        "movement_confirmed",
+        "last_seen_loop_ts",
+    ]
+
+    now_ts = now_eastern().isoformat()
+    for row in rows:
+        key = (row.get("game_id"), row.get("market"), row.get("side"))
+        prior = prior_map.get(key)
+        if not prior:
+            row["last_seen_loop_ts"] = now_ts
+            continue
+        for field in fields:
+            if field == "baseline_consensus_prob":
+                if row.get(field) is None and prior.get(field) is not None:
+                    row[field] = prior[field]
+            elif field == "snapshot_roles":
+                prior_roles = prior.get(field)
+                if prior_roles:
+                    roles = set(prior_roles)
+                    roles.update(row.get(field, []))
+                    row[field] = sorted(roles)
+            else:
+                if not row.get(field) and prior.get(field) is not None:
+                    row[field] = prior[field]
+        row["last_seen_loop_ts"] = now_ts
+
+
+
 def build_snapshot_for_date(
     date_str: str,
     odds_data: dict | None,
@@ -442,6 +496,10 @@ def main() -> None:
 
         # 🧩 Enrich: baseline
         ensure_baseline_consensus_prob(all_rows)
+
+        # 🔁 Merge persistent fields from prior snapshot
+        prior_map = _load_prior_snapshot_map(out_dir)
+        _merge_persistent_fields(all_rows, prior_map)
 
         os.makedirs(out_dir, exist_ok=True)
         with open(tmp_path, "w") as f:
