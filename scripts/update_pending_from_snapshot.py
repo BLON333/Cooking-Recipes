@@ -104,8 +104,8 @@ def build_pending(rows: list, tracker: dict) -> dict:
             "blended_fv": row.get("blended_fv"),
             "book": row.get("book") or row.get("best_book"),
             "date_simulated": row.get("date_simulated"),
-            "skip_reason": row.get("skip_reason"),
             "logged": row.get("logged", False),
+            "last_skip_reason": row.get("skip_reason"),
         }
         entry["market_group"] = infer_market_class(entry.get("market"))
         if "market_class" not in entry:
@@ -140,9 +140,20 @@ def main() -> None:
 
     for key, row in new_rows.items():
         existing_row = existing.get(key, {})
-        for field in ["queued_ts", "logged", "entry_type"]:
+        preserve_fields = ["queued_ts", "logged", "entry_type"]
+        for field in preserve_fields:
             if field in existing_row and field not in row:
                 row[field] = existing_row[field]
+
+        row.setdefault(
+            "movement_confirmed", existing_row.get("movement_confirmed", False)
+        )
+        row.setdefault(
+            "visible_in_snapshot", existing_row.get("visible_in_snapshot", True)
+        )
+        if "last_skip_reason" not in row or row["last_skip_reason"] is None:
+            if "last_skip_reason" in existing_row:
+                row["last_skip_reason"] = existing_row["last_skip_reason"]
         existing[key] = row
 
     save_pending_bets(existing, PENDING_JSON)

@@ -1607,6 +1607,10 @@ def expand_snapshot_rows_with_kelly(
             row["label"] = "🔍" if row.get("is_prospective") else "🟢"
             row["skip_reason"] = bet.get("skip_reason", None)
             row["logged"] = bet.get("logged", False)
+            row["movement_confirmed"] = bet.get("movement_confirmed", False)
+            row["visible_in_snapshot"] = bet.get("visible_in_snapshot", True)
+            if "last_skip_reason" in bet:
+                row["last_skip_reason"] = bet["last_skip_reason"]
 
             role = _assign_snapshot_role(row)
             row["snapshot_role"] = role
