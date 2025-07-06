@@ -322,10 +322,7 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
-    if "Status" in df_fv_all.columns:
-        columns.append("Status")
-    if "Status" in df_fv_filtered.columns:
-        columns.append("Status")
+    # ✅ Ensure df_fv_all exists before referencing
     if "Status" in df.columns:
         columns.append("Status")
     missing = [c for c in columns if c not in df.columns]
@@ -377,6 +374,8 @@ def main() -> None:
         "Stake",
         "Logged?",
     ]
+    if "Status" in df_fv_filtered.columns or "Status" in df_fv_all.columns:
+        columns.append("Status")
     missing = [c for c in columns if c not in df_fv_filtered.columns]
     missing_all = [c for c in columns if c not in df_fv_all.columns]
     if missing:
