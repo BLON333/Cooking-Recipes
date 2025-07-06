@@ -2,9 +2,17 @@
 """Unified snapshot generator.
 
 This script combines the logic of the various snapshot generators into
-one builder that outputs a timestamped JSON file.  Each row is
-annotated with ``snapshot_roles`` describing which downstream snapshot
-categories it qualifies for.
+one builder that outputs a timestamped JSON file. Each row is annotated
+with ``snapshot_roles`` describing which downstream snapshot categories
+it qualifies for.
+
+Snapshot data flow after the snapshot-first refactor:
+
+- Simulation rows from ``load_simulations()``
+- Market odds from ``fetch_market_odds_from_api()`` or cached fallback data
+- Row enrichment via ``_enrich_snapshot_row()``
+- Persistent fields merged from the prior snapshot using
+  ``_merge_persistent_fields()``
 """
 
 from core.config import DEBUG_MODE, VERBOSE_MODE
@@ -33,9 +41,7 @@ from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.market_eval_tracker import (
     load_tracker,
     save_tracker,
-    build_tracker_key,
 )
-from core.pending_bets import load_pending_bets
 from core.book_helpers import ensure_consensus_books
 from core.market_pricer import kelly_fraction
 
@@ -101,85 +107,6 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
     return _core_build_snapshot_rows(sim_data, odds_json, min_ev=min_ev)
 
 
-def _pending_rows_for_date(date_str: str, min_ev: float = 5.0) -> list:
-    """Return pending bets for ``date_str`` meeting the EV threshold."""
-    pending = load_pending_bets()
-    rows: list = []
-
-    # Pending bets stored in pending_bets.json
-    for bet in list(pending.values()):
-        gid = bet.get("game_id")
-        if not gid:
-            continue
-        if parse_game_id(str(gid)).get("date") != date_str:
-            continue
-
-        try:
-            ev = float(bet.get("ev_percent", 0) or 0)
-        except Exception:
-            ev = 0.0
-        try:
-            rk = float(bet.get("raw_kelly", 0) or 0)
-        except Exception:
-            rk = 0.0
-        try:
-            stake_val = float(bet.get("stake", rk) or rk)
-        except Exception:
-            stake_val = rk
-
-        # Skip if EV is below threshold and both Kelly and stake are < 1u
-        if ev < 5.0 and rk < 1.0 and stake_val < 1.0:
-            continue
-
-        row = bet.copy()
-        row["book"] = row.get("book", row.get("best_book"))
-
-        if bet.get("logged") and "stake" in bet:
-            row["snapshot_stake"] = round(float(bet.get("stake", rk)), 2)
-        else:
-            row["snapshot_stake"] = round(rk, 2)
-        row["is_prospective"] = True
-
-        if "sim_prob" in row:
-            row["sim_prob_display"] = f"{round(row['sim_prob'] * 100, 1)}%"
-        else:
-            row["sim_prob_display"] = "-"
-
-        if "market_prob" in row:
-            row["mkt_prob_display"] = f"{round(row['market_prob'] * 100, 1)}%"
-        else:
-            row["mkt_prob_display"] = "-"
-
-        if "ev_percent" in row:
-            row["ev_display"] = f"+{round(row['ev_percent'], 1)}%"
-        else:
-            row["ev_display"] = "-"
-
-        if "fair_odds" in row:
-            fv = row["fair_odds"]
-            if fv >= 2:
-                row["fv_display"] = f"+{int(fv)}"
-            else:
-                try:
-                    row["fv_display"] = f"{int(-100 / (fv - 1))}"
-                except Exception:
-                    row["fv_display"] = f"{round(fv)}"
-        else:
-            row["fv_display"] = "-"
-
-        row["odds_display"] = row.get("market_odds", "-")
-        row["skip_reason"] = bet.get("skip_reason", None)
-        row["logged"] = bet.get("logged", False)
-
-        role = _assign_snapshot_role(row)
-        row["snapshot_role"] = role
-        row.setdefault("snapshot_roles", []).append(role)
-
-        ensure_consensus_books(row)
-        rows.append(row)
-
-
-    return rows
 
 
 def _enrich_snapshot_row(row: dict) -> None:
@@ -348,11 +275,7 @@ def build_snapshot_for_date(
     expanded_rows = expand_snapshot_rows_with_kelly(raw_rows, POPULAR_BOOKS)
     logger.info("\U0001F9E0 Expanded per-book rows: %d", len(expanded_rows))
 
-    pending_rows = _pending_rows_for_date(date_str, min_ev=ev_range[0])
-    if pending_rows:
-        logger.info("\U0001F4CB Pending bets added: %d", len(pending_rows))
-
-    rows = expanded_rows + pending_rows
+    rows = expanded_rows
 
     # 🎯 Retain all rows (EV% filter removed)
     min_ev, max_ev = ev_range  # kept for compatibility
