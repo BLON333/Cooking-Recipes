@@ -1556,8 +1556,7 @@ def write_to_csv(
         except NameError:
             print(f"    • Snapshot File Used     : Not available in this scope")
 
-    prior_prob = prior_snapshot.get("market_prob") if prior_snapshot else None
-    # ✅ Normalize market_prob from consensus_prob if not already present
+    baseline_prob = row.get("baseline_consensus_prob")
     if "market_prob" not in row and "consensus_prob" in row:
         row["market_prob"] = row["consensus_prob"]
     new_prob = row.get("market_prob")
@@ -1566,68 +1565,20 @@ def write_to_csv(
     threshold = market_prob_increase_threshold(hours_to_game, row.get("market", ""))
 
     if row.get("entry_type") in {"first", "top-up"}:
-        if prior_prob is None or new_prob is None:
-            print(
-                "⛔ No prior market probability — building baseline and skipping log."
-            )
-            if VERBOSE:
-                print(
-                    f"⛔ Skipping {row.get('entry_type')} bet — no prior market probability ({prior_prob} → {new_prob})"
-                )
-            if prior_prob is None:
-                current_consensus_prob = (
-                    new_conf_val if new_conf_val is not None else new_prob
-                )
-                # Disabled write to market_conf_tracker.json during snapshot migration
-                # if (
-                #     current_consensus_prob is not None
-                #     and baseline_tracker.get(tracker_key, {}).get("consensus_prob") is None
-                # ):
-                #     baseline_tracker[tracker_key] = {
-                #         "consensus_prob": current_consensus_prob,
-                #         "timestamp": datetime.utcnow().isoformat(),
-                #     }
-                #     save_conf_tracker(baseline_tracker)
-                #     print(
-                #         f"🆕 Baseline stored for {tracker_key} → {current_consensus_prob:.4f}"
-                #     )
-            movement = track_and_update_market_movement(
-                row,
-                MARKET_EVAL_TRACKER,
-                MARKET_EVAL_TRACKER_BEFORE_UPDATE,
-            )
-            prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key) or {}
-            row.update(
-                {
-                    "prev_sim_prob": prior_row.get("sim_prob"),
-                    "prev_market_prob": prior_row.get("market_prob"),
-                    "prev_blended_fv": prior_row.get("blended_fv"),
-                }
-            )
-            annotate_display_deltas(row, prior_row)
-            row["_movement_str"] = row.get("mkt_prob_display")
-            row["_movement"] = movement
+        if baseline_prob is None or new_prob is None:
+            print("⛔ No baseline probability — skipping log.")
             row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
-        elif new_prob <= prior_prob:
+        if new_prob <= baseline_prob:
             print("⛔ Market probability did not improve — skipping.")
             if VERBOSE:
                 print(
-                    f"⛔ Skipping {row.get('entry_type')} bet — market probability did not improve ({new_prob:.4f} ≤ {prior_prob:.4f})"
+                    f"⛔ Skipping {row.get('entry_type')} bet — market probability did not improve ({new_prob:.4f} ≤ {baseline_prob:.4f})"
                 )
-            if prior_prob is None:
-                current_consensus_prob = (
-                    new_conf_val if new_conf_val is not None else new_prob
-                )
-                MARKET_CONF_TRACKER[tracker_key] = {
-                    "consensus_prob": current_consensus_prob,
-                    "status": "pending",
-                    "timestamp": datetime.now().isoformat(),
-                }
             row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
-        elif (new_prob - prior_prob) < threshold:
-            delta = new_prob - prior_prob
+        if (new_prob - baseline_prob) < threshold:
+            delta = new_prob - baseline_prob
             print(
                 f"⛔ Market % increase too small ({delta:.4f} < {threshold:.4f}) — skipping."
             )
@@ -1635,15 +1586,6 @@ def write_to_csv(
                 print(
                     f"⛔ Skipping {row.get('entry_type')} bet — market % increase too small ({delta:.4f} < {threshold:.4f})"
                 )
-            if prior_prob is None:
-                current_consensus_prob = (
-                    new_conf_val if new_conf_val is not None else new_prob
-                )
-                MARKET_CONF_TRACKER[tracker_key] = {
-                    "consensus_prob": current_consensus_prob,
-                    "status": "pending",
-                    "timestamp": datetime.now().isoformat(),
-                }
             row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             return None
 
@@ -1732,10 +1674,13 @@ def write_to_csv(
         row.update(
             {
                 "prev_sim_prob": prior_row.get("sim_prob"),
-                "prev_market_prob": prior_row.get("market_prob"),
                 "prev_blended_fv": prior_row.get("blended_fv"),
             }
         )
+        baseline = row.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = prior_row.get("baseline_consensus_prob") or row.get("consensus_prob") or row.get("market_prob")
+        row["baseline_consensus_prob"] = baseline
         annotate_display_deltas(row, prior_row)
         row["_movement_str"] = row.get("mkt_prob_display")
         row["_movement"] = movement

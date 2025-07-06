@@ -221,6 +221,9 @@ def annotate_display_deltas(entry: Dict, prior: Optional[Dict]) -> None:
         if field == "market_odds":
             prior_val = entry.get("prev_market_odds")
             movement = entry.get("odds_movement", "same")
+        elif field == "market_prob":
+            prior_val = entry.get("baseline_consensus_prob")
+            movement = entry.get("mkt_movement", "same")
         else:
             prior_val = entry.get(f"prev_{field}") or (
                 prior.get(field) if prior else None
@@ -720,12 +723,15 @@ def compare_and_flag_new_rows(
         entry.update(
             {
                 "prev_sim_prob": (prior or {}).get("sim_prob"),
-                "prev_market_prob": (prior or {}).get("market_prob"),
                 "prev_blended_fv": (prior or {}).get("blended_fv"),
             }
         )
-        # Ensure baseline market probability persists for display
-        entry["prev_market_prob"] = (prior or {}).get("market_prob")
+        baseline = entry.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = (prior or {}).get("baseline_consensus_prob") or entry.get(
+                "consensus_prob"
+            ) or entry.get("market_prob")
+        entry["baseline_consensus_prob"] = baseline
         movement = track_and_update_market_movement(
             entry,
             MARKET_EVAL_TRACKER,
@@ -1074,11 +1080,15 @@ def build_snapshot_rows(
             row.update(
                 {
                     "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-                    "prev_market_prob": (prior_row or {}).get("market_prob"),
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
-            row["prev_market_prob"] = (prior_row or {}).get("market_prob")
+            baseline = row.get("baseline_consensus_prob")
+            if baseline is None:
+                baseline = (prior_row or {}).get("baseline_consensus_prob") or row.get(
+                    "consensus_prob"
+                ) or row.get("market_prob")
+            row["baseline_consensus_prob"] = baseline
 
             # Compute movement and update tracker
             movement = track_and_update_market_movement(
@@ -1414,11 +1424,15 @@ def expand_snapshot_rows_with_kelly(
         row.update(
             {
                 "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-                "prev_market_prob": (prior_row or {}).get("market_prob"),
                 "prev_blended_fv": (prior_row or {}).get("blended_fv"),
             }
         )
-        row["prev_market_prob"] = (prior_row or {}).get("market_prob")
+        baseline = row.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = (prior_row or {}).get("baseline_consensus_prob") or row.get(
+                "consensus_prob"
+            ) or row.get("market_prob")
+        row["baseline_consensus_prob"] = baseline
 
         row["book"] = row.get("book", row.get("best_book"))
 
@@ -1522,11 +1536,15 @@ def expand_snapshot_rows_with_kelly(
             expanded_row.update(
                 {
                     "prev_sim_prob": (prior_row or {}).get("sim_prob"),
-                    "prev_market_prob": (prior_row or {}).get("market_prob"),
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
-            expanded_row["prev_market_prob"] = (prior_row or {}).get("market_prob")
+            baseline = expanded_row.get("baseline_consensus_prob")
+            if baseline is None:
+                baseline = (prior_row or {}).get("baseline_consensus_prob") or expanded_row.get(
+                    "consensus_prob"
+                ) or expanded_row.get("market_prob")
+            expanded_row["baseline_consensus_prob"] = baseline
             movement = track_and_update_market_movement(
                 expanded_row,
                 MARKET_EVAL_TRACKER,
@@ -1599,7 +1617,10 @@ def expand_snapshot_rows_with_kelly(
             else:
                 row["sim_prob_display"] = "-"
 
-            if "market_prob" in row:
+            baseline = row.get("baseline_consensus_prob")
+            if baseline is not None and "market_prob" in row:
+                row["mkt_prob_display"] = f"{baseline * 100:.1f}% → {row['market_prob'] * 100:.1f}%"
+            elif "market_prob" in row:
                 row["mkt_prob_display"] = f"{round(row['market_prob'] * 100, 1)}%"
             else:
                 row["mkt_prob_display"] = "-"

@@ -22,6 +22,22 @@ MOVEMENT_THRESHOLDS = {
     "sim_prob": 0.1,
 }
 
+
+def detect_baseline_movement(curr: float | None, baseline: float | None) -> str:
+    """Return directional movement relative to a baseline."""
+    if curr is None or baseline is None:
+        return "same"
+    try:
+        c = float(curr)
+        b = float(baseline)
+    except Exception:
+        return "same"
+    if c > b:
+        return "up"
+    if c < b:
+        return "down"
+    return "same"
+
 from core.market_pricer import decimal_odds
 
 
@@ -70,6 +86,7 @@ def detect_market_movement(current: Dict, prior: Optional[Dict]) -> Dict[str, ob
         prev = (prior or {}).get(field)
         if field == "market_prob":
             from cli.log_betting_evals import market_prob_increase_threshold
+            baseline = current.get("baseline_consensus_prob")
             mkt = current.get("market", "")
             hours = current.get("hours_to_game")
             if hours is None:
@@ -81,12 +98,12 @@ def detect_market_movement(current: Dict, prior: Optional[Dict]) -> Dict[str, ob
                 threshold = 0.01
             else:
                 threshold = market_prob_increase_threshold(hours, mkt)
-            # Compare current vs. prior market_prob with threshold to classify movement
-            if curr is None or prev is None:
+            # Compare current vs. baseline market_prob with threshold
+            if curr is None or baseline is None:
                 movement["mkt_movement"] = "same"
             else:
                 try:
-                    diff = float(curr) - float(prev)
+                    diff = float(curr) - float(baseline)
                 except Exception:
                     movement["mkt_movement"] = "same"
                 else:

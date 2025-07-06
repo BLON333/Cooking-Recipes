@@ -42,20 +42,21 @@ def run_snapshot_persistence_test() -> None:
     logged_probs = [0.55, 0.54, 0.52]
     def detect_movement_and_update(row):
         key = build_tracker_key(row["game_id"], row["market"], row["side"])
-        prev = tracker.get(key)
-        if prev:
-            row["prev_market_prob"] = prev.get("market_prob")
-            diff = row["market_prob"] - prev.get("market_prob", 0)
+        baseline = row.get("baseline_consensus_prob")
+        row["prev_market_prob"] = baseline
+        curr = row.get("market_prob")
+        if baseline is None or curr is None:
+            row["mkt_movement"] = "same"
+        else:
+            diff = curr - baseline
             if abs(diff) < 1e-6:
                 row["mkt_movement"] = "same"
             elif diff > 0:
                 row["mkt_movement"] = "up"
             else:
                 row["mkt_movement"] = "down"
-        else:
-            row["mkt_movement"] = "same"
-        tracker[key] = {"market_prob": row["market_prob"]}
-        return prev
+        tracker[key] = {"market_prob": curr}
+        return {"market_prob": baseline} if baseline is not None else None
 
 
     for idx, ts in enumerate(loop_times):
