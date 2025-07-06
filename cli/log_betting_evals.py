@@ -42,7 +42,6 @@ from core.dispatch_clv_snapshot import parse_start_time
 from core.book_helpers import ensure_consensus_books
 from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
-from core.pending_bets import load_pending_bets
 import re
 import warnings
 from core.snapshot_tracker_loader import (
@@ -2623,17 +2622,6 @@ def run_batch_logging(
             f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
         )
 
-    # 🔁 Fallback to pending if missing
-    from core.pending_bets import load_pending_bets
-
-    PENDING_BETS = load_pending_bets()
-    for key, row in PENDING_BETS.items():
-        if key not in MARKET_EVAL_TRACKER_BEFORE_UPDATE:
-            baseline = row.get("baseline_consensus_prob")
-            if baseline is not None:
-                MARKET_EVAL_TRACKER_BEFORE_UPDATE[key] = {"market_prob": baseline}
-                print(f"🔁 Tracker fallback for {key} → {baseline:.4f}")
-
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
     # ✅ Ensure all required columns exist for downstream filters like should_log_bet
@@ -2750,16 +2738,6 @@ def run_batch_logging(
         force_log=force_log,
         micro_topups=micro_topups,
     )
-
-    if summary_candidates and not dry_run:
-        from core.pending_bets import queue_pending_bet
-
-        for bet in summary_candidates:
-            try:
-                queue_pending_bet(bet)
-            except Exception:
-                pass
-        print(f"📁 Queued {len(summary_candidates)} pending bets to pending_bets.json")
 
     if summary_candidates and not no_save_skips and not dry_run:
         save_skipped_bets(summary_candidates)
