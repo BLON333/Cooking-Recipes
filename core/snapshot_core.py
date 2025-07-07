@@ -1456,9 +1456,10 @@ def expand_snapshot_rows_with_kelly(
         )
         baseline = row.get("baseline_consensus_prob")
         if baseline is None:
+            # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
             baseline = (prior_row or {}).get("baseline_consensus_prob") or row.get(
                 "consensus_prob"
-            ) or row.get("market_prob")
+            )
         row["baseline_consensus_prob"] = baseline
 
         row["book"] = row.get("book", row.get("best_book"))
@@ -1568,9 +1569,10 @@ def expand_snapshot_rows_with_kelly(
             )
             baseline = expanded_row.get("baseline_consensus_prob")
             if baseline is None:
+                # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
                 baseline = (prior_row or {}).get("baseline_consensus_prob") or expanded_row.get(
                     "consensus_prob"
-                ) or expanded_row.get("market_prob")
+                )
             expanded_row["baseline_consensus_prob"] = baseline
             movement = track_and_update_market_movement(
                 expanded_row,
