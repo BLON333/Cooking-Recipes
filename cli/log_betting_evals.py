@@ -328,7 +328,7 @@ from core.time_utils import compute_hours_to_game
 
 
 # === Staking Logic Refactor ===
-from core.logging_helpers import evaluate_snapshot_row_for_logging
+from core.shared_logging_logic import evaluate_snapshot_row_for_logging
 from core.market_eval_tracker import (
     load_tracker as load_eval_tracker,
     save_tracker,
