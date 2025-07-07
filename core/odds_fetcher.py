@@ -9,6 +9,8 @@ import requests
 import numpy as np
 from dotenv import load_dotenv
 from datetime import datetime, timedelta  # ✅ ADD THIS LINE
+from pathlib import Path
+import argparse
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 
@@ -28,6 +30,7 @@ from core.utils import (
     parse_game_id,
     game_id_to_dt,
     to_eastern,
+    now_eastern,
 )
 
 load_dotenv()
@@ -824,3 +827,63 @@ def save_market_odds_to_file(odds_data, date_tag):
 
     logger.debug(f"✅ Saved market odds to {path}")
     return path
+
+
+def get_sim_game_ids_for_date(date_str: str) -> list[str]:
+    """Return a list of simulation game IDs for ``date_str``."""
+    sim_folder = os.path.join("backtest", "sims", date_str)
+    if not os.path.isdir(sim_folder):
+        logger.warning("⚠️ Sim folder does not exist: %s", sim_folder)
+        return []
+    return [p.stem for p in Path(sim_folder).glob("*.json")]
+
+
+def fetch_all_games_for_date(date_str: str, lookahead_days: int | None = None):
+    """Fetch odds for all games on ``date_str`` using the Odds API."""
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        logger.error("❌ Invalid date format: %s", date_str)
+        return None
+
+    if lookahead_days is None:
+        delta = (target_date - now_eastern().date()).days
+        lookahead_days = max(delta + 1, 1)
+
+    all_odds = fetch_all_market_odds(lookahead_days=lookahead_days)
+    if not isinstance(all_odds, dict):
+        return all_odds
+    return {gid: data for gid, data in all_odds.items() if gid.startswith(date_str)}
+
+
+def _cli_main():
+    parser = argparse.ArgumentParser(description="Fetch market odds from Odds API")
+    parser.add_argument("--date", required=True, help="YYYY-MM-DD date")
+    parser.add_argument("--all", action="store_true", help="fetch odds for all games")
+    args = parser.parse_args()
+
+    if args.all:
+        print(f"📡 Fetching odds for all games on {args.date}...")
+        odds = fetch_all_games_for_date(args.date)
+    else:
+        print(f"📡 Fetching odds for simulated games on {args.date}...")
+        game_ids = get_sim_game_ids_for_date(args.date)
+        odds = fetch_market_odds_from_api(game_ids)
+
+    if odds is None:
+        print("\u274c Failed to fetch odds data.")
+        return 1
+
+    count = len([v for v in odds.values() if v])
+    print(f"\u2705 Found {count} games with odds.")
+
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M")
+    tag = f"market_odds_{timestamp}"
+    out_path = save_market_odds_to_file(odds, tag)
+    if out_path:
+        print(f"💾 Saved to {out_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_cli_main())
