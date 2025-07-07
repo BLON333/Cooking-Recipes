@@ -284,6 +284,35 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
         row["last_seen_loop_ts"] = now_ts
 
 
+_SANITIZE_WARNED_TYPES: set[type] = set()
+
+
+def sanitize_json_row(row: dict) -> dict:
+    """Return a copy of ``row`` with JSON-serializable values."""
+    sanitized: dict = {}
+    for k, v in row.items():
+        new_v = v
+        warn_type: type | None = None
+        if isinstance(v, set):
+            new_v = list(v)
+            warn_type = set
+        else:
+            try:
+                import numpy as np
+                if isinstance(v, np.bool_):
+                    new_v = bool(v)
+                    warn_type = np.bool_
+                elif isinstance(v, np.generic):
+                    new_v = v.item()
+                    warn_type = type(v)
+            except Exception:
+                pass
+        sanitized[k] = new_v
+        if warn_type and warn_type not in _SANITIZE_WARNED_TYPES:
+            logger.warning("Converting %s for JSON serialization", warn_type)
+            _SANITIZE_WARNED_TYPES.add(warn_type)
+    return sanitized
+
 
 def build_snapshot_for_date(
     date_str: str,
@@ -464,6 +493,8 @@ def main() -> None:
         # 🔁 Merge persistent fields from prior snapshot
         prior_map = _load_prior_snapshot_map(out_dir)
         _merge_persistent_fields(all_rows, prior_map)
+
+        all_rows = [sanitize_json_row(r) for r in all_rows]
 
         os.makedirs(out_dir, exist_ok=True)
         with open(tmp_path, "w") as f:
