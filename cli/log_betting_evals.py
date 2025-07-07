@@ -2752,7 +2752,7 @@ def run_batch_logging(
             print(f"❌ Failed to load simulation file {sim_path}")
             continue
 
-        mkt = get_closest_odds(game_id, all_market_odds, debug=DEBUG_MISSING_ODDS)
+        mkt = get_closest_odds(game_id, all_market_odds, debug=debug or DEBUG_MISSING_ODDS)
 
         if not mkt:
             print(
@@ -3246,7 +3246,7 @@ if __name__ == "__main__":
         market_odds=odds,
         min_ev=args.min_ev,
         dry_run=args.dry_run,
-        debug=args.debug,  # ✅ New debug toggle wired up!
+        debug=args.debug or args.debug_missing_odds,  # pass through debug-missing-odds
         image=args.image,
         output_dir=args.output_dir,
         fallback_odds_path=args.fallback_odds_path,
