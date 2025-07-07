@@ -206,6 +206,13 @@ def track_and_update_market_movement(
         else entry.get("baseline_consensus_prob"),
     }
 
+    if (
+        prior.get("baseline_consensus_prob") is not None
+        and prior.get("baseline_consensus_prob")
+        != entry.get("baseline_consensus_prob")
+    ):
+        logger.warning("⚠️ baseline_consensus_prob mismatch for %s", key)
+
     changed_fields = []
 
     for field, val in tracker_entry.items():
