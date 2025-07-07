@@ -167,16 +167,26 @@ def track_and_update_market_movement(
     entry.update(movement)
     entry["prev_market_odds"] = prev_market_odds
 
+    baseline_missing = (
+        prior.get("baseline_consensus_prob") is None
+        and entry.get("baseline_consensus_prob") is not None
+    )
+
     # Only update tracker if a meaningful change occurred for existing entries
-    if prior is not None and movement.get("mkt_movement") == "same" and all(
-        movement.get(k) == "same"
-        for k in [
-            "ev_movement",
-            "fv_movement",
-            "odds_movement",
-            "stake_movement",
-            "sim_movement",
-        ]
+    if (
+        prior is not None
+        and movement.get("mkt_movement") == "same"
+        and all(
+            movement.get(k) == "same"
+            for k in [
+                "ev_movement",
+                "fv_movement",
+                "odds_movement",
+                "stake_movement",
+                "sim_movement",
+            ]
+        )
+        and not baseline_missing
     ):
         return movement
 
