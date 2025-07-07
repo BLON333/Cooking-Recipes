@@ -35,6 +35,12 @@ def _save_snapshot(rows: list, path: str) -> None:
     with with_locked_file(lock):
         with open(tmp, "w") as f:
             json.dump(rows, f, indent=2)
+        try:
+            with open(tmp, "r") as f:
+                json.load(f)
+        except Exception as e:  # pragma: no cover - unexpected parse failure
+            logger.error("❌ Failed to parse snapshot temp file %s: %s", tmp, e)
+            return
         os.replace(tmp, path)
 
 
