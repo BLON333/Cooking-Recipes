@@ -190,6 +190,16 @@ def track_and_update_market_movement(
     ):
         return movement
 
+    if (
+        prior.get("baseline_consensus_prob") is not None
+        and entry.get("baseline_consensus_prob")
+        != prior.get("baseline_consensus_prob")
+    ):
+        logger.warning(
+            "\u26a0\ufe0f Attempted overwrite of baseline_consensus_prob for %s",
+            key,
+        )
+
     tracker_entry = {
         "ev_percent": entry.get("ev_percent"),
         "blended_fv": entry.get("blended_fv"),
