@@ -1428,15 +1428,10 @@ def write_to_csv(
     force_log=False,
 ): 
     """
-    Final write function for fully approved bets only.
-
-    This function assumes the bet has already passed all pruning:
-    - Exposure rules
-    - Stake thresholds (min 1u / top-up ≥ 0.5u)
-    - EV caps
-    - Segment tagging
-
-    It should only be called from process_theme_logged_bets().
+    Final write function for fully approved bets only. All validation should
+    occur upstream in :func:`should_log_bet` or related helpers.  This routine
+    is responsible solely for writing the finalized row to ``market_evals.csv``
+    and updating any in-memory trackers.
 
     Parameters
     ----------
@@ -1445,12 +1440,6 @@ def write_to_csv(
         updates the provided dict. Persisting the updated exposure data is
         handled by the caller.
     """
-    if not row.get("side") or float(row.get("stake", 0.0)) <= 0.0 or row.get("skip_reason"):
-        logger.warning(
-            "⛔ Skipping tracker update due to invalid or zero-stake bet: %s",
-            row,
-        )
-        return None
 
 
     # 🗓️ Derive human-friendly fields from game_id
@@ -1491,10 +1480,9 @@ def write_to_csv(
     else:
         print(f"\u274C Tracker key missing: {tracker_key}")
 
-    if new_conf_val is None:
-        print(f"  ⛔ No valid consensus_prob for {tracker_key} — skipping")
-        row["skip_reason"] = SkipReason.NO_CONSENSUS.value
-        return None
+    # ``should_log_bet`` guarantees ``consensus_prob`` validity; simply fall
+    # back to ``None`` when parsing fails so trackers can handle the update
+    # gracefully.
 
     # if prev_conf_val is not None and new_conf_val <= prev_conf_val:
     #     print(
@@ -1593,33 +1581,6 @@ def write_to_csv(
             f"[confirmation_debug] {row['game_id']} | {row['market']} | {row['side']} — baseline: {base}, current: {current}, delta: {delta}"
         )
     hours_to_game = row.get("hours_to_game", 8)
-
-    threshold = market_prob_increase_threshold
-
-    if row.get("entry_type") in {"first", "top-up"}:
-        if baseline_prob is None or new_prob is None:
-            print("⛔ No baseline probability — skipping log.")
-            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
-            return None
-        if new_prob <= baseline_prob:
-            print("⛔ Market probability did not improve — skipping.")
-            if VERBOSE:
-                print(
-                    f"⛔ Skipping {row.get('entry_type')} bet — market probability did not improve ({new_prob:.4f} ≤ {baseline_prob:.4f})"
-                )
-            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
-            return None
-        if (new_prob - baseline_prob) < threshold:
-            delta = new_prob - baseline_prob
-            print(
-                f"⛔ Market % increase too small ({delta:.4f} < {threshold:.4f}) — skipping."
-            )
-            if VERBOSE:
-                print(
-                    f"⛔ Skipping {row.get('entry_type')} bet — market % increase too small ({delta:.4f} < {threshold:.4f})"
-                )
-            row["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
-            return None
 
     # Clean up non-persistent keys
     row.pop("consensus_books", None)
