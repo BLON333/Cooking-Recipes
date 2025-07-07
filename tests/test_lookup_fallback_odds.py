@@ -37,3 +37,12 @@ def test_lookup_fallback_odds_none():
     }
     row, key = lookup_fallback_odds("2025-07-08-TOR@CWS-T1940", odds)
     assert row is None and key is None
+
+
+def test_lookup_fallback_odds_fuzzy_off_by_one():
+    odds = {
+        "2025-07-07-TOR@CWS-T1941": {"val": 1},
+        "2025-07-07-TOR@CWS-T1943": {"val": 2},
+    }
+    result, key = lookup_fallback_odds("2025-07-07-TOR@CWS-T1940", odds)
+    assert result == {"val": 1}

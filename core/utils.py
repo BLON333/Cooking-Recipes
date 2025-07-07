@@ -1043,7 +1043,7 @@ def lookup_fallback_odds(
     game_id: str,
     fallback_odds: dict,
     *,
-    max_delta: int | None = 2,
+    max_delta: int | None = 3,
     debug: bool = False,
 ) -> tuple[dict | None, str | None]:
     """Return the best-matching fallback odds entry for ``game_id``.
@@ -1084,72 +1084,62 @@ def lookup_fallback_odds(
         if debug:
             print(f"[Fallback Debug] No exact match for {game_id}; attempting fuzzy lookup")
 
-    # ✅ Step 2: strip time suffix and look for matching prefixes
-    if "-T" not in game_id:
-        return None, None
-    prefix = game_id.rsplit("-T", 1)[0]
-    matches = [k for k in fallback_odds if k.startswith(prefix)]
-    if not matches:
-        if debug:
-            print(f"[Fallback Debug] No candidate keys for {game_id}")
-        return None, None
-    if debug:
-        suffix_list = [m[len(prefix):] for m in sorted(matches)]
-        joined = ", ".join(f"{m} ({s})" for m, s in zip(sorted(matches), suffix_list))
-        print(f"[Fallback Debug] Keys with prefix {prefix}: {joined}")
+    # ✅ Step 2: parse and match game components for fuzzy lookup
 
-    def _suffix_minutes(gid: str) -> int | None:
-        if "-T" not in gid:
+    def _time_suffix_minutes(token: str) -> int | None:
+        if not token.startswith("T"):
             return None
-        token = gid.split("-T", 1)[1].split("-", 1)[0]
+        digits = "".join(c for c in token.split("-")[0][1:] if c.isdigit())[:4]
+        if len(digits) != 4:
+            return None
         try:
-            dt = datetime.strptime(token, "%H%M")
+            dt = datetime.strptime(digits, "%H%M")
         except Exception:
             return None
         return dt.hour * 60 + dt.minute
 
-    target_min = _suffix_minutes(game_id)
-    best_key = None
-    best_delta = None
-    candidate_info: list[tuple[str, int | None]] = []
-    for k in sorted(matches):  # deterministic ordering for ties
-        cand_min = _suffix_minutes(k)
-        if target_min is None or cand_min is None:
-            best_key = k
-            candidate_info.append((k, None))
-            break
-        delta = abs(cand_min - target_min)
-        if best_delta is None or delta < best_delta:
-            best_delta = delta
-            best_key = k
-        candidate_info.append((k, delta))
+    req = parse_game_id(game_id)
+    req_minutes = _time_suffix_minutes(req.get("time", ""))
 
-    candidate_info.sort(key=lambda x: float('inf') if x[1] is None else x[1])
-
-    if debug:
-        cand_str = ", ".join(
-            f"{c[0]} ({c[1]}m)" if c[1] is not None else c[0]
-            for c in candidate_info
+    def parts_match(key: str) -> bool:
+        parts = parse_game_id(key)
+        return (
+            parts.get("date") == req.get("date")
+            and parts.get("away") == req.get("away")
+            and parts.get("home") == req.get("home")
         )
-        print(f"[Fallback Debug] Target {game_id} → candidates: {cand_str}")
-    if best_key:
+
+    candidates = [k for k in fallback_odds if parts_match(k)]
+
+    if not candidates:
         if debug:
-            print(f"[Fallback Debug] Closest match: {best_key}")
-            diff = f"{best_delta} minutes" if best_delta is not None else "?"
-            print(f"[Fallback Debug] Time difference: {diff}")
-        if max_delta is not None and best_delta is not None and best_delta > max_delta:
-            if debug:
-                print(
-                    f"[Fallback Debug] Closest candidate {best_key} ({best_delta}m) exceeds max_delta"
-                )
-            return None, None
-        row = fallback_odds.get(best_key)
-        return row, best_key
+            print(f"[Fallback Debug] Tried fuzzy match for {game_id} — no similar keys found.")
+        return None, None
 
-    if debug:
-        print(f"[Fallback Debug] No suitable fallback found for {game_id}")
+    scored: list[tuple[int | None, str]] = []
+    for k in sorted(candidates):  # deterministic ordering
+        c_parts = parse_game_id(k)
+        cand_minutes = _time_suffix_minutes(c_parts.get("time", ""))
+        delta = (
+            abs(cand_minutes - req_minutes)
+            if cand_minutes is not None and req_minutes is not None
+            else None
+        )
+        scored.append((delta, k))
 
-    return None, None
+    scored.sort(key=lambda x: float("inf") if x[0] is None else x[0])
+    best_delta, best_key = scored[0]
+
+    if max_delta is not None and best_delta is not None and best_delta > max_delta:
+        if debug:
+            print(f"[Fallback Debug] Tried fuzzy match for {game_id} — no similar keys found.")
+        return None, None
+
+    row = fallback_odds.get(best_key)
+    if row and debug:
+        delta_msg = f"Δ{best_delta} min" if best_delta is not None else "Δ?"
+        print(f"[Fallback Debug] Matched to {best_key} ({delta_msg})")
+    return row, best_key
 
 
 TEAM_NAME_FROM_ABBR = {
