@@ -33,7 +33,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from core.utils import now_eastern
 from core.odds_fetcher import fetch_all_market_odds, save_market_odds_to_file
-from cli.monitor_early_bets import recheck_pending_bets, update_pending_from_snapshot
+# from cli.monitor_early_bets import recheck_pending_bets, update_pending_from_snapshot
 from core.snapshot_core import load_latest_snapshot
 
 EDGE_THRESHOLD = 0.05
@@ -46,7 +46,6 @@ last_snapshot_time = 0
 
 # Track the closing odds monitor subprocess so we can restart if it exits
 closing_monitor_proc = None
-early_bet_monitor_proc = None
 active_processes: list[dict] = []  # Track background subprocesses
 
 
@@ -229,44 +228,6 @@ def ensure_closing_monitor_running() -> bool:
     return restarted
 
 
-def ensure_early_monitor_running() -> bool:
-    """Launch ``monitor_early_bets.py`` if not already running.
-
-    Returns ``True`` if the monitor was restarted or started for the first
-    time, ``False`` if it was already running.
-    """
-
-    global early_bet_monitor_proc
-    restarted = False
-
-    exit_code = None if early_bet_monitor_proc is None else early_bet_monitor_proc.poll()
-
-    if early_bet_monitor_proc is None or exit_code is not None:
-        if early_bet_monitor_proc is not None and exit_code is not None:
-            logger.warning(
-                "⚠️ [%s] Early bet monitor exited with code %s, restarting...",
-                now_eastern(),
-                exit_code,
-            )
-
-        script_path = os.path.join("cli", "monitor_early_bets.py")
-        if not os.path.exists(script_path):
-            script_path = "monitor_early_bets.py"
-
-        early_bet_monitor_proc = launch_process(
-            "early_bet_monitor",
-            [PYTHON, script_path],
-        )
-
-        logger.info(
-            "🎯 [%s] Launching early bet monitor (PID %d)",
-            now_eastern(),
-            early_bet_monitor_proc.pid,
-        )
-
-        restarted = True
-
-    return restarted
 
 
 def get_date_strings():
@@ -407,7 +368,6 @@ logger.info(
 )
 
 ensure_closing_monitor_running()
-ensure_early_monitor_running()
 
 logger.info(
     "🟢 [%s] First-time launch → fetching odds and dispatching logs",
@@ -429,26 +389,6 @@ if initial_odds:
     else:
         run_unified_snapshot_and_dispatch(initial_odds)
 
-        # Ensure latest snapshot is fully written before rechecking pending bets
-        latest_snapshot = max(
-            Path("backtest").glob("market_snapshot_*.json"),
-            key=lambda f: f.stat().st_mtime,
-        )
-        for _ in range(10):  # retry up to ~2 seconds
-            if latest_snapshot.exists() and latest_snapshot.stat().st_size > 1000:
-                break
-            time.sleep(0.2)
-
-        logger.info("\ud83d\udcc2 Updating pending bets from latest snapshot before recheck...")
-
-        # Load snapshot data
-        snapshot_rows = load_latest_snapshot()
-        # Update pending_bets.json in-place using snapshot
-        update_pending_from_snapshot(snapshot_rows)
-
-        logger.info("\u2705 Pending bets updated. Proceeding to recheck...")
-        recheck_pending_bets()
-
 start_time = time.time()
 loop_count = 0
 if not initial_odds:
@@ -469,7 +409,6 @@ while True:
     poll_active_processes()
 
     monitor_restarted = ensure_closing_monitor_running()
-    early_monitor_restarted = ensure_early_monitor_running()
 
     triggered_sim = False
     triggered_log = False
@@ -508,25 +447,7 @@ while True:
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_tracker_with_csv"])
                 run_unified_snapshot_and_dispatch(odds_file)
 
-                # Ensure latest snapshot is fully written before rechecking pending bets
-                latest_snapshot = max(
-                    Path("backtest").glob("market_snapshot_*.json"),
-                    key=lambda f: f.stat().st_mtime,
-                )
-                for _ in range(10):  # retry up to ~2 seconds
-                    if latest_snapshot.exists() and latest_snapshot.stat().st_size > 1000:
-                        break
-                    time.sleep(0.2)
-
-                logger.info("\ud83d\udcc2 Updating pending bets from latest snapshot before recheck...")
-
-                # Load snapshot data
-                snapshot_rows = load_latest_snapshot()
-                # Update pending_bets.json in-place using snapshot
-                update_pending_from_snapshot(snapshot_rows)
-
-                logger.info("\u2705 Pending bets updated. Proceeding to recheck...")
-                recheck_pending_bets()
+                # Snapshot-first model: no pending_bets.json to update
 
         last_log_time = now
         triggered_log = True
@@ -548,7 +469,7 @@ while True:
         else f"⏭ (next ~{next_in(last_log_time, LOG_INTERVAL)})"
     )
     monitor_msg = "restarted" if monitor_restarted else "OK"
-    early_monitor_msg = "restarted" if early_monitor_restarted else "OK"
+    early_monitor_msg = "N/A"
 
     logger.info(
         "\n🔁 [%s] Loop %d (uptime %s):\nSim %s | Log %s | Closing Monitor %s | Early Monitor %s",

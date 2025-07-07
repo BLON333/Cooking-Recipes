@@ -356,22 +356,10 @@ def should_log_bet(
 
     # Restrict early bets for low-liquidity segments (1st_3, 1st_7, team_totals)
     if segment in {"1st_3", "1st_7", "team_totals"} and hours_to_game is not None and hours_to_game > 12:
-        try:
-            from core.pending_bets import queue_pending_bet
-
-            baseline = new_bet.get("consensus_prob") or new_bet.get("market_prob")
-            queued = {
-                **new_bet,
-                "baseline_consensus_prob": baseline,
-                "last_skip_reason": "time_blocked",
-            }
-            if consensus_move >= required_move:
-                queued["movement_confirmed"] = True
-            queue_pending_bet(queued)
-        except Exception:
-            pass
         if verbose:
-            print(f"⏳ should_log_bet: Queued {segment} bet — too early (>12h to game)")
+            print(
+                f"⏳ should_log_bet: Skipping {segment} bet — too early (>12h to game)"
+            )
         new_bet["entry_type"] = "none"
         new_bet["skip_reason"] = "time_blocked"
         return build_skipped_evaluation("time_blocked", game_id, new_bet)
