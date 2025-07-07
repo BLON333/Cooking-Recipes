@@ -191,6 +191,9 @@ def track_and_update_market_movement(
         "best_book": entry.get("best_book"),
         "raw_sportsbook": current_raw,
         "prev_raw_sportsbook": prev_raw,
+        "baseline_consensus_prob": prior.get("baseline_consensus_prob")
+        if prior.get("baseline_consensus_prob") is not None
+        else entry.get("baseline_consensus_prob"),
     }
 
     changed_fields = []

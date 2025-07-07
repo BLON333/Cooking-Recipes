@@ -514,12 +514,12 @@ def main() -> None:
         final_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.json")
         tmp_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.tmp")
 
-        # 🧩 Enrich: baseline
-        ensure_baseline_consensus_prob(all_rows)
-
         # 🔁 Merge persistent fields from prior snapshot
         prior_map = _load_prior_snapshot_map(out_dir)
         _merge_persistent_fields(all_rows, prior_map)
+
+        # 🧩 Enrich: baseline
+        ensure_baseline_consensus_prob(all_rows, MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
         all_rows = [sanitize_json_row(r) for r in all_rows]
 

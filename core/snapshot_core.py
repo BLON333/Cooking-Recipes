@@ -117,12 +117,34 @@ def warn_missing_baselines(rows: list) -> None:
             pass
 
 
-def ensure_baseline_consensus_prob(rows: list) -> None:
+def ensure_baseline_consensus_prob(rows: list, tracker: dict | None = None) -> None:
     """Populate ``baseline_consensus_prob`` when missing."""
+    if tracker is None:
+        tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
+
     for row in rows:
+        if row.get("baseline_consensus_prob") is not None:
+            continue
+
         key = f"{row.get('game_id')}:{row.get('market')}:{row.get('side')}"
-        if "baseline_consensus_prob" not in row or row["baseline_consensus_prob"] is None:
-            row["baseline_consensus_prob"] = row.get("consensus_prob") or row.get("market_prob")
+
+        baseline = None
+        if tracker:
+            tracker_entry = tracker.get(key)
+            if tracker_entry:
+                baseline = tracker_entry.get("baseline_consensus_prob")
+                if baseline is None:
+                    baseline = tracker_entry.get("market_prob")
+
+        if baseline is None:
+            prior_row = row.get("_prior_snapshot")
+            if prior_row:
+                baseline = prior_row.get("baseline_consensus_prob")
+
+        if baseline is None:
+            baseline = row.get("consensus_prob") or row.get("market_prob")
+
+        row["baseline_consensus_prob"] = baseline
 
 
 def format_percentage(val: Optional[float]) -> str:
