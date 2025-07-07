@@ -13,7 +13,7 @@ from cli.log_betting_evals import (
     load_existing_stakes,
     build_theme_exposure_tracker,
 )
-from core.logging_helpers import evaluate_snapshot_row_for_logging
+from core.shared_logging_logic import evaluate_snapshot_row_for_logging
 from core.market_eval_tracker import load_tracker as load_eval_tracker
 
 logger = get_logger(__name__)
