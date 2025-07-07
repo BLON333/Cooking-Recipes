@@ -1039,22 +1039,43 @@ def parse_snapshot_timestamp(token: str) -> datetime | None:
         return None
 
 
-def lookup_fallback_odds(game_id: str, fallback_odds: dict) -> dict | None:
-    """Return the best-matching fallback odds entry for ``game_id``."""
+def lookup_fallback_odds(
+    game_id: str,
+    fallback_odds: dict,
+    *,
+    max_delta: int | None = 2,
+    return_key: bool = False,
+) -> dict | tuple[dict | None, str | None] | None:
+    """Return the best-matching fallback odds entry for ``game_id``.
+
+    Parameters
+    ----------
+    game_id:
+        Canonical game identifier to look up.
+    fallback_odds:
+        Dictionary mapping game_id -> odds row.
+    max_delta:
+        Optional maximum difference in minutes allowed when fuzzy matching the
+        ``-T`` time suffix. ``None`` disables the constraint.
+    return_key:
+        If ``True`` return a ``(row, matched_key)`` tuple instead of just the
+        row.
+    """
     if not isinstance(fallback_odds, dict):
-        return None
+        return (None, None) if return_key else None
 
     # ✅ Step 1: attempt exact match first
     if game_id in fallback_odds:
-        return fallback_odds[game_id]
+        row = fallback_odds[game_id]
+        return (row, game_id) if return_key else row
 
     # ✅ Step 2: strip time suffix and look for matching prefixes
     if "-T" not in game_id:
-        return None
+        return (None, None) if return_key else None
     prefix = game_id.rsplit("-T", 1)[0]
     matches = [k for k in fallback_odds if k.startswith(prefix)]
     if not matches:
-        return None
+        return (None, None) if return_key else None
 
     def _suffix_minutes(gid: str) -> int | None:
         if "-T" not in gid:
@@ -1080,13 +1101,15 @@ def lookup_fallback_odds(game_id: str, fallback_odds: dict) -> dict | None:
             best_key = k
 
     if best_key:
+        if max_delta is not None and best_delta is not None and best_delta > max_delta:
+            return (None, None) if return_key else None
         if best_key != game_id:
-            from core.logger import get_logger
-            logger = get_logger(__name__)
-            logger.warning("⚠️ Fallback matched %s for %s", best_key, game_id)
-        return fallback_odds.get(best_key)
+            # Logging is handled by callers
+            pass
+        row = fallback_odds.get(best_key)
+        return (row, best_key) if return_key else row
 
-    return None
+    return (None, None) if return_key else None
 
 
 TEAM_NAME_FROM_ABBR = {

@@ -242,16 +242,31 @@ def print_tracker_snapshot_keys(tracker):
 
 
 def get_closest_odds(game_id: str, market_odds: dict):
-    """Return odds for ``game_id`` using :func:`lookup_fallback_odds`."""
+    """Return odds for ``game_id`` using :func:`lookup_fallback_odds`.
+
+    This helper normalizes ``game_id`` with :func:`canonical_game_id` and first
+    attempts an exact lookup. If that fails, it falls back to a fuzzy match that
+    tolerates small ``-T`` suffix mismatches (\u00b11\u20132 minutes).
+    """
 
     if not isinstance(market_odds, dict):
         return None
 
     canon_id = canonical_game_id(game_id)
-    odds_row = lookup_fallback_odds(canon_id, market_odds)
+
+    if canon_id in market_odds:
+        return market_odds[canon_id]
+
+    odds_row, matched = lookup_fallback_odds(
+        canon_id, market_odds, max_delta=2, return_key=True
+    )
 
     if odds_row is None:
-        logger.warning("❌ No odds found for %s — fallback lookup failed", canon_id)
+        logger.warning(
+            "❌ No odds found for %s — fallback lookup failed", canon_id
+        )
+    elif matched != canon_id:
+        logger.info("✅ Fuzzy matched %s for %s", matched, canon_id)
 
     return odds_row
 
