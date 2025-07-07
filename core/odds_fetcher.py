@@ -25,6 +25,7 @@ from core.utils import (
     merge_book_sources_for,
     canonical_game_id,
     parse_game_id,
+    game_id_to_dt,
     to_eastern,
 )
 
@@ -262,8 +263,9 @@ def fetch_market_odds_from_api(game_ids, filter_bookmakers=None, lookahead_days=
     events = resp.json()
     logger.debug(f"[DEBUG] Received {len(events)} events from Odds API")
 
-    odds_data = {}
-
+    # Build lookup tables for matching
+    events_by_id = {}
+    events_by_key = defaultdict(list)
     for event in events:
         try:
             home_team = event["home_team"]
@@ -273,67 +275,108 @@ def fetch_market_odds_from_api(game_ids, filter_bookmakers=None, lookahead_days=
             ).replace(tzinfo=ZoneInfo("UTC"))
             start_time = to_eastern(start_time_utc)
 
-            game_id = canonical_game_id(
+            api_gid = canonical_game_id(
                 extract_game_id_from_event(away_team, home_team, start_time)
             )
 
-            # 🕒 Debug the start times and game_id
-            logger.debug(
-                "📅 Game %s starts at %s ET (UTC: %s)",
-                game_id,
-                start_time.isoformat(),
-                start_time_utc.isoformat(),
-            )
+            events_by_id[api_gid] = {
+                "event": event,
+                "start": start_time,
+                "home": home_team,
+                "away": away_team,
+            }
 
-            # 🔍 DEBUG comparison with your sim game_ids
-            logger.debug("🔍 Incoming game_ids (expected): %s", sorted(input_game_ids))
-            logger.debug(
-                "🧱 Built from API: %s → Home: %s, Away: %s",
-                game_id,
-                home_team,
-                away_team,
-            )
+            parts = parse_game_id(api_gid)
+            key = (parts["date"], parts["away"], parts["home"])
+            events_by_key[key].append(api_gid)
+        except Exception as e:
+            logger.debug(f"💥 Exception while indexing event: {e}")
 
-            if game_id not in input_game_ids:
+    odds_data = {}
+
+    for sim_id in input_game_ids:
+        game_id = sim_id
+        event_info = events_by_id.get(game_id)
+
+        if event_info is None:
+            parts = parse_game_id(game_id)
+            key = (parts["date"], parts["away"], parts["home"])
+            candidates = events_by_key.get(key, [])
+
+            sim_dt = game_id_to_dt(game_id)
+            matches = []
+            if candidates:
+                for cid in candidates:
+                    c_info = events_by_id[cid]
+                    if sim_dt is None:
+                        matches.append(cid)
+                    else:
+                        delta = abs((c_info["start"] - sim_dt).total_seconds()) / 60
+                        if delta <= 10:
+                            matches.append(cid)
+
+            if len(matches) == 1:
+                event_info = events_by_id[matches[0]]
+                api_id = matches[0]
+                logger.info(
+                    "📎 Fuzzy matched API game_id: %s to sim input: %s",
+                    api_id,
+                    sim_id,
+                )
+                game_id = api_id
+            elif len(matches) > 1:
                 logger.warning(
-                    "❌ No odds for %s — possible ID mismatch or time suffix drift",
-                    game_id,
+                    "⚠️ Multiple events found for %s@%s on %s — ambiguous time for %s",
+                    parts["away"],
+                    parts["home"],
+                    parts["date"],
+                    sim_id,
                 )
-                os.makedirs("logs", exist_ok=True)
-                with open("logs/missed_game_ids.txt", "a") as f:
-                    f.write(f"{game_id} — API: {away_team} @ {home_team}\n")
+                continue
+            else:
+                logger.warning("❌ No odds found for %s — skipped.", sim_id)
                 continue
 
-            logger.debug(f"\n✅ Matched event: {away_team} @ {home_team} → {game_id} | Start: {start_time.isoformat()}")
+        start_time = event_info["start"]
+        home_team = event_info["home"]
+        away_team = event_info["away"]
+        event = event_info["event"]
 
+        logger.debug(
+            "\n✅ Matched event: %s @ %s → %s | Start: %s",
+            away_team,
+            home_team,
+            game_id,
+            start_time.isoformat(),
+        )
 
-            event_id = event["id"]
-            try:
-                odds_resp = requests.get(
-                    EVENT_ODDS_URL.format(event_id=event_id),
-                    params={
-                        "apiKey": ODDS_API_KEY,
-                        "regions": "us",
-                        "markets": ",".join(MARKET_KEYS),
-                        "bookmakers": ",".join(BOOKMAKERS),
-                        "oddsFormat": "american",
-                    },
-                    timeout=10,
-                )
-            except TypeError:
-                odds_resp = requests.get(
-                    EVENT_ODDS_URL.format(event_id=event_id),
-                    params={
-                        "apiKey": ODDS_API_KEY,
-                        "regions": "us",
-                        "markets": ",".join(MARKET_KEYS),
-                        "bookmakers": ",".join(BOOKMAKERS),
-                        "oddsFormat": "american",
-                    },
-                )
-            except requests.exceptions.RequestException as e:
-                logger.error("❌ Error fetching odds for %s: %s", game_id, e)
-                continue
+        event_id = event["id"]
+        try:
+            odds_resp = requests.get(
+                EVENT_ODDS_URL.format(event_id=event_id),
+                params={
+                    "apiKey": ODDS_API_KEY,
+                    "regions": "us",
+                    "markets": ",".join(MARKET_KEYS),
+                    "bookmakers": ",".join(BOOKMAKERS),
+                    "oddsFormat": "american",
+                },
+                timeout=10,
+            )
+        except TypeError:
+            odds_resp = requests.get(
+                EVENT_ODDS_URL.format(event_id=event_id),
+                params={
+                    "apiKey": ODDS_API_KEY,
+                    "regions": "us",
+                    "markets": ",".join(MARKET_KEYS),
+                    "bookmakers": ",".join(BOOKMAKERS),
+                    "oddsFormat": "american",
+                },
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error("❌ Error fetching odds for %s: %s", game_id, e)
+            continue
 
             if odds_resp.status_code != 200:
                 logger.debug(f"⚠️ Failed to fetch odds for {game_id}: {odds_resp.text}")
