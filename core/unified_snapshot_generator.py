@@ -15,14 +15,17 @@ Snapshot data flow after the snapshot-first refactor:
   ``_merge_persistent_fields()``
 """
 
-from core.config import DEBUG_MODE, VERBOSE_MODE
 import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from core.config import DEBUG_MODE, VERBOSE_MODE
 import json
 import argparse
 import shutil
 from datetime import timedelta
 from core.bootstrap import *  # noqa
+
 
 from core.utils import now_eastern, safe_load_json, lookup_fallback_odds, parse_game_id
 from core.logger import get_logger
