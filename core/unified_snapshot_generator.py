@@ -122,6 +122,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     baseline = row.get("baseline_consensus_prob")
     if baseline is None:
         baseline = row.get("market_prob") or row.get("consensus_prob")
+    # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
     row["baseline_consensus_prob"] = baseline
 
     curr = row.get("market_prob") or row.get("consensus_prob")
