@@ -87,7 +87,8 @@ def build_pending(rows: list, tracker: dict) -> dict:
             baseline = tracker[key].get("consensus_prob")
 
         if baseline is None:
-            baseline = row.get("consensus_prob") or row.get("market_prob")
+            # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+            baseline = row.get("consensus_prob")
 
         if baseline is not None:
             row["baseline_consensus_prob"] = baseline

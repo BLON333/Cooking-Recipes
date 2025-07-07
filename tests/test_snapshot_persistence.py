@@ -99,8 +99,11 @@ def run_snapshot_persistence_test() -> None:
             baseline = pending_bets.get(key, {}).get("baseline_consensus_prob")
             if baseline is None:
                 baseline = snapshot_cache.get(key, {}).get(
-                    "baseline_consensus_prob", r["market_prob"]
+                    "baseline_consensus_prob"
                 )
+            if baseline is None:
+                # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+                baseline = r.get("consensus_prob")
             r["baseline_consensus_prob"] = baseline
 
             prior = detect_movement_and_update(r)
