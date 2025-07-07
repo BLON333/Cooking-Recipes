@@ -33,7 +33,6 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from core.utils import now_eastern
 from core.odds_fetcher import fetch_all_market_odds, save_market_odds_to_file
-# from cli.monitor_early_bets import recheck_pending_bets, update_pending_from_snapshot
 from core.snapshot_core import load_latest_snapshot
 
 EDGE_THRESHOLD = 0.05
