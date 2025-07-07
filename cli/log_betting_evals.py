@@ -241,12 +241,12 @@ def print_tracker_snapshot_keys(tracker):
         print(f" - {key}")
 
 
-def get_closest_odds(game_id: str, market_odds: dict):
+def get_closest_odds(game_id: str, market_odds: dict, max_delta: int = 2):
     """Return odds for ``game_id`` using :func:`lookup_fallback_odds`.
 
-    This helper normalizes ``game_id`` with :func:`canonical_game_id` and first
-    attempts an exact lookup. If that fails, it falls back to a fuzzy match that
-    tolerates small ``-T`` suffix mismatches (\u00b11\u20132 minutes).
+    ``max_delta`` sets the maximum allowed difference in minutes between the
+    ``-T`` time suffixes when falling back to a fuzzy match. A warning is logged
+    if the best match differs by more than two minutes.
     """
 
     if not isinstance(market_odds, dict):
@@ -258,7 +258,7 @@ def get_closest_odds(game_id: str, market_odds: dict):
         return market_odds[canon_id]
 
     odds_row, matched = lookup_fallback_odds(
-        canon_id, market_odds, max_delta=2, return_key=True
+        canon_id, market_odds, max_delta=max_delta, return_key=True
     )
 
     if odds_row is None:
@@ -266,7 +266,30 @@ def get_closest_odds(game_id: str, market_odds: dict):
             "❌ No odds found for %s — fallback lookup failed", canon_id
         )
     elif matched != canon_id:
-        logger.info("✅ Fuzzy matched %s for %s", matched, canon_id)
+        delta = None
+        try:
+            from datetime import datetime
+
+            def _mins(gid: str) -> int | None:
+                if "-T" not in gid:
+                    return None
+                token = gid.split("-T", 1)[1].split("-", 1)[0]
+                dt = datetime.strptime(token, "%H%M")
+                return dt.hour * 60 + dt.minute
+
+            m1 = _mins(canon_id)
+            m2 = _mins(matched)
+            if m1 is not None and m2 is not None:
+                delta = abs(m1 - m2)
+        except Exception:
+            delta = None
+
+        if delta is not None and delta > 2:
+            logger.warning(
+                "⚠️ Fuzzy matched %s for %s (%d min diff)", matched, canon_id, delta
+            )
+        else:
+            logger.info("✅ Fuzzy matched %s for %s", matched, canon_id)
 
     return odds_row
 
@@ -1753,8 +1776,10 @@ def log_bets(
         side_clean = standardize_derivative_label(side)
 
         if market_key in {"spreads", "h2h"}:
-            raw_lookup = convert_full_team_spread_to_odds_key(side_clean)
-            lookup_side = normalize_label_for_odds(raw_lookup, market_key)
+            lookup_side = normalize_label_for_odds(
+                convert_full_team_spread_to_odds_key(standardize_derivative_label(side)),
+                market_key,
+            )
         elif market_key == "totals":
             lookup_side = normalize_label_for_odds(side_clean, market_key)
         else:
@@ -1772,7 +1797,15 @@ def log_bets(
             continue
 
         if not isinstance(market_entry, dict):
-            logger.warning("❌ No odds for %s — market %s", side, market_key)
+            logger.warning(
+                "❌ No odds for %s — market %s | normalized lookup: '%s'",
+                side,
+                market_key,
+                lookup_side,
+            )
+            if DEBUG:
+                available = list(market_odds.get(market_key, {}).keys())
+                print(f"🔍 Available sides for {market_key}: {available[:10]}...")
             continue
 
         # Safely get the correct sim line (now that matched_key is known)
@@ -2053,7 +2086,10 @@ def log_derivative_bets(
 
                 if market_key in {"spreads", "h2h"}:
                     lookup_side = normalize_label_for_odds(
-                        convert_full_team_spread_to_odds_key(side_clean), market_key
+                        convert_full_team_spread_to_odds_key(
+                            standardize_derivative_label(label)
+                        ),
+                        market_key,
                     )
                 elif market_key == "totals":
                     lookup_side = normalize_label_for_odds(side_clean, market_key)
@@ -2095,11 +2131,17 @@ def log_derivative_bets(
 
                     if not isinstance(market_entry, dict):
                         logger.warning(
-                            "❌ No odds for %s in %s_%s",
+                            "❌ No odds for %s in %s_%s | normalized lookup: '%s'",
                             label,
                             market_key,
                             segment_clean,
+                            lookup_side,
                         )
+                        if DEBUG:
+                            avail = list(market_odds.get(full_key, {}).keys())
+                            print(
+                                f"🔍 Available sides for {full_key}: {avail[:10]}..."
+                            )
                         continue
 
                     market_full = matched_key  # set final market key
@@ -2112,10 +2154,16 @@ def log_derivative_bets(
 
                 if not isinstance(market_entry, dict):
                     logger.warning(
-                        "❌ No odds for %s in %s",
+                        "❌ No odds for %s in %s | normalized lookup: '%s'",
                         label,
                         market_full,
+                        lookup_side,
                     )
+                    if DEBUG:
+                        avail = list(market_odds.get(market_full, {}).keys())
+                        print(
+                            f"🔍 Available sides for {market_full}: {avail[:10]}..."
+                        )
                     continue
 
                 market_price = market_entry.get("price")
