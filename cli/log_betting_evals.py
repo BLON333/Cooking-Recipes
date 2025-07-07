@@ -247,10 +247,11 @@ def get_closest_odds(game_id: str, market_odds: dict):
     if not isinstance(market_odds, dict):
         return None
 
-    odds_row = lookup_fallback_odds(game_id, market_odds)
+    canon_id = canonical_game_id(game_id)
+    odds_row = lookup_fallback_odds(canon_id, market_odds)
 
     if odds_row is None:
-        logger.warning("❌ No odds found for %s — fallback lookup failed", game_id)
+        logger.warning("❌ No odds found for %s — fallback lookup failed", canon_id)
 
     return odds_row
 
