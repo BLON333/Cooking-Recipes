@@ -1695,7 +1695,6 @@ def expand_snapshot_rows_with_kelly(
                 deduped.append(row)
                 seen.add(key)
 
-    ensure_baseline_consensus_prob(deduped)
     warn_missing_baselines(deduped)
     save_tracker(MARKET_EVAL_TRACKER)
     return deduped
