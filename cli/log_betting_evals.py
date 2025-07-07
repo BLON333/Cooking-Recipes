@@ -1,7 +1,8 @@
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 # === Path Setup ===
 from core import config
-import os
-import sys
 from core.bootstrap import *  # noqa
 
 # === Core Imports ===
@@ -11,6 +12,7 @@ from collections import defaultdict
 
 # === External Notification / Environment ===
 import requests
+from dotenv import load_dotenv
 from core.utils import post_with_retries
 from core.constants import market_prob_increase_threshold
 from core.should_log_bet import (
@@ -21,8 +23,6 @@ from core.should_log_bet import (
 )
 from core.theme_key_utils import make_theme_key
 from core.exposure_utils import get_exposure_key
-from dotenv import load_dotenv
-
 from core.market_eval_tracker import (
     load_tracker as load_eval_tracker,
     save_tracker,
@@ -37,18 +37,18 @@ from core.utils import (
     parse_game_id,
     to_eastern,
     parse_snapshot_timestamp,
+    canonical_game_id,
 )
-from core.utils import canonical_game_id
 from core.dispatch_clv_snapshot import parse_start_time
 from core.book_helpers import ensure_consensus_books
 from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
-import re
-import warnings
 from core.snapshot_tracker_loader import (
     find_latest_snapshot_tracker_path,
     find_latest_market_snapshot_path,
 )
+import re
+import warnings
 
 load_dotenv()
 from core.logger import get_logger, set_log_level
