@@ -44,6 +44,7 @@ from core.market_eval_tracker import (
 )
 from core.book_helpers import ensure_consensus_books
 from core.market_pricer import kelly_fraction
+from core.confirmation_utils import required_market_move, extract_book_count
 
 logger = get_logger(__name__)
 
@@ -189,6 +190,46 @@ def _enrich_snapshot_row(row: dict) -> None:
     elif roles:
         visible = True
     row["visible_in_snapshot"] = visible
+
+    # 🧩 Enrich: confirmation metrics
+    try:
+        curr_prob = float(row.get("market_prob"))
+        base_prob = float(row.get("baseline_consensus_prob"))
+        row["consensus_move"] = round(curr_prob - base_prob, 5)
+    except Exception:
+        row["consensus_move"] = 0.0
+
+    try:
+        hours = float(row.get("hours_to_game", 0))
+    except Exception:
+        hours = 0.0
+    book_count = extract_book_count(row)
+    row["required_move"] = round(
+        required_market_move(
+            hours_to_game=hours,
+            book_count=book_count,
+            market=row.get("market"),
+            ev_percent=row.get("ev_percent"),
+        ),
+        5,
+    )
+
+    if row.get("consensus_move", 0.0) >= row.get("required_move", 0.0):
+        row["movement_confirmed"] = True
+    else:
+        row.setdefault("movement_confirmed", False)
+
+    # 🧩 Enrich: early/low-EV gating
+    ev = row.get("ev_percent", 0.0) or 0.0
+    rk = row.get("raw_kelly", 0.0) or 0.0
+    stake = row.get("stake", row.get("full_stake", 0.0)) or 0.0
+    if ev < 5.0 and rk < 1.0 and stake < 1.0:
+        row.setdefault("skip_reason", "low_ev")
+
+    segment = str(row.get("segment", ""))
+    if segment in {"1st_3", "1st_7", "team_totals"} and hours > 12:
+        row.setdefault("skip_reason", "time_blocked")
+        row["entry_type"] = "none"
 
 
 def _load_prior_snapshot_map(directory: str = "backtest") -> dict:
