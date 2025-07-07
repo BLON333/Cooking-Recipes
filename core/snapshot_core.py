@@ -987,6 +987,8 @@ def build_snapshot_rows(
                 label=lookup_side,
             )
             consensus_prob = result.get("consensus_prob")
+            if consensus_prob is None:
+                consensus_prob = market_entry.get("consensus_prob")
             book_odds_list = list(result.get("bookwise_probs", {}).values())
 
             market_clean = matched_key.replace("alternate_", "")
