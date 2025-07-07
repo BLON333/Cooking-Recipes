@@ -13,7 +13,7 @@ from collections import defaultdict
 # === External Notification / Environment ===
 import requests
 from dotenv import load_dotenv
-from core.utils import post_with_retries
+from core.utils import post_with_retries, lookup_fallback_odds
 from core.constants import market_prob_increase_threshold
 from core.should_log_bet import (
     MIN_NEGATIVE_ODDS,
@@ -241,54 +241,17 @@ def print_tracker_snapshot_keys(tracker):
 
 
 def get_closest_odds(game_id: str, market_odds: dict):
-    """Return odds for ``game_id`` with fuzzy suffix matching.
-
-    If ``game_id`` isn't found exactly, look for keys starting with the base
-    ID (everything before the last ``-T``) and choose the candidate with the
-    numerically closest ``T`` suffix.
-    """
+    """Return odds for ``game_id`` using :func:`lookup_fallback_odds`."""
 
     if not isinstance(market_odds, dict):
         return None
 
-    odds = market_odds.get(game_id)
-    if odds is not None:
-        return odds
+    odds_row = lookup_fallback_odds(game_id, market_odds)
 
-    if "-T" not in game_id:
-        return None
+    if odds_row is None:
+        logger.warning("❌ No odds found for %s — fallback lookup failed", game_id)
 
-    base, suffix = game_id.rsplit("-T", 1)
-    m = re.match(r"(\d+)", suffix)
-    if not m:
-        return None
-    target_num = int(m.group(1))
-    prefix = f"{base}-T"
-
-    closest_match = None
-    closest_diff = None
-
-    for key in market_odds:
-        if not key.startswith(prefix):
-            continue
-        rest = key[len(prefix) :]
-        m2 = re.match(r"(\d+)", rest)
-        if not m2:
-            continue
-        try:
-            num = int(m2.group(1))
-        except Exception:
-            continue
-        diff = abs(num - target_num)
-        if closest_diff is None or diff < closest_diff:
-            closest_match = key
-            closest_diff = diff
-
-    if closest_match:
-        logger.warning("⏱ Fuzzy-matched game ID %s → %s", game_id, closest_match)
-        return market_odds.get(closest_match)
-
-    return None
+    return odds_row
 
 
 from core.market_pricer import (
