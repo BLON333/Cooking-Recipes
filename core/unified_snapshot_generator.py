@@ -119,11 +119,9 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
 def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     """Populate enrichment fields on a snapshot row."""
     # 🧩 Enrich: baseline
+    if row.get("baseline_consensus_prob") is None:
+        row["baseline_consensus_prob"] = row.get("consensus_prob")
     baseline = row.get("baseline_consensus_prob")
-    if baseline is None:
-        baseline = row.get("market_prob") or row.get("consensus_prob")
-    # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
-    row["baseline_consensus_prob"] = baseline
 
     curr = row.get("market_prob") or row.get("consensus_prob")
 
