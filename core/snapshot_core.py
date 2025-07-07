@@ -1119,18 +1119,6 @@ def build_snapshot_rows(
                 MARKET_EVAL_TRACKER_BEFORE_UPDATE,
             )
             annotate_display_deltas(row, prior_row)
-            MARKET_EVAL_TRACKER.setdefault(tracker_key, {})
-            MARKET_EVAL_TRACKER[tracker_key].update(
-                {
-                    "market_odds": row.get("market_odds"),
-                    "ev_percent": row.get("ev_percent"),
-                    "blended_fv": row.get("blended_fv"),
-                    "stake": row.get("stake"),
-                    "market_prob": row.get("market_prob"),
-                    "sim_prob": row.get("sim_prob"),
-                    "baseline_consensus_prob": row.get("baseline_consensus_prob"),
-                }
-            )
             if VERBOSE_MODE:
                 old_ev = (prior_row or {}).get("ev_percent")
                 new_ev = row.get("ev_percent")
