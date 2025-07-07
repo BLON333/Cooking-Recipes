@@ -1086,6 +1086,10 @@ def lookup_fallback_odds(
         if debug:
             print(f"[Fallback Debug] No candidate keys for {game_id}")
         return (None, None) if return_key else None
+    if debug:
+        print(
+            f"[Fallback Debug] Keys with prefix {prefix}: {sorted(matches)}"
+        )
 
     def _suffix_minutes(gid: str) -> int | None:
         if "-T" not in gid:
@@ -1132,8 +1136,14 @@ def lookup_fallback_odds(
             print(
                 f"[Fallback Debug] Using fallback {best_key} ({best_delta if best_delta is not None else '?'}m)"
             )
+            row = fallback_odds.get(best_key)
+            has_odds = isinstance(row, dict) and bool(row)
+            print(
+                f"[Fallback Debug] Fallback key data present: {has_odds}"
+            )
             print(f"[fallback_debug] Matched fallback key: {best_key} for {game_id}")
-        row = fallback_odds.get(best_key)
+        else:
+            row = fallback_odds.get(best_key)
         return (row, best_key) if return_key else row
 
     if debug:
