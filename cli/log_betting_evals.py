@@ -1573,6 +1573,14 @@ def write_to_csv(
         except NameError:
             print(f"    • Snapshot File Used     : Not available in this scope")
 
+    # Ensure baseline_consensus_prob is populated before confirmation checks
+    if row.get("baseline_consensus_prob") is None:
+        row["baseline_consensus_prob"] = (
+            (prior_snapshot or {}).get("baseline_consensus_prob")
+            or row.get("consensus_prob")
+            or row.get("market_prob")
+        )
+
     baseline_prob = row.get("baseline_consensus_prob")
     if "market_prob" not in row and "consensus_prob" in row:
         row["market_prob"] = row["consensus_prob"]
