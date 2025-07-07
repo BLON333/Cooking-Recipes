@@ -119,6 +119,7 @@ def warn_missing_baselines(rows: list) -> None:
 
 def ensure_baseline_consensus_prob(rows: list, tracker: dict | None = None) -> None:
     """Populate ``baseline_consensus_prob`` when missing."""
+    # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
     if tracker is None:
         tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
 
@@ -133,8 +134,6 @@ def ensure_baseline_consensus_prob(rows: list, tracker: dict | None = None) -> N
             tracker_entry = tracker.get(key)
             if tracker_entry:
                 baseline = tracker_entry.get("baseline_consensus_prob")
-                if baseline is None:
-                    baseline = tracker_entry.get("market_prob")
 
         if baseline is None:
             prior_row = row.get("_prior_snapshot")
@@ -142,7 +141,7 @@ def ensure_baseline_consensus_prob(rows: list, tracker: dict | None = None) -> N
                 baseline = prior_row.get("baseline_consensus_prob")
 
         if baseline is None:
-            baseline = row.get("consensus_prob") or row.get("market_prob")
+            baseline = row.get("consensus_prob")
 
         row["baseline_consensus_prob"] = baseline
 
