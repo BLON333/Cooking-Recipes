@@ -1043,13 +1043,50 @@ def lookup_fallback_odds(game_id: str, fallback_odds: dict) -> dict | None:
     """Return the best-matching fallback odds entry for ``game_id``."""
     if not isinstance(fallback_odds, dict):
         return None
-    base = base_game_id(game_id)
-    candidates = [gid for gid in fallback_odds if base_game_id(gid) == base]
-    if not candidates:
+
+    # ✅ Step 1: attempt exact match first
+    if game_id in fallback_odds:
+        return fallback_odds[game_id]
+
+    # ✅ Step 2: strip time suffix and look for matching prefixes
+    if "-T" not in game_id:
         return None
-    match = fuzzy_match_game_id(game_id, candidates)
-    key = match or candidates[0]
-    return fallback_odds.get(key)
+    prefix = game_id.rsplit("-T", 1)[0]
+    matches = [k for k in fallback_odds if k.startswith(prefix)]
+    if not matches:
+        return None
+
+    def _suffix_minutes(gid: str) -> int | None:
+        if "-T" not in gid:
+            return None
+        token = gid.split("-T", 1)[1].split("-", 1)[0]
+        try:
+            dt = datetime.strptime(token, "%H%M")
+        except Exception:
+            return None
+        return dt.hour * 60 + dt.minute
+
+    target_min = _suffix_minutes(game_id)
+    best_key = None
+    best_delta = None
+    for k in sorted(matches):  # deterministic ordering for ties
+        cand_min = _suffix_minutes(k)
+        if target_min is None or cand_min is None:
+            best_key = k
+            break
+        delta = abs(cand_min - target_min)
+        if best_delta is None or delta < best_delta:
+            best_delta = delta
+            best_key = k
+
+    if best_key:
+        if best_key != game_id:
+            from core.logger import get_logger
+            logger = get_logger(__name__)
+            logger.warning("⚠️ Fallback matched %s for %s", best_key, game_id)
+        return fallback_odds.get(best_key)
+
+    return None
 
 
 TEAM_NAME_FROM_ABBR = {
