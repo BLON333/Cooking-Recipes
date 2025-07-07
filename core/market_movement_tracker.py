@@ -10,6 +10,7 @@ from typing import Dict, Optional
 from core.utils import canonical_game_id
 
 from core.logger import get_logger
+from core.constants import market_prob_increase_threshold
 
 logger = get_logger(__name__)
 
@@ -85,7 +86,6 @@ def detect_market_movement(current: Dict, prior: Optional[Dict]) -> Dict[str, ob
         curr = current.get(field)
         prev = (prior or {}).get(field)
         if field == "market_prob":
-            from cli.log_betting_evals import market_prob_increase_threshold
             baseline = current.get("baseline_consensus_prob")
             mkt = current.get("market", "")
             hours = current.get("hours_to_game")
@@ -97,7 +97,7 @@ def detect_market_movement(current: Dict, prior: Optional[Dict]) -> Dict[str, ob
                 )
                 threshold = 0.01
             else:
-                threshold = market_prob_increase_threshold(hours, mkt)
+                threshold = market_prob_increase_threshold
             # Compare current vs. baseline market_prob with threshold
             if curr is None or baseline is None:
                 movement["mkt_movement"] = "same"

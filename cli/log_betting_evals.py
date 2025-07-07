@@ -12,6 +12,7 @@ from collections import defaultdict
 # === External Notification / Environment ===
 import requests
 from core.utils import post_with_retries
+from core.constants import market_prob_increase_threshold
 from core.should_log_bet import (
     MIN_NEGATIVE_ODDS,
     MAX_POSITIVE_ODDS,
@@ -903,26 +904,6 @@ def expand_snapshot_rows_with_kelly(
     return deduped
 
 
-def market_prob_increase_threshold(
-    hours_to_game: float, market_type: str = ""
-) -> float:
-    """Return required market_prob delta for logging based on time to game.
-
-    A lower threshold is returned for derivative markets (e.g. F5, 1st inning) to
-    allow small market moves to pass the filter.
-    """
-
-    market_key = market_type.lower() if isinstance(market_type, str) else ""
-    is_derivative = any(x in market_key for x in ["1st", "f5", "innings"])
-
-    if hours_to_game >= 48:
-        return 0.004 if is_derivative else 0.005
-    elif hours_to_game <= 6:
-        return 0.001 if is_derivative else 0.002
-    else:
-        decay = 0.003
-        floor = 0.001 if is_derivative else 0.002
-        return floor + (decay * (hours_to_game - 6) / 42)
 
 
 def should_include_in_summary(row):
@@ -1561,7 +1542,7 @@ def write_to_csv(
     new_prob = row.get("market_prob")
     hours_to_game = row.get("hours_to_game", 8)
 
-    threshold = market_prob_increase_threshold(hours_to_game, row.get("market", ""))
+    threshold = market_prob_increase_threshold
 
     if row.get("entry_type") in {"first", "top-up"}:
         if baseline_prob is None or new_prob is None:
