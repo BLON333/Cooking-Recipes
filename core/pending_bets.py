@@ -2,6 +2,12 @@ import os
 import json
 import time
 from datetime import datetime
+import warnings
+
+warnings.warn(
+    "core.pending_bets is deprecated; pending_bets.json is no longer used",
+    DeprecationWarning,
+)
 
 from core.utils import (
     safe_load_json,
