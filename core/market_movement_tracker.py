@@ -167,10 +167,13 @@ def track_and_update_market_movement(
     entry.update(movement)
     entry["prev_market_odds"] = prev_market_odds
 
-    baseline_missing = (
-        prior.get("baseline_consensus_prob") is None
-        and entry.get("baseline_consensus_prob") is not None
-    )
+    existing_baseline = tracker.get(key, {}).get("baseline_consensus_prob")
+    if existing_baseline is None:
+        existing_baseline = prior.get("baseline_consensus_prob")
+
+    baseline_missing = existing_baseline is None and entry.get(
+        "baseline_consensus_prob"
+    ) is not None
 
     # Only update tracker if a meaningful change occurred for existing entries
     if (
@@ -211,15 +214,15 @@ def track_and_update_market_movement(
         "best_book": entry.get("best_book"),
         "raw_sportsbook": current_raw,
         "prev_raw_sportsbook": prev_raw,
-        "baseline_consensus_prob": prior.get("baseline_consensus_prob")
-        if prior.get("baseline_consensus_prob") is not None
+        "baseline_consensus_prob": existing_baseline
+        if existing_baseline is not None
         else entry.get("baseline_consensus_prob"),
     }
 
     if (
-        prior.get("baseline_consensus_prob") is not None
-        and prior.get("baseline_consensus_prob")
-        != entry.get("baseline_consensus_prob")
+        existing_baseline is not None
+        and entry.get("baseline_consensus_prob") is not None
+        and entry.get("baseline_consensus_prob") != existing_baseline
     ):
         logger.warning("⚠️ baseline_consensus_prob mismatch for %s", key)
 
