@@ -751,7 +751,7 @@ def compare_and_flag_new_rows(
         if baseline is None:
             baseline = (prior or {}).get("baseline_consensus_prob") or entry.get(
                 "consensus_prob"
-            ) or entry.get("market_prob")
+            )
         entry["baseline_consensus_prob"] = baseline
         movement = track_and_update_market_movement(
             entry,
