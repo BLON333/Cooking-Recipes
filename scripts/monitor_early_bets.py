@@ -9,13 +9,11 @@ from core.logger import get_logger
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.utils import safe_load_json
 from core.lock_utils import with_locked_file
-from core.should_log_bet import should_log_bet
 from cli.log_betting_evals import (
-    write_to_csv,
     load_existing_stakes,
-    record_successful_log,
     build_theme_exposure_tracker,
 )
+from core.logging_helpers import evaluate_snapshot_row_for_logging
 from core.market_eval_tracker import load_tracker as load_eval_tracker
 
 logger = get_logger(__name__)
@@ -63,40 +61,23 @@ def recheck_pending_bets(backtest_dir: str = DEFAULT_BACKTEST_DIR) -> None:
             updated_rows.append(row)
             continue
 
-        evaluation = should_log_bet(
-            row.copy(),
+        result = evaluate_snapshot_row_for_logging(
+            row,
             theme_stakes,
-            verbose=False,
-            eval_tracker=eval_tracker,
-            existing_csv_stakes=existing,
+            eval_tracker,
+            existing,
         )
 
-        if evaluation and evaluation.get("log") and not evaluation.get("skip_reason"):
-            result = write_to_csv(
-                evaluation,
-                "logs/market_evals.csv",
-                existing,
-                session_exposure,
-                theme_stakes,
-            )
-            if result and not result.get("skip_reason"):
-                record_successful_log(result, existing, theme_stakes)
-                row.update(result)
-                row["logged"] = True
-                row["logged_ts"] = now_ts
-                row["queued"] = False
-                changed = True
-            else:
-                reason = (result or {}).get("skip_reason") or evaluation.get("skip_reason")
-                if reason:
-                    row["skip_reason"] = reason
-                row["queued"] = True
-                changed = True
+        if result and not result.get("skip_reason") and result.get("log"):
+            row.update(result)
+            row["logged"] = True
+            row["logged_ts"] = now_ts
+            row["queued"] = False
+            changed = True
         else:
-            if evaluation:
-                reason = evaluation.get("skip_reason")
-                if reason:
-                    row["skip_reason"] = reason
+            reason = (result or {}).get("skip_reason")
+            if reason:
+                row["skip_reason"] = reason
             row["queued"] = True
             changed = True
         updated_rows.append(row)

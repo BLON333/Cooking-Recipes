@@ -327,7 +327,7 @@ from core.time_utils import compute_hours_to_game
 
 
 # === Staking Logic Refactor ===
-from core.should_log_bet import should_log_bet
+from core.logging_helpers import evaluate_snapshot_row_for_logging
 from core.market_eval_tracker import (
     load_tracker as load_eval_tracker,
     save_tracker,
@@ -2976,14 +2976,11 @@ def process_theme_logged_bets(
         assert best_row.get("side"), f"Missing 'side' for {best_row}"
 
         try:
-            result = write_to_csv(
+            result = evaluate_snapshot_row_for_logging(
                 best_row,
-                "logs/market_evals.csv",
-                existing,
-                session_exposure,
                 existing_exposure,
-                dry_run=dry_run,
-                force_log=force_log,
+                MARKET_EVAL_TRACKER,
+                existing,
             )
             final_rows.append(best_row)
         except Exception as e:  # pragma: no cover - unexpected failure
@@ -3003,13 +3000,6 @@ def process_theme_logged_bets(
                 ensure_consensus_books(best_row)
                 skipped_bets.append(best_row)
 
-            if not result.get("skip_reason") and result.get("side"):
-                record_successful_log(result, existing, existing_exposure)
-            else:
-                logger.warning(
-                    "❌ Skipping tracker update: result was skipped or malformed → %s",
-                    result,
-                )
         else:
             print(
                 f"⛔ CSV Log Failed → {best_row['game_id']} | {best_row['market']} | {best_row['side']}"
