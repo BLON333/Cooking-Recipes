@@ -1569,6 +1569,8 @@ def write_to_csv(
             or row.get("market_prob")
         )
 
+    # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+
     baseline_prob = row.get("baseline_consensus_prob")
     if "market_prob" not in row and "consensus_prob" in row:
         row["market_prob"] = row["consensus_prob"]
@@ -1673,6 +1675,7 @@ def write_to_csv(
         baseline = row.get("baseline_consensus_prob")
         if baseline is None:
             baseline = prior_row.get("baseline_consensus_prob") or row.get("consensus_prob") or row.get("market_prob")
+        # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
         row["baseline_consensus_prob"] = baseline
         annotate_display_deltas(row, prior_row)
         row["_movement_str"] = row.get("mkt_prob_display")
