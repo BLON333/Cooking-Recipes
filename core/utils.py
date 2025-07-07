@@ -1044,9 +1044,8 @@ def lookup_fallback_odds(
     fallback_odds: dict,
     *,
     max_delta: int | None = 2,
-    return_key: bool = False,
     debug: bool = False,
-) -> dict | tuple[dict | None, str | None] | None:
+) -> tuple[dict | None, str | None]:
     """Return the best-matching fallback odds entry for ``game_id``.
 
     Parameters
@@ -1058,38 +1057,46 @@ def lookup_fallback_odds(
     max_delta:
         Optional maximum difference in minutes allowed when fuzzy matching the
         ``-T`` time suffix. ``None`` disables the constraint.
-    return_key:
-        If ``True`` return a ``(row, matched_key)`` tuple instead of just the
-        row.
+    debug:
+        If ``True`` print diagnostic information about the matching process.
+
+    Returns
+    -------
+    tuple
+        ``(row, matched_key)`` where ``row`` is the odds entry or ``None`` and
+        ``matched_key`` is the key used.
     """
     debug = debug or config.DEBUG_MODE
 
+    if debug:
+        print(f"[Fallback Debug] lookup for {game_id}")
+
     if not isinstance(fallback_odds, dict):
-        return (None, None) if return_key else None
+        return None, None
 
     # ✅ Step 1: attempt exact match first
     if game_id in fallback_odds:
         row = fallback_odds[game_id]
         if debug:
             print(f"[Fallback Debug] Exact match for {game_id}")
-        return (row, game_id) if return_key else row
+        return row, game_id
     else:
         if debug:
-            print(f"[fallback_debug] No exact match for {game_id}. Searching fuzzy matches...")
+            print(f"[Fallback Debug] No exact match for {game_id}; attempting fuzzy lookup")
 
     # ✅ Step 2: strip time suffix and look for matching prefixes
     if "-T" not in game_id:
-        return (None, None) if return_key else None
+        return None, None
     prefix = game_id.rsplit("-T", 1)[0]
     matches = [k for k in fallback_odds if k.startswith(prefix)]
     if not matches:
         if debug:
             print(f"[Fallback Debug] No candidate keys for {game_id}")
-        return (None, None) if return_key else None
+        return None, None
     if debug:
-        print(
-            f"[Fallback Debug] Keys with prefix {prefix}: {sorted(matches)}"
-        )
+        suffix_list = [m[len(prefix):] for m in sorted(matches)]
+        joined = ", ".join(f"{m} ({s})" for m, s in zip(sorted(matches), suffix_list))
+        print(f"[Fallback Debug] Keys with prefix {prefix}: {joined}")
 
     def _suffix_minutes(gid: str) -> int | None:
         if "-T" not in gid:
@@ -1126,30 +1133,23 @@ def lookup_fallback_odds(
         )
         print(f"[Fallback Debug] Target {game_id} → candidates: {cand_str}")
     if best_key:
+        if debug:
+            print(f"[Fallback Debug] Closest match: {best_key}")
+            diff = f"{best_delta} minutes" if best_delta is not None else "?"
+            print(f"[Fallback Debug] Time difference: {diff}")
         if max_delta is not None and best_delta is not None and best_delta > max_delta:
             if debug:
                 print(
                     f"[Fallback Debug] Closest candidate {best_key} ({best_delta}m) exceeds max_delta"
                 )
-            return (None, None) if return_key else None
-        if debug and best_key != game_id:
-            print(
-                f"[Fallback Debug] Using fallback {best_key} ({best_delta if best_delta is not None else '?'}m)"
-            )
-            row = fallback_odds.get(best_key)
-            has_odds = isinstance(row, dict) and bool(row)
-            print(
-                f"[Fallback Debug] Fallback key data present: {has_odds}"
-            )
-            print(f"[fallback_debug] Matched fallback key: {best_key} for {game_id}")
-        else:
-            row = fallback_odds.get(best_key)
-        return (row, best_key) if return_key else row
+            return None, None
+        row = fallback_odds.get(best_key)
+        return row, best_key
 
     if debug:
         print(f"[Fallback Debug] No suitable fallback found for {game_id}")
 
-    return (None, None) if return_key else None
+    return None, None
 
 
 TEAM_NAME_FROM_ABBR = {

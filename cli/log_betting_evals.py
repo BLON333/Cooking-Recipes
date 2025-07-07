@@ -259,7 +259,7 @@ def get_closest_odds(game_id: str, market_odds: dict, max_delta: int = 2, debug:
         return market_odds[canon_id]
 
     odds_row, matched = lookup_fallback_odds(
-        canon_id, market_odds, max_delta=max_delta, return_key=True, debug=debug
+        canon_id, market_odds, max_delta=max_delta, debug=debug
     )
 
     if odds_row is None:
