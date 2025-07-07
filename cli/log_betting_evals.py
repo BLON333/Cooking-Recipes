@@ -1577,6 +1577,13 @@ def write_to_csv(
     if "market_prob" not in row and "consensus_prob" in row:
         row["market_prob"] = row["consensus_prob"]
     new_prob = row.get("market_prob")
+    if DEBUG and "baseline_consensus_prob" in row and "market_prob" in row:
+        base = row.get("baseline_consensus_prob")
+        current = row.get("market_prob")
+        delta = round(current - base, 4) if base is not None and current is not None else "?"
+        print(
+            f"[confirmation_debug] {row['game_id']} | {row['market']} | {row['side']} — baseline: {base}, current: {current}, delta: {delta}"
+        )
     hours_to_game = row.get("hours_to_game", 8)
 
     threshold = market_prob_increase_threshold
