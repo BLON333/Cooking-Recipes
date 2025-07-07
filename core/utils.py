@@ -1073,6 +1073,9 @@ def lookup_fallback_odds(
         if debug:
             print(f"[Fallback Debug] Exact match for {game_id}")
         return (row, game_id) if return_key else row
+    else:
+        if debug:
+            print(f"[fallback_debug] No exact match for {game_id}. Searching fuzzy matches...")
 
     # ✅ Step 2: strip time suffix and look for matching prefixes
     if "-T" not in game_id:
@@ -1129,6 +1132,7 @@ def lookup_fallback_odds(
             print(
                 f"[Fallback Debug] Using fallback {best_key} ({best_delta if best_delta is not None else '?'}m)"
             )
+            print(f"[fallback_debug] Matched fallback key: {best_key} for {game_id}")
         row = fallback_odds.get(best_key)
         return (row, best_key) if return_key else row
 
