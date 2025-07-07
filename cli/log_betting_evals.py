@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from core.utils import post_with_retries, lookup_fallback_odds
 from core.constants import market_prob_increase_threshold
 from core.should_log_bet import (
+    should_log_bet,
     MIN_NEGATIVE_ODDS,
     MAX_POSITIVE_ODDS,
     round_stake,
