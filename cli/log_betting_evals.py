@@ -64,6 +64,7 @@ movement_log_count = 0
 VERBOSE = False
 DEBUG = False
 SHOW_PENDING = False
+DEBUG_MISSING_ODDS = False
 
 
 def log_segment_mismatch(
@@ -241,7 +242,7 @@ def print_tracker_snapshot_keys(tracker):
         print(f" - {key}")
 
 
-def get_closest_odds(game_id: str, market_odds: dict, max_delta: int = 2):
+def get_closest_odds(game_id: str, market_odds: dict, max_delta: int = 2, debug: bool = False):
     """Return odds for ``game_id`` using :func:`lookup_fallback_odds`.
 
     ``max_delta`` sets the maximum allowed difference in minutes between the
@@ -258,13 +259,46 @@ def get_closest_odds(game_id: str, market_odds: dict, max_delta: int = 2):
         return market_odds[canon_id]
 
     odds_row, matched = lookup_fallback_odds(
-        canon_id, market_odds, max_delta=max_delta, return_key=True
+        canon_id, market_odds, max_delta=max_delta, return_key=True, debug=debug
     )
 
     if odds_row is None:
         logger.warning(
             "❌ No odds found for %s — fallback lookup failed", canon_id
         )
+        if debug:
+            prefix = canon_id.rsplit("-T", 1)[0]
+            def _mins(gid: str) -> int | None:
+                if "-T" not in gid:
+                    return None
+                token = gid.split("-T", 1)[1].split("-", 1)[0]
+                try:
+                    from datetime import datetime
+                    dt = datetime.strptime(token, "%H%M")
+                    return dt.hour * 60 + dt.minute
+                except Exception:
+                    return None
+
+            target_min = _mins(canon_id)
+            cands = []
+            for k in market_odds:
+                if k.startswith(prefix):
+                    cand_min = _mins(k)
+                    delta = None
+                    if target_min is not None and cand_min is not None:
+                        delta = abs(cand_min - target_min)
+                    cands.append((delta, k))
+            if cands:
+                cands.sort(key=lambda x: float('inf') if x[0] is None else x[0])
+                best = cands[0]
+                delta_str = f"{best[0]} min" if best[0] is not None else "?"
+                print(
+                    f"[Fallback Debug] Tried fuzzy match for {canon_id} — closest candidate was {best[1]} ({delta_str} delta), but no odds found."
+                )
+            else:
+                print(
+                    f"[Fallback Debug] Tried fuzzy match for {canon_id} — no similar keys found."
+                )
     elif matched != canon_id:
         delta = None
         try:
@@ -2711,12 +2745,17 @@ def run_batch_logging(
             print(f"❌ Failed to load simulation file {sim_path}")
             continue
 
-        mkt = get_closest_odds(game_id, all_market_odds)
+        mkt = get_closest_odds(game_id, all_market_odds, debug=DEBUG_MISSING_ODDS)
 
         if not mkt:
             print(
                 f"❌ No market odds for {raw_game_id} (normalized: {game_id}), skipping."
             )
+            if DEBUG_MISSING_ODDS:
+                prefix = game_id.rsplit("-T", 1)[0]
+                similar = [k for k in all_market_odds if k.startswith(prefix)]
+                if similar:
+                    print(f"🔍 Similar keys: {similar}")
             continue
 
         log_bets(
@@ -3108,6 +3147,11 @@ if __name__ == "__main__":
     )
     p.add_argument("--debug", action="store_true", help="Enable debug logging")
     p.add_argument(
+        "--debug-missing-odds",
+        action="store_true",
+        help="Print detailed info when market odds are missing",
+    )
+    p.add_argument(
         "--image",
         action="store_true",
         help="Generate summary image and post to Discord",
@@ -3132,6 +3176,7 @@ if __name__ == "__main__":
     if args.debug:
         set_log_level("DEBUG")
     DEBUG = args.debug
+    DEBUG_MISSING_ODDS = args.debug_missing_odds
 
     VERBOSE = args.verbose
     SHOW_PENDING = args.show_pending
