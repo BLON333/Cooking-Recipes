@@ -1045,6 +1045,7 @@ def lookup_fallback_odds(
     *,
     max_delta: int | None = 2,
     return_key: bool = False,
+    debug: bool = False,
 ) -> dict | tuple[dict | None, str | None] | None:
     """Return the best-matching fallback odds entry for ``game_id``.
 
@@ -1061,12 +1062,16 @@ def lookup_fallback_odds(
         If ``True`` return a ``(row, matched_key)`` tuple instead of just the
         row.
     """
+    debug = debug or config.DEBUG_MODE
+
     if not isinstance(fallback_odds, dict):
         return (None, None) if return_key else None
 
     # ✅ Step 1: attempt exact match first
     if game_id in fallback_odds:
         row = fallback_odds[game_id]
+        if debug:
+            print(f"[Fallback Debug] Exact match for {game_id}")
         return (row, game_id) if return_key else row
 
     # ✅ Step 2: strip time suffix and look for matching prefixes
@@ -1075,6 +1080,8 @@ def lookup_fallback_odds(
     prefix = game_id.rsplit("-T", 1)[0]
     matches = [k for k in fallback_odds if k.startswith(prefix)]
     if not matches:
+        if debug:
+            print(f"[Fallback Debug] No candidate keys for {game_id}")
         return (None, None) if return_key else None
 
     def _suffix_minutes(gid: str) -> int | None:
@@ -1090,24 +1097,43 @@ def lookup_fallback_odds(
     target_min = _suffix_minutes(game_id)
     best_key = None
     best_delta = None
+    candidate_info: list[tuple[str, int | None]] = []
     for k in sorted(matches):  # deterministic ordering for ties
         cand_min = _suffix_minutes(k)
         if target_min is None or cand_min is None:
             best_key = k
+            candidate_info.append((k, None))
             break
         delta = abs(cand_min - target_min)
         if best_delta is None or delta < best_delta:
             best_delta = delta
             best_key = k
+        candidate_info.append((k, delta))
 
+    candidate_info.sort(key=lambda x: float('inf') if x[1] is None else x[1])
+
+    if debug:
+        cand_str = ", ".join(
+            f"{c[0]} ({c[1]}m)" if c[1] is not None else c[0]
+            for c in candidate_info
+        )
+        print(f"[Fallback Debug] Target {game_id} → candidates: {cand_str}")
     if best_key:
         if max_delta is not None and best_delta is not None and best_delta > max_delta:
+            if debug:
+                print(
+                    f"[Fallback Debug] Closest candidate {best_key} ({best_delta}m) exceeds max_delta"
+                )
             return (None, None) if return_key else None
-        if best_key != game_id:
-            # Logging is handled by callers
-            pass
+        if debug and best_key != game_id:
+            print(
+                f"[Fallback Debug] Using fallback {best_key} ({best_delta if best_delta is not None else '?'}m)"
+            )
         row = fallback_odds.get(best_key)
         return (row, best_key) if return_key else row
+
+    if debug:
+        print(f"[Fallback Debug] No suitable fallback found for {game_id}")
 
     return (None, None) if return_key else None
 

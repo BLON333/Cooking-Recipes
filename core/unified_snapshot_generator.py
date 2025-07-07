@@ -54,6 +54,9 @@ logger = get_logger(__name__)
 # Debug/verbose toggles
 VERBOSE = False
 DEBUG = False
+DEBUG_MOVEMENT = False
+_movement_debug_count = 0
+MOVEMENT_DEBUG_LIMIT = 5
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -113,7 +116,7 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
 
 
 
-def _enrich_snapshot_row(row: dict) -> None:
+def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     """Populate enrichment fields on a snapshot row."""
     # 🧩 Enrich: baseline
     baseline = row.get("baseline_consensus_prob")
@@ -221,6 +224,19 @@ def _enrich_snapshot_row(row: dict) -> None:
         row["movement_confirmed"] = True
     else:
         row.setdefault("movement_confirmed", False)
+
+    if debug_movement:
+        global _movement_debug_count
+        if _movement_debug_count < MOVEMENT_DEBUG_LIMIT:
+            delta = (row.get("market_prob") or 0) - (row.get("baseline_consensus_prob") or 0)
+            print(
+                f"Movement Debug → game_id: {row.get('game_id')} | Baseline: {row.get('baseline_consensus_prob')}"
+                f" | Market: {row.get('market_prob')} | Δ = {delta*100:+.1f}% | confirmed: {row.get('movement_confirmed')}"
+            )
+            _movement_debug_count += 1
+        elif _movement_debug_count == MOVEMENT_DEBUG_LIMIT:
+            print("Movement Debug output truncated...")
+            _movement_debug_count += 1
 
     # 🧩 Enrich: early/low-EV gating
     ev = row.get("ev_percent", 0.0) or 0.0
@@ -362,7 +378,7 @@ def build_snapshot_for_date(
     best_book_tracker: dict[tuple[str, str, str], dict] = {}
 
     for row in rows:
-        _enrich_snapshot_row(row)
+        _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
         if is_best_book_row(row):
             key = (row.get("game_id"), row.get("market"), row.get("side"))
@@ -409,7 +425,15 @@ def main() -> None:
             default="5.0,20.0",
             help="EV%% range to include as 'min,max'",
         )
+        parser.add_argument(
+            "--debug-movement",
+            action="store_true",
+            help="Print market movement confirmation debug logs",
+        )
         args = parser.parse_args()
+
+        global DEBUG_MOVEMENT
+        DEBUG_MOVEMENT = args.debug_movement
 
         if args.date:
             date_list = [d.strip() for d in str(args.date).split(",") if d.strip()]
