@@ -1107,11 +1107,10 @@ def build_snapshot_rows(
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
-            baseline = row.get("baseline_consensus_prob")
+            # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+            baseline = (prior_row or {}).get("baseline_consensus_prob")
             if baseline is None:
-                baseline = (prior_row or {}).get("baseline_consensus_prob") or row.get(
-                    "consensus_prob"
-                ) or row.get("market_prob")
+                baseline = row.get("consensus_prob")
             row["baseline_consensus_prob"] = baseline
 
             # Compute movement and update tracker
