@@ -24,11 +24,11 @@ from core.should_log_bet import (
 )
 from core.theme_key_utils import make_theme_key
 from core.exposure_utils import get_exposure_key
-from core.market_eval_tracker import (
-    load_tracker as load_eval_tracker,
-    save_tracker,
-    build_tracker_key,
+from core.market_snapshot_tracker import (
+    load_latest_snapshot_tracker,
+    write_market_snapshot,
 )
+from core.market_eval_tracker import build_tracker_key
 from core.lock_utils import with_locked_file
 from core.skip_reasons import SkipReason
 from core.utils import (
@@ -164,11 +164,8 @@ def latest_snapshot_path(folder="backtest"):
     return os.path.join(folder, files[0]) if files else None
 
 
-# Load tracker for updates during logging
-MARKET_EVAL_TRACKER = load_eval_tracker()
-
-# Load most recent snapshot file for movement comparison
-SNAPSHOT_PATH_USED = find_latest_market_snapshot_path()
+# Load tracker from the most recent snapshot
+MARKET_EVAL_TRACKER, SNAPSHOT_PATH_USED = load_latest_snapshot_tracker()
 if SNAPSHOT_PATH_USED:
     print(f"📄 Snapshot File Used     : {SNAPSHOT_PATH_USED}")
 else:
@@ -327,11 +324,11 @@ from core.time_utils import compute_hours_to_game
 
 # === Staking Logic Refactor ===
 from core.shared_logging_logic import evaluate_snapshot_row_for_logging
-from core.market_eval_tracker import (
-    load_tracker as load_eval_tracker,
-    save_tracker,
-    build_tracker_key,
+from core.market_snapshot_tracker import (
+    load_latest_snapshot_tracker,
+    write_market_snapshot,
 )
+from core.market_eval_tracker import build_tracker_key
 from core.market_movement_tracker import (
     track_and_update_market_movement,
     detect_market_movement,
@@ -2577,7 +2574,8 @@ def run_batch_logging(
 
     # Load the live tracker and snapshot baseline
     MARKET_EVAL_TRACKER.clear()
-    MARKET_EVAL_TRACKER.update(load_eval_tracker())
+    latest_tracker, _ = load_latest_snapshot_tracker()
+    MARKET_EVAL_TRACKER.update(latest_tracker)
 
     # ------------------------------------------------------------------
     # Snapshot tracker baseline
@@ -2585,8 +2583,8 @@ def run_batch_logging(
     MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
 
     # 📂 Load from latest snapshot first
-    snapshot_path = find_latest_market_snapshot_path()
-    MARKET_EVAL_TRACKER_BEFORE_UPDATE = load_eval_tracker(snapshot_path)
+    latest_tracker, snapshot_path = load_latest_snapshot_tracker()
+    MARKET_EVAL_TRACKER_BEFORE_UPDATE.update(latest_tracker)
     if snapshot_path:
         print(
             f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
@@ -3025,12 +3023,10 @@ def process_theme_logged_bets(
 
     if not dry_run:
         try:
-            save_tracker(MARKET_EVAL_TRACKER)
-            logger.info(
-                "\u2705 Tracker saved with %d entries.", len(MARKET_EVAL_TRACKER)
-            )
+            path = write_market_snapshot(MARKET_EVAL_TRACKER)
+            logger.info("\u2705 Snapshot written to %s", path)
         except Exception as e:  # pragma: no cover - unexpected save failure
-            logger.warning("\u26a0\ufe0f Failed to save market eval tracker: %s", e)
+            logger.warning("\u26a0\ufe0f Failed to write market snapshot: %s", e)
 
 
     if not config.DEBUG_MODE:
