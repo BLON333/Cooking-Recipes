@@ -388,20 +388,23 @@ def build_snapshot_for_date(
             if consensus_data and consensus_data.get("consensus_prob") is not None:
                 row["consensus_prob"] = consensus_data["consensus_prob"]
 
-        key = (row.get("game_id"), row.get("market"), row.get("side"))
-        prior_baseline = None
-        if prior_map:
-            prior_baseline = prior_map.get(key, {}).get("baseline_consensus_prob")
-        odds_baseline = None
-        if prior_baseline is None:
-            try:
-                odds_baseline = odds_data[row["game_id"]][row["market"]][row["side"]]["consensus_prob"]
-            except Exception:
-                odds_baseline = None
+        snap_key = (row.get("game_id"), row.get("market"), row.get("side"))
+        prior_baseline = prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
+
         if prior_baseline is not None:
             row["baseline_consensus_prob"] = prior_baseline
-        elif odds_baseline is not None:
-            row["baseline_consensus_prob"] = odds_baseline
+        else:
+            try:
+                odds_baseline = (
+                    odds_data[row["game_id"]]
+                    [row["market"]]
+                    [row["side"]]
+                    .get("consensus_prob")
+                )
+                if odds_baseline is not None:
+                    row["baseline_consensus_prob"] = odds_baseline
+            except (KeyError, TypeError):
+                pass
 
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
