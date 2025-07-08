@@ -55,13 +55,32 @@ from core.confirmation_utils import required_market_move
 from core.scaling_utils import blend_prob
 from core.consensus_pricer import calculate_consensus_prob
 from core.market_movement_tracker import track_and_update_market_movement
-from core.market_eval_tracker import load_tracker, save_tracker, build_tracker_key
+from core.snapshot_tracker_loader import find_latest_market_snapshot_path
+from core.utils import canonical_game_id
 import copy
 
 from core.book_helpers import ensure_consensus_books
 
-# Load tracker once for snapshot utilities and keep a frozen copy for comparisons
-MARKET_EVAL_TRACKER = load_tracker()
+# Load tracker once for snapshot utilities using the latest snapshot
+def build_tracker_key(game_id: str, market: str, side: str) -> str:
+    gid = canonical_game_id(str(game_id))
+    return f"{gid}:{str(market).strip()}:{str(side).strip()}"
+
+
+def load_snapshot_tracker(directory: str = "backtest") -> dict:
+    path = find_latest_market_snapshot_path(directory)
+    if not path or not os.path.exists(path):
+        return {}
+    data = safe_load_json(path)
+    tracker = {}
+    rows = data if isinstance(data, list) else data.values() if isinstance(data, dict) else []
+    for r in rows:
+        key = build_tracker_key(r.get("game_id"), r.get("market"), r.get("side"))
+        tracker[key] = r
+    return tracker
+
+
+MARKET_EVAL_TRACKER = load_snapshot_tracker()
 MARKET_EVAL_TRACKER_BEFORE_UPDATE = copy.deepcopy(MARKET_EVAL_TRACKER)
 
 # === Console Output Controls ===
@@ -813,8 +832,6 @@ def compare_and_flag_new_rows(
         seen.add(j)
         flagged.append(entry)
 
-    # Persist tracker updates
-    save_tracker(MARKET_EVAL_TRACKER)
     return flagged, next_snapshot
 
 
@@ -1138,8 +1155,6 @@ def build_snapshot_rows(
                         f"🔍 Movement: {tracker_key} — EV {old_ev} → {new_ev}, FV {old_fv} → {new_fv}"
                     )
             rows.append(row)
-    # Persist tracker after processing simulations
-    save_tracker(MARKET_EVAL_TRACKER)
     return rows
 
 
@@ -1704,7 +1719,6 @@ def expand_snapshot_rows_with_kelly(
                 seen.add(key)
 
     warn_missing_baselines(deduped)
-    save_tracker(MARKET_EVAL_TRACKER)
     return deduped
 
 
