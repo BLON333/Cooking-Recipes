@@ -1006,6 +1006,28 @@ def canonical_game_id(game_id: str) -> str:
         return game_id
 
 
+def build_snapshot_key(game_id: str, market: str, side: str) -> str:
+    """Return a canonical key for snapshot tracking.
+
+    Parameters
+    ----------
+    game_id : str
+        Game identifier.
+    market : str
+        Market name.
+    side : str
+        Market side.
+
+    Returns
+    -------
+    str
+        Normalized ``game_id:market:side`` key with the game id canonicalized.
+    """
+
+    gid = canonical_game_id(str(game_id))
+    return f"{gid}:{str(market).strip()}:{str(side).strip()}"
+
+
 def game_id_to_dt(game_id: str) -> datetime | None:
     """Return a :class:`datetime` for the Eastern start time encoded in ``game_id``."""
     parts = parse_game_id(game_id)
