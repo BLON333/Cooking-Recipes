@@ -405,9 +405,14 @@ def build_snapshot_for_date(
         row_label = row.get("side")
         if row_market and row_label:
             canonical_gid = canonical_game_id(row["game_id"])
+            odds_row = odds_data.get(canonical_gid)
+            matched_gid = canonical_gid
+            if odds_row is None:
+                odds_row, matched_gid = lookup_fallback_odds(canonical_gid, odds_data)
+
             consensus_data, method = calculate_consensus_prob(
-                canonical_gid,
-                odds_data,
+                matched_gid,
+                {matched_gid: odds_row} if odds_row else {},
                 row_market,
                 row_label,
                 debug=False,
@@ -429,7 +434,11 @@ def build_snapshot_for_date(
                         f"\U0001F50D Baseline lookup → {canon_gid} | {row['market']} | {row['side']}"
                     )
 
-                game_odds = odds_data[canon_gid]
+                game_odds = odds_data.get(canon_gid)
+                matched_gid = canon_gid
+                if game_odds is None:
+                    game_odds, matched_gid = lookup_fallback_odds(canon_gid, odds_data)
+
                 market_odds = game_odds[row["market"]]
                 side_data = market_odds[row["side"]]
 
