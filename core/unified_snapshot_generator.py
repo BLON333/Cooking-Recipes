@@ -45,6 +45,7 @@ from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.book_helpers import ensure_consensus_books
 from core.market_pricer import kelly_fraction
 from core.confirmation_utils import required_market_move, extract_book_count
+from core.consensus_pricer import calculate_consensus_prob
 
 logger = get_logger(__name__)
 
@@ -374,6 +375,19 @@ def build_snapshot_for_date(
     best_book_tracker: dict[tuple[str, str, str], dict] = {}
 
     for row in rows:
+        row_market = row.get("market")
+        row_label = row.get("side")
+        if row_market and row_label:
+            consensus_data, method = calculate_consensus_prob(
+                row["game_id"],
+                odds_data,
+                row_market,
+                row_label,
+                debug=False,
+            )
+            if consensus_data and consensus_data.get("consensus_prob") is not None:
+                row["consensus_prob"] = consensus_data["consensus_prob"]
+
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
         if is_best_book_row(row):
