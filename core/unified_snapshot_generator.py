@@ -573,6 +573,8 @@ def main() -> None:
             return
 
         try:
+            if os.path.exists(final_path):
+                os.remove(final_path)  # 🔐 Ensure overwrite is possible
             os.rename(tmp_path, final_path)
         except Exception:
             logger.exception(
