@@ -176,9 +176,13 @@ def track_and_update_market_movement(
         "baseline_consensus_prob"
     ) is not None
 
-    # Only update tracker if a meaningful change occurred for existing entries
+    # Only update tracker if a meaningful change occurred for an entry that is
+    # already persisted in the tracker.  This prevents skipping new rows that
+    # also exist in the reference tracker but haven't yet been written to the
+    # main tracker.
     if (
         prior_entry is not None
+        and tracker.get(key) is not None
         and movement.get("mkt_movement") == "same"
         and all(
             movement.get(k) == "same"
