@@ -656,6 +656,70 @@ def main() -> None:
                 except Exception:
                     # Skip rows with invalid or missing data
                     continue
+
+        # -------------------------------------------------------------------
+        # Write debug CSV summarizing all snapshot rows
+        # -------------------------------------------------------------------
+        summary_debug_path = os.path.join(out_dir, f"snapshot_debug_{timestamp}.csv")
+        debug_headers = [
+            "game_id",
+            "market",
+            "side",
+            "ev_percent",
+            "stake",
+            "raw_kelly",
+            "baseline_consensus_prob",
+            "market_prob",
+            "consensus_move",
+            "required_move",
+            "movement_confirmed",
+            "logged",
+            "should_be_logged",
+        ]
+
+        with open(summary_debug_path, "w", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=debug_headers)
+            writer.writeheader()
+
+            for row in all_rows:
+                try:
+                    baseline = row.get("baseline_consensus_prob")
+                    market_prob = row.get("market_prob")
+                    if baseline is None or market_prob is None:
+                        continue
+
+                    ev = float(row.get("ev_percent", 0))
+                    stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+                    raw_kelly = float(row.get("raw_kelly", 0) or 0)
+                    required_move = row.get("required_move")
+                    movement_confirmed = bool(row.get("movement_confirmed"))
+                    logged = bool(row.get("logged"))
+                    consensus_move = float(baseline) - float(market_prob)
+
+                    should_be_logged = (
+                        "Yes" if (stake >= 1.0 and ev >= 5.0 and movement_confirmed) else "No"
+                    )
+
+                    writer.writerow(
+                        {
+                            "game_id": row.get("game_id"),
+                            "market": row.get("market"),
+                            "side": row.get("side"),
+                            "ev_percent": f"{ev:.4f}",
+                            "stake": f"{stake:.4f}",
+                            "raw_kelly": f"{raw_kelly:.4f}",
+                            "baseline_consensus_prob": f"{float(baseline):.4f}",
+                            "market_prob": f"{float(market_prob):.4f}",
+                            "consensus_move": f"{consensus_move:.4f}",
+                            "required_move": f"{float(required_move):.4f}" if required_move is not None else "",
+                            "movement_confirmed": movement_confirmed,
+                            "logged": logged,
+                            "should_be_logged": should_be_logged,
+                        }
+                    )
+                except Exception:
+                    # Skip rows with invalid or missing data
+                    continue
     except Exception:
         logger.exception("Snapshot generation failed:")
         sys.exit(1)
