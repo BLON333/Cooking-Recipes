@@ -4,9 +4,9 @@ from core.config import DEBUG_MODE, VERBOSE_MODE
 from typing import Dict, Optional
 
 # Use the canonical game_id when tracking market movement to ensure
-# consistency with snapshot keys.  ``build_tracker_key`` from
-# ``market_eval_tracker`` performs similar normalization, but here we only
-# need the canonical game id for constructing the tracker key.
+# consistency with snapshot keys. ``build_key`` from ``snapshot_core``
+# does not perform normalization, so we handle canonicalization here
+# when constructing the tracker key.
 from core.utils import canonical_game_id
 
 from core.logger import get_logger

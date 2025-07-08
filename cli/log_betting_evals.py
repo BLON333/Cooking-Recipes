@@ -28,7 +28,7 @@ from core.market_snapshot_tracker import (
     load_latest_snapshot_tracker,
     write_market_snapshot,
 )
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_core import build_key
 from core.lock_utils import with_locked_file
 from core.skip_reasons import SkipReason
 from core.utils import (
@@ -328,7 +328,7 @@ from core.market_snapshot_tracker import (
     load_latest_snapshot_tracker,
     write_market_snapshot,
 )
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_core import build_key
 from core.market_movement_tracker import (
     track_and_update_market_movement,
     detect_market_movement,
@@ -819,7 +819,7 @@ def expand_snapshot_rows_with_kelly(
                 if base_fields["side"] == "St. Louis Cardinals":
                     print(f"🔍 {book}: EV={ev:.2f}%, Odds={odds}, Stake={stake:.2f}u")
 
-                tracker_key = build_tracker_key(
+                tracker_key = build_key(
                     base_fields["game_id"],
                     base_fields["market"],
                     base_fields["side"],
@@ -1204,7 +1204,7 @@ def build_discord_embed(row: dict) -> str:
         else:
             logger.debug("🔄 Alert best_book %s not allowed", best_book)
 
-    tracker_key = build_tracker_key(game_id, market, side)
+    tracker_key = build_key(game_id, market, side)
     prior = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
     movement = row.get("_movement")
     if movement is None:
@@ -1419,7 +1419,7 @@ def write_to_csv(
                 time_formatted = ""
     row["Time"] = time_formatted
     key = (row["game_id"], row["market"], row["side"])
-    tracker_key = build_tracker_key(row["game_id"], row["market"], row["side"])
+    tracker_key = build_key(row["game_id"], row["market"], row["side"])
     print(f"🔍 Evaluating key: {tracker_key}")
 
     new_conf = row.get("consensus_prob")
@@ -1805,7 +1805,7 @@ def log_bets(
         p_market = consensus_prob if consensus_prob else implied_prob(market_price)
         book_odds_list = [implied_prob(v) for v in book_prices.values()]
 
-        tracker_key = build_tracker_key(
+        tracker_key = build_key(
             game_id, matched_key.replace("alternate_", ""), side
         )
         prior = MARKET_EVAL_TRACKER.get(tracker_key)
@@ -1916,7 +1916,7 @@ def log_bets(
             row["consensus_books"] = {best_book_str: market_price}
 
         # 📝 Track every evaluated bet before applying stake/EV filters
-        tracker_key = build_tracker_key(row["game_id"], row["market"], row["side"])
+        tracker_key = build_key(row["game_id"], row["market"], row["side"])
         prior = MARKET_EVAL_TRACKER.get(tracker_key)
 
         movement = detect_market_movement(row, prior)
@@ -2175,7 +2175,7 @@ def log_derivative_bets(
 
                 book_odds_list = [implied_prob(v) for v in book_prices.values()]
 
-                tracker_key = build_tracker_key(
+                tracker_key = build_key(
                     game_id, market_full.replace("alternate_", ""), side_clean
                 )
                 prior = MARKET_EVAL_TRACKER.get(tracker_key)
@@ -2317,7 +2317,7 @@ def log_derivative_bets(
                     print(f"📦 Books stored in row: {book_prices}")
                     print(f"🏦 Best Book Selected: {row['best_book']}")
                 # 📝 Track every evaluated bet before applying stake/EV filters
-                tracker_key = build_tracker_key(
+                tracker_key = build_key(
                     row["game_id"], row["market"], row["side"]
                 )
                 prior = MARKET_EVAL_TRACKER.get(tracker_key)
@@ -2893,7 +2893,7 @@ def process_theme_logged_bets(
                     continue
 
                 # 📝 Update tracker for every evaluated bet
-                t_key = build_tracker_key(
+                t_key = build_key(
                     row_copy["game_id"], row_copy["market"], row_copy["side"]
                 )
                 prior = MARKET_EVAL_TRACKER.get(t_key)
@@ -3003,7 +3003,7 @@ def process_theme_logged_bets(
     if VERBOSE:
         print("\n🧠 Snapshot Prob Consistency Check:")
         for row in final_snapshot:
-            key = build_tracker_key(row["game_id"], row["market"], row["side"])
+            key = build_key(row["game_id"], row["market"], row["side"])
             prior = row.get("_prior_snapshot")
             if prior:
                 print(

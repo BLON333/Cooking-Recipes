@@ -56,15 +56,14 @@ from core.scaling_utils import blend_prob
 from core.consensus_pricer import calculate_consensus_prob
 from core.market_movement_tracker import track_and_update_market_movement
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
-from core.utils import canonical_game_id
 import copy
 
 from core.book_helpers import ensure_consensus_books
 
-# Load tracker once for snapshot utilities using the latest snapshot
-def build_tracker_key(game_id: str, market: str, side: str) -> str:
-    gid = canonical_game_id(str(game_id))
-    return f"{gid}:{str(market).strip()}:{str(side).strip()}"
+# Build keys for tracker dictionaries and snapshot rows
+def build_key(game_id: str, market: str, side: str) -> str:
+    """Return ``game_id:market:side`` without additional normalization."""
+    return f"{game_id}:{market}:{side}"
 
 
 def load_snapshot_tracker(directory: str = "backtest") -> dict:
@@ -75,7 +74,7 @@ def load_snapshot_tracker(directory: str = "backtest") -> dict:
     tracker = {}
     rows = data if isinstance(data, list) else data.values() if isinstance(data, dict) else []
     for r in rows:
-        key = build_tracker_key(r.get("game_id"), r.get("market"), r.get("side"))
+        key = build_key(r.get("game_id"), r.get("market"), r.get("side"))
         tracker[key] = r
     return tracker
 
@@ -1010,7 +1009,7 @@ def build_snapshot_rows(
             market_clean = matched_key.replace("alternate_", "")
             market_class = "alternate" if price_source == "alternate" else "main"
 
-            tracker_key = build_tracker_key(game_id, market_clean, side)
+            tracker_key = build_key(game_id, market_clean, side)
             prior_row = (
                 MARKET_EVAL_TRACKER.get(tracker_key)
                 or MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
@@ -1446,7 +1445,7 @@ def expand_snapshot_rows_with_kelly(
     for row in rows:
         row["blended_fv"] = 1 / row["blended_prob"]
         per_book = row.get("_raw_sportsbook") or row.get("consensus_books", {})
-        tracker_key = build_tracker_key(
+        tracker_key = build_key(
             row.get("game_id"),
             row.get("market", ""),
             row.get("side", ""),
@@ -1570,7 +1569,7 @@ def expand_snapshot_rows_with_kelly(
             role = _assign_snapshot_role(expanded_row)
             expanded_row["snapshot_role"] = role
             expanded_row.setdefault("snapshot_roles", []).append(role)
-            tracker_key = build_tracker_key(
+            tracker_key = build_key(
                 expanded_row["game_id"],
                 expanded_row["market"],
                 expanded_row["side"],

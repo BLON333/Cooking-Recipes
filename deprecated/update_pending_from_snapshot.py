@@ -7,7 +7,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import glob
 
-from core.market_eval_tracker import build_tracker_key, load_tracker
+from core.snapshot_core import (
+    build_key,
+    load_snapshot_tracker,
+)
 from core.utils import safe_load_json
 from core.snapshot_core import _assign_snapshot_role, ensure_baseline_consensus_prob
 from core.market_normalizer import normalize_market_key
@@ -73,7 +76,7 @@ def build_pending(rows: list, tracker: dict) -> dict:
     """Convert ``rows`` into pending bet entries keyed by tracker key."""
     pending: dict = {}
     for row in rows:
-        key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
+        key = build_key(row.get("game_id"), row.get("market"), row.get("side"))
 
         baseline = None
         if key in existing and isinstance(existing[key], dict):
@@ -133,7 +136,7 @@ def main() -> None:
         print("❌ No snapshot data found")
         return
 
-    tracker = load_tracker()
+    tracker = load_snapshot_tracker()
     filtered = filter_rows(rows)
     ensure_baseline_consensus_prob(filtered)
     new_rows = build_pending(filtered, tracker)

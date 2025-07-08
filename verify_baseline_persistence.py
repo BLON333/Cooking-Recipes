@@ -1,8 +1,9 @@
 import os
 import json
+from datetime import datetime
 from typing import Any, Dict
 
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_core import build_key
 from core.utils import safe_load_json, parse_snapshot_timestamp
 from core.snapshot_tracker_loader import (
     find_latest_market_snapshot_path,
@@ -10,7 +11,6 @@ from core.snapshot_tracker_loader import (
 )
 
 BACKTEST_DIR = "backtest"
-TRACKER_FILE = os.path.join("data", "trackers", "market_eval_tracker.json")
 
 def load_json(path: str) -> Any:
     return safe_load_json(path)
@@ -32,10 +32,8 @@ def main() -> None:
     dt = parse_snapshot_timestamp(token)
     snapshot_date = dt.date() if dt else None
 
-    tracker_path = (
-        find_latest_snapshot_tracker_path(snapshot_date)
-        if snapshot_date is not None
-        else TRACKER_FILE
+    tracker_path = find_latest_snapshot_tracker_path(
+        snapshot_date if snapshot_date is not None else datetime.now().date()
     )
     print(f"\U0001F4C4 Using tracker snapshot: {tracker_path}")
     tracker: Dict[str, Any] = load_json(tracker_path) or {}
@@ -75,7 +73,7 @@ def main() -> None:
         if gid is None or market is None or side is None:
             continue
 
-        key = build_tracker_key(str(gid), str(market), str(side))
+        key = build_key(str(gid), str(market), str(side))
         tracker_base = tracker.get(key, {}).get("baseline_consensus_prob")
 
         mkt_prob = row.get("market_prob")
