@@ -1659,23 +1659,25 @@ def write_to_csv(
             "timestamp": datetime.now().isoformat(),
         }
 
+        prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key) or {}
+        baseline = row.get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = prior_row.get("baseline_consensus_prob") or row.get("consensus_prob")
+        # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+        row["baseline_consensus_prob"] = baseline
+
         movement = track_and_update_market_movement(
             row,
             MARKET_EVAL_TRACKER,
             MARKET_EVAL_TRACKER_BEFORE_UPDATE,
         )
-        prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key) or {}
+
         row.update(
             {
                 "prev_sim_prob": prior_row.get("sim_prob"),
                 "prev_blended_fv": prior_row.get("blended_fv"),
             }
         )
-        baseline = row.get("baseline_consensus_prob")
-        if baseline is None:
-            baseline = prior_row.get("baseline_consensus_prob") or row.get("consensus_prob")
-        # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
-        row["baseline_consensus_prob"] = baseline
         annotate_display_deltas(row, prior_row)
         row["_movement_str"] = row.get("mkt_prob_display")
         row["_movement"] = movement
