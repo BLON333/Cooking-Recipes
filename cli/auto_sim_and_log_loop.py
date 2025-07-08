@@ -388,6 +388,9 @@ if initial_odds:
     else:
         run_unified_snapshot_and_dispatch(initial_odds)
 
+        # Reconcile tracker immediately after snapshot generation
+        run_subprocess([PYTHON, "-m", "scripts.reconcile_tracker_with_csv"])
+
 start_time = time.time()
 loop_count = 0
 if not initial_odds:
@@ -445,6 +448,9 @@ while True:
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_tracker_with_csv"])
                 run_unified_snapshot_and_dispatch(odds_file)
+
+                # Reconcile tracker immediately after snapshot generation
+                run_subprocess([PYTHON, "-m", "scripts.reconcile_tracker_with_csv"])
 
                 # Snapshot-first model: no pending_bets.json to update
 
