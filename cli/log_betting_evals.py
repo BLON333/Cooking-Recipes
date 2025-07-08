@@ -146,9 +146,6 @@ def save_market_conf_tracker(tracker: dict, path: str = MARKET_CONF_TRACKER_PATH
 import copy
 from datetime import datetime
 
-# Load market confirmation tracker
-MARKET_CONF_TRACKER = load_market_conf_tracker()
-
 # Base schema for market_evals.csv. Additional columns may be appended
 # later (e.g. by update_clv_column.py). When writing to an existing CSV
 # we read its header to determine the active schema.
@@ -1470,16 +1467,6 @@ def write_to_csv(
     except Exception:
         new_conf_val = None
 
-    prev_conf_val = None
-    baseline_tracker = MARKET_CONF_TRACKER
-    if tracker_key in baseline_tracker:
-        if "consensus_prob" not in baseline_tracker[tracker_key]:
-            print(f"\u26A0\uFE0F Tracker entry for {tracker_key} exists but has no consensus_prob")
-        else:
-            prev_conf_val = baseline_tracker[tracker_key].get("consensus_prob")
-    else:
-        print(f"\u274C Tracker key missing: {tracker_key}")
-
     # ``should_log_bet`` guarantees ``consensus_prob`` validity; simply fall
     # back to ``None`` when parsing fails so trackers can handle the update
     # gracefully.
@@ -1653,11 +1640,7 @@ def write_to_csv(
                 f"✅ Logged {row['game_id']} {row['side']} ({row['market']}) — EV {row['ev_percent']:+.1f}%, Stake {row['stake']:.2f}u"
             )
 
-        # Update market confirmation tracker on successful log
-        MARKET_CONF_TRACKER[tracker_key] = {
-            "consensus_prob": new_conf_val,
-            "timestamp": datetime.now().isoformat(),
-        }
+
 
         prior_row = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key) or {}
         baseline = row.get("baseline_consensus_prob")
@@ -2534,12 +2517,6 @@ def run_batch_logging(
     load_dotenv()
 
     global LOGGER_CONFIG, MARKET_EVAL_TRACKER_BEFORE_UPDATE
-    from core.market_conf_tracker import clean_stale_tracker_entries
-
-    # Clean broken or stale tracker entries before loading
-    removed_count = clean_stale_tracker_entries(max_age_days=5)
-    if removed_count:
-        print(f"🧹 Tracker cleanup removed {removed_count} stale entries")
     min_odds, max_odds = MIN_NEGATIVE_ODDS, MAX_POSITIVE_ODDS
     min_ev_pct = round(min_ev * 100, 2)
     LOGGER_CONFIG = (
@@ -3091,13 +3068,6 @@ def process_theme_logged_bets(
         except Exception as e:  # pragma: no cover - unexpected save failure
             logger.warning("\u26a0\ufe0f Failed to save market eval tracker: %s", e)
 
-        # Disabled save during snapshot migration; tracker persistence handled elsewhere
-        # try:
-        #     save_market_conf_tracker(MARKET_CONF_TRACKER)
-        # except Exception as e:
-        #     logger.warning(
-        #         "\u26a0\ufe0f Failed to save market confirmation tracker: %s", e
-        #     )
 
     if not config.DEBUG_MODE:
         print(
