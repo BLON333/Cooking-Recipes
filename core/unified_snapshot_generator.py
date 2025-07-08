@@ -116,9 +116,6 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
 
 def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     """Populate enrichment fields on a snapshot row."""
-    # 🧩 Enrich: baseline
-    if row.get("baseline_consensus_prob") is None and row.get("consensus_prob") is not None:
-        row["baseline_consensus_prob"] = row["consensus_prob"]
     baseline = row.get("baseline_consensus_prob")
 
     curr = row.get("market_prob") or row.get("consensus_prob")
@@ -334,8 +331,11 @@ def build_snapshot_for_date(
     date_str: str,
     odds_data: dict | None,
     ev_range: tuple[float, float] = (5.0, 20.0),
+    prior_map: dict | None = None,
 ) -> list:
     """Return expanded snapshot rows for a single date."""
+    if prior_map is None:
+        prior_map = {}
     sim_dir = os.path.join("backtest", "sims", date_str)
     sims = load_simulations(sim_dir)
     if not sims:
@@ -387,6 +387,21 @@ def build_snapshot_for_date(
             )
             if consensus_data and consensus_data.get("consensus_prob") is not None:
                 row["consensus_prob"] = consensus_data["consensus_prob"]
+
+        key = (row.get("game_id"), row.get("market"), row.get("side"))
+        prior_baseline = None
+        if prior_map:
+            prior_baseline = prior_map.get(key, {}).get("baseline_consensus_prob")
+        odds_baseline = None
+        if prior_baseline is None:
+            try:
+                odds_baseline = odds_data[row["game_id"]][row["market"]][row["side"]]["consensus_prob"]
+            except Exception:
+                odds_baseline = None
+        if prior_baseline is not None:
+            row["baseline_consensus_prob"] = prior_baseline
+        elif odds_baseline is not None:
+            row["baseline_consensus_prob"] = odds_baseline
 
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
@@ -503,8 +518,14 @@ def main() -> None:
         MARKET_EVAL_TRACKER_BEFORE_UPDATE.update(MARKET_EVAL_TRACKER)
 
         all_rows: list = []
+        prior_map = _load_prior_snapshot_map("backtest")
         for date_str in date_list:
-            rows_for_date = build_snapshot_for_date(date_str, odds_cache, (min_ev, max_ev))
+            rows_for_date = build_snapshot_for_date(
+                date_str,
+                odds_cache,
+                (min_ev, max_ev),
+                prior_map=prior_map,
+            )
             for row in rows_for_date:
                 row["snapshot_for_date"] = date_str
             all_rows.extend(rows_for_date)
@@ -523,7 +544,6 @@ def main() -> None:
         tmp_path = os.path.join(out_dir, f"market_snapshot_{timestamp}.tmp")
 
         # 🔁 Merge persistent fields from prior snapshot
-        prior_map = _load_prior_snapshot_map(out_dir)
         _merge_persistent_fields(all_rows, prior_map)
 
         # 🧩 Enrich: baseline
