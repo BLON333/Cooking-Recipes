@@ -36,15 +36,12 @@ from core.snapshot_core import (
     build_snapshot_rows as _core_build_snapshot_rows,
     MARKET_EVAL_TRACKER,
     MARKET_EVAL_TRACKER_BEFORE_UPDATE,
+    load_snapshot_tracker,
     expand_snapshot_rows_with_kelly,
     _assign_snapshot_role,
     ensure_baseline_consensus_prob,
 )
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
-from core.market_eval_tracker import (
-    load_tracker,
-    save_tracker,
-)
 from core.book_helpers import ensure_consensus_books
 from core.market_pricer import kelly_fraction
 from core.confirmation_utils import required_market_move, extract_book_count
@@ -487,7 +484,7 @@ def main() -> None:
     
         # Refresh tracker baseline before snapshot generation
         MARKET_EVAL_TRACKER.clear()
-        MARKET_EVAL_TRACKER.update(load_tracker())
+        MARKET_EVAL_TRACKER.update(load_snapshot_tracker())
         MARKET_EVAL_TRACKER_BEFORE_UPDATE.clear()
         MARKET_EVAL_TRACKER_BEFORE_UPDATE.update(MARKET_EVAL_TRACKER)
 
@@ -504,9 +501,7 @@ def main() -> None:
             )
             sys.exit(1)
 
-        # Save tracker after snapshot generation
-        save_tracker(MARKET_EVAL_TRACKER)
-        print(f"\U0001F4BE Saved market_eval_tracker with {len(MARKET_EVAL_TRACKER)} entries.")
+        # Snapshot tracker state is not persisted separately
     
         timestamp = now_eastern().strftime("%Y%m%dT%H%M")
         out_dir = "backtest"
