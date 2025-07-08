@@ -105,13 +105,29 @@ def is_personal_book_row(row: dict) -> bool:
 def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
     """Wrapper around snapshot_core.build_snapshot_rows with debug logging."""
     if VERBOSE or DEBUG:
-        for game_id in sim_data.keys():
-            print(f"\U0001F50D Evaluating {game_id}")
+        for game_id in sim_data:
             canonical_id = canonical_game_id(game_id)
-            if lookup_fallback_odds(canonical_id, odds_json)[0]:
-                print(f"\u2705 Matched odds for {game_id}")
-            else:
-                print(f"\u274C No odds found for {game_id}")
+            print(f"\U0001F50D Sim game_id: {game_id} \u2192 Canonical: {canonical_id}")
+
+            if canonical_id not in odds_json:
+                print(f"\u274C No odds found for canonical_id: {canonical_id}")
+                continue
+
+            game_odds = odds_json[canonical_id]
+            print(f"\u2705 Found odds for: {canonical_id} \u2192 Markets: {list(game_odds.keys())}")
+
+            for market in ["totals", "h2h", "spreads"]:
+                if market not in game_odds:
+                    print(f"\u26A0\uFE0F Market '{market}' not found for {canonical_id}")
+                    continue
+
+                for side_key, side_data in game_odds[market].items():
+                    cp = side_data.get("consensus_prob")
+                    if cp is None:
+                        print(f"\u26A0\uFE0F No consensus_prob for {market} \u2192 {side_key}")
+                    else:
+                        print(f"\u2705 {market} \u2192 {side_key}: consensus_prob = {cp}")
+
     return _core_build_snapshot_rows(sim_data, odds_json, min_ev=min_ev)
 
 
@@ -407,16 +423,32 @@ def build_snapshot_for_date(
         else:
             try:
                 canon_gid = canonical_game_id(row["game_id"])
-                odds_baseline = (
-                    odds_data[canon_gid]
-                    [row["market"]]
-                    [row["side"]]
-                    .get("consensus_prob")
-                )
+                if VERBOSE or DEBUG:
+                    print(
+                        f"\U0001F50D Baseline lookup → {canon_gid} | {row['market']} | {row['side']}"
+                    )
+
+                game_odds = odds_data[canon_gid]
+                market_odds = game_odds[row["market"]]
+                side_data = market_odds[row["side"]]
+
+                odds_baseline = side_data.get("consensus_prob")
                 if odds_baseline is not None:
+                    if VERBOSE or DEBUG:
+                        print(
+                            f"\u2705 consensus_prob found: {odds_baseline}"
+                        )
                     row["baseline_consensus_prob"] = odds_baseline
+                else:
+                    if VERBOSE or DEBUG:
+                        print(
+                            f"\u26A0\uFE0F No consensus_prob for {row['market']} \u2192 {row['side']}"
+                        )
             except (KeyError, TypeError):
-                pass
+                if VERBOSE or DEBUG:
+                    print(
+                        f"\u26A0\uFE0F Lookup failed for {canon_gid} | {row['market']} | {row['side']}"
+                    )
 
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
