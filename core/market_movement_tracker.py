@@ -144,7 +144,8 @@ def track_and_update_market_movement(
     gid = canonical_game_id(entry.get("game_id", ""))
     key = f"{gid}:{str(entry.get('market', '')).strip()}:{str(entry.get('side', '')).strip()}"
     base = reference_tracker if reference_tracker is not None else tracker
-    prior = base.get(key) or {}
+    prior_entry = base.get(key)
+    prior = prior_entry or {}
 
     # Determine the sportsbook for this row
     book = entry.get("book") or entry.get("best_book")
@@ -177,7 +178,7 @@ def track_and_update_market_movement(
 
     # Only update tracker if a meaningful change occurred for existing entries
     if (
-        prior is not None
+        prior_entry is not None
         and movement.get("mkt_movement") == "same"
         and all(
             movement.get(k) == "same"
