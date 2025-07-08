@@ -260,14 +260,18 @@ def annotate_display_deltas(entry: Dict, prior: Optional[Dict]) -> None:
         if field == "market_odds":
             prior_val = entry.get("prev_market_odds")
             movement = entry.get("odds_movement", "same")
-        elif field == "market_prob":
-            prior_val = entry.get("baseline_consensus_prob")
-            movement = entry.get("mkt_movement", "same")
         else:
-            prior_val = entry.get(f"prev_{field}") or (
-                prior.get(field) if prior else None
-            )
-            movement = entry.get(movement_fields.get(field, ("", ""))[0], "same")
+            if field == "market_prob":
+                prior_val = entry.get("baseline_consensus_prob")
+                movement = entry.get("mkt_movement", "same")
+            else:
+                prior_val = entry.get(f"prev_{field}") or (
+                    prior.get(field) if prior else None
+                )
+                movement = entry.get(
+                    movement_fields.get(field, ("", ""))[0],
+                    "same",
+                )
 
         if field in movement_fields or field == "market_odds":
             if prior_val is not None and movement != "same":
