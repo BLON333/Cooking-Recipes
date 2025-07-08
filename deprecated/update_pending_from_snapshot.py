@@ -16,7 +16,7 @@ from core.pending_bets import (
     load_pending_bets,
     save_pending_bets,
 )
-from cli.log_betting_evals import load_market_conf_tracker
+from core.market_eval_tracker import load_tracker
 
 SNAPSHOT_DIR = os.path.join("backtest")
 PENDING_JSON = os.path.join("logs", "pending_bets.json")
@@ -134,7 +134,7 @@ def main() -> None:
         print("❌ No snapshot data found")
         return
 
-    tracker = load_market_conf_tracker()
+    tracker = load_tracker()
     filtered = filter_rows(rows)
     ensure_baseline_consensus_prob(filtered)
     new_rows = build_pending(filtered, tracker)
