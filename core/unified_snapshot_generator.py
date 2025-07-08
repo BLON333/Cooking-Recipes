@@ -369,12 +369,13 @@ def build_snapshot_for_date(
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
         odds = {
-            gid: lookup_fallback_odds(canonical_game_id(gid), odds_data)[0]
+            canonical_game_id(gid): lookup_fallback_odds(canonical_game_id(gid), odds_data)[0]
             for gid in sims.keys()
         }
 
     for gid in sims.keys():
-        if gid not in odds or odds.get(gid) is None:
+        canon_gid = canonical_game_id(gid)
+        if canon_gid not in odds or odds.get(canon_gid) is None:
             logger.warning(
                 "\u26A0\uFE0F No odds found for %s \u2014 check if sim or odds file used wrong ID format",
                 gid,
