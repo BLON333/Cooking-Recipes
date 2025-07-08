@@ -1,6 +1,8 @@
 import os, glob
 from datetime import date, datetime
-from core.market_eval_tracker import TRACKER_PATH
+
+# Default location for historical market tracker snapshots
+DEFAULT_TRACKER_PATH = os.path.join("data", "trackers", "market_eval_tracker.json")
 
 SNAPSHOT_DIR = os.path.join('data', 'trackers')
 
@@ -34,8 +36,8 @@ def find_latest_snapshot_tracker_path(game_date: date | str, directory: str = SN
     if generic:
         return max(generic, key=os.path.getmtime)
 
-    # Final fallback to the live tracker
-    return TRACKER_PATH
+    # Final fallback to the live tracker path
+    return DEFAULT_TRACKER_PATH
 
 
 def find_latest_market_snapshot_path(backtest_dir: str = "backtest") -> str | None:

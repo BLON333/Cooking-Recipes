@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import json
 from datetime import datetime, timedelta
 
-from core.market_eval_tracker import build_tracker_key
+from core.utils import build_snapshot_key
 from core.snapshot_core import annotate_display_deltas
 
 
@@ -21,11 +21,11 @@ def run_snapshot_persistence_test() -> None:
 
     # baseline values stored in pending_bets.json
     pending_bets = {
-        build_tracker_key(game1, market1, side1): {
+        build_snapshot_key(game1, market1, side1): {
             "baseline_consensus_prob": 0.45,
             "logged": False,
         },
-        build_tracker_key(game2, market2, side2): {
+        build_snapshot_key(game2, market2, side2): {
             "baseline_consensus_prob": 0.55,
             "logged": True,
         },
@@ -41,7 +41,7 @@ def run_snapshot_persistence_test() -> None:
     fv_market_probs = [0.46, 0.48, 0.475]
     logged_probs = [0.55, 0.54, 0.52]
     def detect_movement_and_update(row):
-        key = build_tracker_key(row["game_id"], row["market"], row["side"])
+        key = build_snapshot_key(row["game_id"], row["market"], row["side"])
         baseline = row.get("baseline_consensus_prob")
         row["prev_market_prob"] = baseline
         curr = row.get("market_prob")
@@ -95,7 +95,7 @@ def run_snapshot_persistence_test() -> None:
 
         output_rows = []
         for r in rows:
-            key = build_tracker_key(r["game_id"], r["market"], r["side"])
+            key = build_snapshot_key(r["game_id"], r["market"], r["side"])
             baseline = pending_bets.get(key, {}).get("baseline_consensus_prob")
             if baseline is None:
                 baseline = snapshot_cache.get(key, {}).get(
@@ -139,8 +139,8 @@ def run_snapshot_persistence_test() -> None:
             }
             print(json.dumps(short, indent=2))
 
-        fv_key = build_tracker_key(game1, market1, side1)
-        log_key = build_tracker_key(game2, market2, side2)
+        fv_key = build_snapshot_key(game1, market1, side1)
+        log_key = build_snapshot_key(game2, market2, side2)
         if not snapshot_cache.get(fv_key):
             print("WARNING: FV Drop bet disappeared prematurely!")
         if not snapshot_cache.get(log_key):
