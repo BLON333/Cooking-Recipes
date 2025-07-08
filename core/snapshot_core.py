@@ -41,6 +41,7 @@ from core.utils import (
     normalize_game_id,
     fuzzy_match_game_id,
 )
+from core.odds_normalizer import canonical_game_id
 from core.time_utils import compute_hours_to_game
 from core.dispatch_clv_snapshot import parse_start_time
 from core.should_log_bet import get_theme, get_theme_key
@@ -74,7 +75,8 @@ def load_snapshot_tracker(directory: str = "backtest") -> dict:
     tracker = {}
     rows = data if isinstance(data, list) else data.values() if isinstance(data, dict) else []
     for r in rows:
-        key = build_key(r.get("game_id"), r.get("market"), r.get("side"))
+        canon = canonical_game_id(str(r.get("game_id")))
+        key = build_key(canon, r.get("market"), r.get("side"))
         tracker[key] = r
     return tracker
 
@@ -145,7 +147,8 @@ def ensure_baseline_consensus_prob(rows: list, tracker: dict | None = None) -> N
         if row.get("baseline_consensus_prob") is not None:
             continue
 
-        key = f"{row.get('game_id')}:{row.get('market')}:{row.get('side')}"
+        canon_gid = canonical_game_id(str(row.get('game_id')))
+        key = f"{canon_gid}:{row.get('market')}:{row.get('side')}"
 
         baseline = None
         if tracker:
@@ -886,10 +889,11 @@ def build_snapshot_rows(
     rows = []
     for game_id, sim in sim_data.items():
         full_gid = str(game_id)
+        canonical_gid = canonical_game_id(full_gid)
         markets = sim.get("markets", [])
-        odds = odds_data.get(full_gid)
+        odds = odds_data.get(canonical_gid)
         if odds is None:
-            fuzzy_id = fuzzy_match_game_id(full_gid, list(odds_data.keys()), window=3)
+            fuzzy_id = fuzzy_match_game_id(canonical_gid, list(odds_data.keys()), window=3)
             if fuzzy_id:
                 odds = odds_data.get(fuzzy_id)
                 if odds is None:
@@ -1002,8 +1006,8 @@ def build_snapshot_rows(
                 sportsbook_odds[best_book] = price
                 market_entry["per_book"] = sportsbook_odds
             result, _ = calculate_consensus_prob(
-                game_id=game_id,
-                market_odds={game_id: odds},
+                game_id=canonical_gid,
+                market_odds={canonical_gid: odds},
                 market_key=matched_key,
                 label=lookup_side,
             )
@@ -1015,7 +1019,7 @@ def build_snapshot_rows(
             market_clean = matched_key.replace("alternate_", "")
             market_class = "alternate" if price_source == "alternate" else "main"
 
-            tracker_key = build_key(game_id, market_clean, side)
+            tracker_key = build_key(canonical_gid, market_clean, side)
             prior_row = (
                 MARKET_EVAL_TRACKER.get(tracker_key)
                 or MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
@@ -1451,8 +1455,9 @@ def expand_snapshot_rows_with_kelly(
     for row in rows:
         row["blended_fv"] = 1 / row["blended_prob"]
         per_book = row.get("_raw_sportsbook") or row.get("consensus_books", {})
+        canon_gid = canonical_game_id(str(row.get("game_id")))
         tracker_key = build_key(
-            row.get("game_id"),
+            canon_gid,
             row.get("market", ""),
             row.get("side", ""),
         )
@@ -1568,8 +1573,9 @@ def expand_snapshot_rows_with_kelly(
             role = _assign_snapshot_role(expanded_row)
             expanded_row["snapshot_role"] = role
             expanded_row.setdefault("snapshot_roles", []).append(role)
+            canon_gid = canonical_game_id(str(expanded_row.get("game_id")))
             tracker_key = build_key(
-                expanded_row["game_id"],
+                canon_gid,
                 expanded_row["market"],
                 expanded_row["side"],
             )

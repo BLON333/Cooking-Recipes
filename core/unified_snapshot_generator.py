@@ -29,6 +29,7 @@ from core.bootstrap import *  # noqa
 
 
 from core.utils import now_eastern, safe_load_json, lookup_fallback_odds, parse_game_id
+from core.odds_normalizer import canonical_game_id
 from core.logger import get_logger
 from core.odds_fetcher import fetch_market_odds_from_api
 from core.book_whitelist import ALLOWED_BOOKS
@@ -106,7 +107,8 @@ def build_snapshot_rows(sim_data: dict, odds_json: dict, min_ev: float = 0.01):
     if VERBOSE or DEBUG:
         for game_id in sim_data.keys():
             print(f"\U0001F50D Evaluating {game_id}")
-            if lookup_fallback_odds(game_id, odds_json)[0]:
+            canonical_id = canonical_game_id(game_id)
+            if lookup_fallback_odds(canonical_id, odds_json)[0]:
                 print(f"\u2705 Matched odds for {game_id}")
             else:
                 print(f"\u274C No odds found for {game_id}")
@@ -256,7 +258,8 @@ def _load_prior_snapshot_map(directory: str = "backtest") -> dict:
         return {}
     mapping = {}
     for r in data:
-        key = (r.get("game_id"), r.get("market"), r.get("side"))
+        canon_gid = canonical_game_id(r.get("game_id", ""))
+        key = (canon_gid, r.get("market"), r.get("side"))
         mapping[key] = r
     return mapping
 
@@ -277,7 +280,8 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
 
     now_ts = now_eastern().isoformat()
     for row in rows:
-        key = (row.get("game_id"), row.get("market"), row.get("side"))
+        canon_gid = canonical_game_id(row.get("game_id", ""))
+        key = (canon_gid, row.get("market"), row.get("side"))
         prior = prior_map.get(key)
         if not prior:
             row["last_seen_loop_ts"] = now_ts
@@ -348,7 +352,10 @@ def build_snapshot_for_date(
     if odds_data is None:
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
-        odds = {gid: lookup_fallback_odds(gid, odds_data)[0] for gid in sims.keys()}
+        odds = {
+            gid: lookup_fallback_odds(canonical_game_id(gid), odds_data)[0]
+            for gid in sims.keys()
+        }
 
     for gid in sims.keys():
         if gid not in odds or odds.get(gid) is None:
@@ -380,8 +387,9 @@ def build_snapshot_for_date(
         row_market = row.get("market")
         row_label = row.get("side")
         if row_market and row_label:
+            canonical_gid = canonical_game_id(row["game_id"])
             consensus_data, method = calculate_consensus_prob(
-                row["game_id"],
+                canonical_gid,
                 odds_data,
                 row_market,
                 row_label,
@@ -390,15 +398,17 @@ def build_snapshot_for_date(
             if consensus_data and consensus_data.get("consensus_prob") is not None:
                 row["consensus_prob"] = consensus_data["consensus_prob"]
 
-        snap_key = (row.get("game_id"), row.get("market"), row.get("side"))
+        canon_gid = canonical_game_id(row.get("game_id", ""))
+        snap_key = (canon_gid, row.get("market"), row.get("side"))
         prior_baseline = prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
 
         if prior_baseline is not None:
             row["baseline_consensus_prob"] = prior_baseline
         else:
             try:
+                canon_gid = canonical_game_id(row["game_id"])
                 odds_baseline = (
-                    odds_data[row["game_id"]]
+                    odds_data[canon_gid]
                     [row["market"]]
                     [row["side"]]
                     .get("consensus_prob")
@@ -411,7 +421,8 @@ def build_snapshot_for_date(
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
         if is_best_book_row(row):
-            key = (row.get("game_id"), row.get("market"), row.get("side"))
+            canon_gid = canonical_game_id(row.get("game_id", ""))
+            key = (canon_gid, row.get("market"), row.get("side"))
             best_row = best_book_tracker.get(key)
             if not best_row:
                 best_book_tracker[key] = row
