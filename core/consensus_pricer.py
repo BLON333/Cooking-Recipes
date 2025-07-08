@@ -198,7 +198,7 @@ def calculate_consensus_prob(
 
 
         shared_books = [b for b in consensus_books if b in books_label and b in books_pair]
-        if not shared_books:
+        if len(shared_books) < 1:
             # attempt alternate market if we haven't already
             alt_mkt_key = (
                 mkt_key.replace("spreads", "alternate_spreads")
@@ -217,8 +217,8 @@ def calculate_consensus_prob(
                     books_pair = alt_books_pair
                     shared_books = alt_shared
                     mkt_key = alt_mkt_key
-            if not shared_books:
-                return sim_only("no shared books")
+            if len(shared_books) < 1:
+                return {"consensus_prob": None}, "no_books"
      
         if len(shared_books) == 1 and not debug:
             should_log = not throttle_logs or game_id not in _DEVIG_WARNING_LOGGED
@@ -226,6 +226,7 @@ def calculate_consensus_prob(
                 print(f"⚠️ Only 1 book used for devig → {shared_books[0]}")
                 if throttle_logs:
                     _DEVIG_WARNING_LOGGED.add(game_id)
+        method = "devig_1book" if len(shared_books) == 1 else "devig"
 
         book_probs = {}
         for book in shared_books:
@@ -252,8 +253,8 @@ def calculate_consensus_prob(
             "fair_odds": fair_odds,
             "bookwise_probs": book_probs,
             "books_used": list(book_probs.keys()),
-            "pricing_method": "devig",
-        }, "devig"
+            "pricing_method": method,
+        }, method
 
     return sim_only("exhausted market keys")
 
