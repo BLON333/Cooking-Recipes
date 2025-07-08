@@ -1106,17 +1106,16 @@ def build_snapshot_rows(
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
-            # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
+            # --- Assign baseline_consensus_prob from tracker ---
+            tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
+            key = tracker_key
             baseline = (prior_row or {}).get("baseline_consensus_prob")
             if baseline is None:
+                baseline = tracker.get(key, {}).get("baseline_consensus_prob")
+            if baseline is None:
                 baseline = row.get("consensus_prob")
-            row["baseline_consensus_prob"] = baseline
 
-            if row.get("baseline_consensus_prob") is None:
-                row["baseline_consensus_prob"] = (
-                    (prior_row or {}).get("baseline_consensus_prob")
-                    or row.get("consensus_prob")
-                )
+            row["baseline_consensus_prob"] = baseline
 
             # Compute movement and update tracker
             movement = track_and_update_market_movement(
@@ -1447,12 +1446,17 @@ def expand_snapshot_rows_with_kelly(
                 "prev_blended_fv": (prior_row or {}).get("blended_fv"),
             }
         )
+        # --- Ensure baseline_consensus_prob is included ---
+        tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
+        key = tracker_key
         baseline = row.get("baseline_consensus_prob")
         if baseline is None:
-            # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
-            baseline = (prior_row or {}).get("baseline_consensus_prob") or row.get(
-                "consensus_prob"
-            )
+            baseline = (prior_row or {}).get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = tracker.get(key, {}).get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = row.get("consensus_prob")
+
         row["baseline_consensus_prob"] = baseline
 
         row["book"] = row.get("book", row.get("best_book"))
@@ -1565,18 +1569,18 @@ def expand_snapshot_rows_with_kelly(
                     "prev_blended_fv": (prior_row or {}).get("blended_fv"),
                 }
             )
+            # --- Ensure baseline_consensus_prob is included ---
+            tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
+            key = tracker_key
             baseline = expanded_row.get("baseline_consensus_prob")
             if baseline is None:
-                # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
-                baseline = (prior_row or {}).get("baseline_consensus_prob") or expanded_row.get(
-                    "consensus_prob"
-                )
+                baseline = (prior_row or {}).get("baseline_consensus_prob")
+            if baseline is None:
+                baseline = tracker.get(key, {}).get("baseline_consensus_prob")
+            if baseline is None:
+                baseline = expanded_row.get("consensus_prob")
+
             expanded_row["baseline_consensus_prob"] = baseline
-            if expanded_row.get("baseline_consensus_prob") is None:
-                expanded_row["baseline_consensus_prob"] = (
-                    (prior_row or {}).get("baseline_consensus_prob")
-                    or expanded_row.get("consensus_prob")
-                )
             movement = track_and_update_market_movement(
                 expanded_row,
                 MARKET_EVAL_TRACKER,
