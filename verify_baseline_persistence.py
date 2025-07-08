@@ -3,8 +3,11 @@ import json
 from typing import Any, Dict
 
 from core.market_eval_tracker import build_tracker_key
-from core.utils import safe_load_json
-from core.snapshot_tracker_loader import find_latest_market_snapshot_path
+from core.utils import safe_load_json, parse_snapshot_timestamp
+from core.snapshot_tracker_loader import (
+    find_latest_market_snapshot_path,
+    find_latest_snapshot_tracker_path,
+)
 
 BACKTEST_DIR = "backtest"
 TRACKER_FILE = os.path.join("data", "trackers", "market_eval_tracker.json")
@@ -18,8 +21,24 @@ def main() -> None:
         print("\u274c No market snapshot found.")
         return
 
-    tracker: Dict[str, Any] = load_json(TRACKER_FILE) or {}
+    print(f"\U0001F4C4 Using snapshot: {snapshot_path}")
+
+    # Load snapshot rows
     snapshot = load_json(snapshot_path) or []
+
+    # Resolve tracker snapshot matching the snapshot date
+    name = os.path.basename(snapshot_path)
+    token = name.replace("market_snapshot_", "").split(".")[0]
+    dt = parse_snapshot_timestamp(token)
+    snapshot_date = dt.date() if dt else None
+
+    tracker_path = (
+        find_latest_snapshot_tracker_path(snapshot_date)
+        if snapshot_date is not None
+        else TRACKER_FILE
+    )
+    print(f"\U0001F4C4 Using tracker snapshot: {tracker_path}")
+    tracker: Dict[str, Any] = load_json(tracker_path) or {}
 
     if not isinstance(snapshot, list):
         print("\u274c Snapshot file is not a list")
