@@ -1581,9 +1581,7 @@ def expand_snapshot_rows_with_kelly(
             # --- Ensure baseline_consensus_prob is included ---
             tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
             key = tracker_key
-            baseline = expanded_row.get("baseline_consensus_prob")
-            if baseline is None:
-                baseline = (prior_row or {}).get("baseline_consensus_prob")
+            baseline = (prior_row or {}).get("baseline_consensus_prob")
             if baseline is None:
                 baseline = tracker.get(key, {}).get("baseline_consensus_prob")
             if baseline is None:
