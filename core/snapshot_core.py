@@ -769,11 +769,13 @@ def compare_and_flag_new_rows(
                 "prev_blended_fv": (prior or {}).get("blended_fv"),
             }
         )
-        baseline = entry.get("baseline_consensus_prob")
+        tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
+        baseline = (prior or {}).get("baseline_consensus_prob")
         if baseline is None:
-            baseline = (prior or {}).get("baseline_consensus_prob") or entry.get(
-                "consensus_prob"
-            )
+            baseline = tracker.get(key, {}).get("baseline_consensus_prob")
+        if baseline is None:
+            baseline = entry.get("consensus_prob")
+
         entry["baseline_consensus_prob"] = baseline
         movement = track_and_update_market_movement(
             entry,
@@ -1467,9 +1469,7 @@ def expand_snapshot_rows_with_kelly(
         # --- Ensure baseline_consensus_prob is included ---
         tracker = MARKET_EVAL_TRACKER_BEFORE_UPDATE
         key = tracker_key
-        baseline = row.get("baseline_consensus_prob")
-        if baseline is None:
-            baseline = (prior_row or {}).get("baseline_consensus_prob")
+        baseline = (prior_row or {}).get("baseline_consensus_prob")
         if baseline is None:
             baseline = tracker.get(key, {}).get("baseline_consensus_prob")
         if baseline is None:
