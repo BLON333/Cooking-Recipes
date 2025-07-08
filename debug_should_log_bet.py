@@ -7,7 +7,7 @@ from core.snapshot_tracker_loader import (
     find_latest_market_snapshot_path,
     find_latest_snapshot_tracker_path,
 )
-from core.market_eval_tracker import load_tracker
+from core.snapshot_core import load_snapshot_tracker as load_tracker_from_core
 from core.confirmation_utils import required_market_move, extract_book_count
 from core.should_log_bet import should_log_bet
 
@@ -45,7 +45,7 @@ def load_snapshot_tracker(game_date: str) -> dict:
         if isinstance(tracker, dict):
             return tracker
     try:
-        return load_tracker()
+        return load_tracker_from_core()
     except Exception:
         return {}
 

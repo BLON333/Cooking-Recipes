@@ -10,7 +10,7 @@ import json
 import os
 from typing import Any, Dict, Optional
 
-from core.snapshot_core import build_tracker_key
+from core.snapshot_core import build_key
 from core.market_snapshot_tracker import load_latest_snapshot_tracker
 
 TOLERANCE = 1e-4
@@ -68,7 +68,7 @@ def verify(snapshot_file: str, *, threshold: Optional[float] = None) -> None:
         delta = curr - base
         if threshold is not None and abs(delta) < threshold:
             continue
-        key = build_tracker_key(str(gid), str(market), str(side))
+        key = build_key(str(gid), str(market), str(side))
         entry: Dict[str, Any] = tracker.get(key, {}) if isinstance(tracker, dict) else {}
         t_base = entry.get("baseline_consensus_prob")
         t_prob = entry.get("market_prob")

@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 
 from core.utils import safe_load_json
 from core.lock_utils import with_locked_file
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_core import build_key
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 
 DEFAULT_DIR = "backtest"
@@ -21,7 +21,7 @@ def load_latest_snapshot_tracker(directory: str = DEFAULT_DIR) -> Tuple[Dict[str
     tracker: Dict[str, dict] = {}
     rows = data if isinstance(data, list) else data.values() if isinstance(data, dict) else []
     for row in rows:
-        key = build_tracker_key(row.get("game_id"), row.get("market"), row.get("side"))
+        key = build_key(row.get("game_id"), row.get("market"), row.get("side"))
         tracker[key] = row
     return tracker, path
 

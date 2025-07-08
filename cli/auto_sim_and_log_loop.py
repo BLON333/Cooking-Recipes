@@ -380,7 +380,7 @@ if initial_odds:
     run_logger(initial_odds)
     logger.info("🧼 [%s] Reconciling tracker after log pass", now_eastern())
     run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
-    # ⚠️ Do not reconcile market_eval_tracker — this file preserves baseline + market memory
+    # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
     if any(p["name"].startswith("dispatch_") for p in active_processes):
         logger.info(
             "🟡 Skipping snapshot dispatch – previous dispatch scripts still active."
@@ -388,7 +388,7 @@ if initial_odds:
     else:
         run_unified_snapshot_and_dispatch(initial_odds)
 
-        # ⚠️ Do not reconcile market_eval_tracker — this file preserves baseline + market memory
+        # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
 start_time = time.time()
 loop_count = 0
@@ -445,10 +445,10 @@ while True:
                     "🧼 [%s] Reconciling tracker after log pass", now_eastern()
                 )
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
-                # ⚠️ Do not reconcile market_eval_tracker — this file preserves baseline + market memory
+                # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
                 run_unified_snapshot_and_dispatch(odds_file)
 
-                # ⚠️ Do not reconcile market_eval_tracker — this file preserves baseline + market memory
+                # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
                 # Snapshot-first model: no pending_bets.json to update
 
