@@ -14,7 +14,7 @@ from cli.log_betting_evals import (
     build_theme_exposure_tracker,
 )
 from core.shared_logging_logic import evaluate_snapshot_row_for_logging
-from core.market_eval_tracker import load_tracker as load_eval_tracker
+from core.market_snapshot_tracker import load_latest_snapshot_tracker
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ def recheck_pending_bets(backtest_dir: str = DEFAULT_BACKTEST_DIR) -> None:
     existing = load_existing_stakes("logs/market_evals.csv")
     session_exposure = defaultdict(set)
     theme_stakes = build_theme_exposure_tracker("logs/market_evals.csv")
-    eval_tracker = load_eval_tracker()
+    eval_tracker, _ = load_latest_snapshot_tracker()
 
     updated_rows = []
     changed = False
