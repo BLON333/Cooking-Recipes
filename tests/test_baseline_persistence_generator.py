@@ -39,13 +39,14 @@ def test_baseline_persists_across_runs(monkeypatch):
     monkeypatch.setattr(usg, "expand_snapshot_rows_with_kelly", fake_expand)
     monkeypatch.setattr(usg, "calculate_consensus_prob", fake_consensus)
 
-    odds1 = {"GAME1": {"totals": {"Over 8.5": {"consensus_prob": 0.45}}}}
+    canon_id = usg.canonical_game_id("GAME1")
+    odds1 = {canon_id: {"totals": {"Over 8.5": {"consensus_prob": 0.45}}}}
     prior_map = {}
     first = usg.build_snapshot_for_date(date, odds1, (0.0, 10.0), prior_map=prior_map)
     assert first and first[0]["baseline_consensus_prob"] == 0.45
 
-    prior_map = {(first[0]["game_id"], first[0]["market"], first[0]["side"]): first[0]}
-    odds2 = {"GAME1": {"totals": {"Over 8.5": {"consensus_prob": 0.50}}}}
+    prior_map = {(canon_id, first[0]["market"], first[0]["side"]): first[0]}
+    odds2 = {canon_id: {"totals": {"Over 8.5": {"consensus_prob": 0.50}}}}
     second = usg.build_snapshot_for_date(date, odds2, (0.0, 10.0), prior_map=prior_map)
     assert second and second[0]["baseline_consensus_prob"] == 0.45
 

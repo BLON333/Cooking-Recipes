@@ -368,10 +368,14 @@ def build_snapshot_for_date(
     if odds_data is None:
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
-        odds = {
-            canonical_game_id(gid): lookup_fallback_odds(canonical_game_id(gid), odds_data)[0]
-            for gid in sims.keys()
-        }
+        odds = {}
+        for gid in sims.keys():
+            canonical_id = canonical_game_id(gid)
+            matched_odds, _ = lookup_fallback_odds(canonical_id, odds_data)
+            if matched_odds is not None:
+                odds[canonical_id] = matched_odds
+                if DEBUG:
+                    print(f"✅ Matched odds for {gid} → {canonical_id}")
 
     for gid in sims.keys():
         canon_gid = canonical_game_id(gid)
