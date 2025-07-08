@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Remove phantom entries from market_eval_tracker.json based on market_evals.csv."""
+"""Report phantom entries in the latest snapshot tracker based on market_evals.csv."""
 
 import csv
 import json
 import os
 from datetime import datetime
 
-from core.market_eval_tracker import TRACKER_PATH
+from core.market_snapshot_tracker import load_latest_snapshot_tracker
 
 CSV_PATH = os.path.join("logs", "market_evals.csv")
 
@@ -37,39 +37,13 @@ def load_csv_keys(csv_path: str) -> set[tuple[str, str, str]]:
     return entries
 
 
-def load_tracker(path: str) -> dict:
-    if not os.path.exists(path):
-        print(f"❌ Tracker not found: {path}")
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        if isinstance(data, dict):
-            return data
-    print(f"❌ Unexpected tracker format in {path}")
-    return {}
 
 
-def save_tracker(tracker: dict, path: str) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(dict(sorted(tracker.items())), f, indent=2)
-
-
-def backup_tracker(path: str) -> str:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base = os.path.splitext(path)[0]
-    backup_path = f"{base}.backup.{timestamp}.json"
-    if os.path.exists(path):
-        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
-        with open(path, "r", encoding="utf-8") as src, open(backup_path, "w", encoding="utf-8") as dst:
-            dst.write(src.read())
-        print(f"🛟 Backup written to {backup_path}")
-    return backup_path
-
-
-def reconcile(csv_path: str = CSV_PATH, tracker_path: str = TRACKER_PATH) -> None:
+def reconcile(csv_path: str = CSV_PATH) -> None:
     csv_keys = load_csv_keys(csv_path)
-    tracker = load_tracker(tracker_path)
+    tracker, _ = load_latest_snapshot_tracker()
     if not tracker:
+        print("❌ No snapshot tracker found")
         return
 
     original_count = len(tracker)
@@ -84,9 +58,6 @@ def reconcile(csv_path: str = CSV_PATH, tracker_path: str = TRACKER_PATH) -> Non
 
     removed_count = len(removed_keys)
     cleaned_tracker = tracker
-    if removed_count:
-        backup_tracker(tracker_path)
-        save_tracker(cleaned_tracker, tracker_path)
     
     print("✅ Reconciliation Complete")
     print(f"🔢 Tracker entries removed: {removed_count}")

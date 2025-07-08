@@ -10,7 +10,8 @@ from typing import Dict
 from core.theme_key_utils import make_theme_key
 
 from core.exposure_utils import get_exposure_key
-from core.theme_exposure_tracker import TRACKER_PATH, load_tracker, save_tracker
+from core.theme_exposure_tracker import TRACKER_PATH, save_tracker
+from core.market_snapshot_tracker import load_latest_snapshot_tracker
 
 CSV_PATH = os.path.join("logs", "market_evals.csv")
 
@@ -52,6 +53,22 @@ def compute_csv_totals(csv_path: str) -> Dict[str, float]:
     return totals
 
 
+def compute_snapshot_totals(tracker: Dict[str, dict]) -> Dict[str, float]:
+    """Return exposure totals from a snapshot tracker."""
+    totals: Dict[str, float] = {}
+    for row in tracker.values():
+        stake_val = row.get("stake")
+        if not stake_val:
+            continue
+        try:
+            stake = float(stake_val)
+        except Exception:
+            continue
+        key = get_exposure_key(row)
+        totals[key] = totals.get(key, 0.0) + stake
+    return totals
+
+
 def reconcile(csv_path: str = CSV_PATH, tracker_path: str = TRACKER_PATH) -> None:
     """Rebuild ``theme_exposure.json`` from the CSV log."""
     csv_totals = compute_csv_totals(csv_path)
@@ -59,7 +76,8 @@ def reconcile(csv_path: str = CSV_PATH, tracker_path: str = TRACKER_PATH) -> Non
         print("⚠️ No exposure totals found in CSV")
         return
 
-    old_tracker = load_tracker(tracker_path)
+    snapshot_tracker, _ = load_latest_snapshot_tracker()
+    old_tracker = compute_snapshot_totals(snapshot_tracker)
     added_keys = set(csv_totals) - set(old_tracker)
     removed_keys = set(old_tracker) - set(csv_totals)
 

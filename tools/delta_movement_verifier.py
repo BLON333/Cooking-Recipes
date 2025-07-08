@@ -2,7 +2,7 @@
 """Delta Movement Verifier
 
 Check ``baseline_consensus_prob`` against ``market_prob`` in a snapshot file
-and compare to entries in ``market_eval_tracker.json``.
+and compare to the latest snapshot tracker.
 """
 
 import argparse
@@ -10,7 +10,8 @@ import json
 import os
 from typing import Any, Dict, Optional
 
-from core.market_eval_tracker import build_tracker_key
+from core.snapshot_core import build_tracker_key
+from core.market_snapshot_tracker import load_latest_snapshot_tracker
 
 TOLERANCE = 1e-4
 
@@ -28,14 +29,14 @@ def load_json(path: str) -> Optional[Any]:
         return None
 
 
-def verify(snapshot_file: str, tracker_file: str, *, threshold: Optional[float] = None) -> None:
+def verify(snapshot_file: str, *, threshold: Optional[float] = None) -> None:
     snapshot = load_json(snapshot_file)
-    tracker = load_json(tracker_file)
+    tracker, tracker_path = load_latest_snapshot_tracker()
     if not isinstance(snapshot, list):
         print("❌ Snapshot must be a list of dictionaries")
         return
-    if not isinstance(tracker, dict):
-        print("❌ Tracker must be a dictionary")
+    if not tracker:
+        print("❌ No snapshot tracker available")
         return
 
     header = [
@@ -91,12 +92,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Verify baseline consensus movement against tracker")
     parser.add_argument("snapshot_file", help="Path to market_snapshot JSON file")
     parser.add_argument(
-        "tracker_file",
-        nargs="?",
-        default=os.path.join("data", "trackers", "market_eval_tracker.json"),
-        help="Path to market_eval_tracker.json",
-    )
-    parser.add_argument(
         "--threshold",
         type=float,
         default=None,
@@ -104,7 +99,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    verify(args.snapshot_file, args.tracker_file, threshold=args.threshold)
+    verify(args.snapshot_file, threshold=args.threshold)
 
 
 if __name__ == "__main__":
