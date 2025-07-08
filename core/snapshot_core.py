@@ -1112,6 +1112,12 @@ def build_snapshot_rows(
                 baseline = row.get("consensus_prob")
             row["baseline_consensus_prob"] = baseline
 
+            if row.get("baseline_consensus_prob") is None:
+                row["baseline_consensus_prob"] = (
+                    (prior_row or {}).get("baseline_consensus_prob")
+                    or row.get("consensus_prob")
+                )
+
             # Compute movement and update tracker
             movement = track_and_update_market_movement(
                 row,
@@ -1454,6 +1460,11 @@ def expand_snapshot_rows_with_kelly(
         if not isinstance(per_book, dict) or not per_book:
             if row.get("market_odds") is None:
                 row["skip_reason"] = "no_odds"
+            if row.get("baseline_consensus_prob") is None:
+                row["baseline_consensus_prob"] = (
+                    (prior_row or {}).get("baseline_consensus_prob")
+                    or row.get("consensus_prob")
+                )
             movement = track_and_update_market_movement(
                 row,
                 MARKET_EVAL_TRACKER,
@@ -1561,6 +1572,11 @@ def expand_snapshot_rows_with_kelly(
                     "consensus_prob"
                 )
             expanded_row["baseline_consensus_prob"] = baseline
+            if expanded_row.get("baseline_consensus_prob") is None:
+                expanded_row["baseline_consensus_prob"] = (
+                    (prior_row or {}).get("baseline_consensus_prob")
+                    or expanded_row.get("consensus_prob")
+                )
             movement = track_and_update_market_movement(
                 expanded_row,
                 MARKET_EVAL_TRACKER,
