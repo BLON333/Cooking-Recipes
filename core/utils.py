@@ -99,12 +99,28 @@ TEAM_ABBR_TO_NAME = {v.upper(): k.title() for k, v in TEAM_ABBR.items()}
 
 # Mapping for normalizing non-standard team abbreviations encountered in
 # simulation files or other data sources.
+# Normalize internal or alternate abbreviations to MLB standard codes.  Include
+# identity mappings for all teams plus common variations seen in simulation
+# data (e.g. ``CHIB`` or ``NYMB``) and book suffixes like ``B``.
 TEAM_FIXES = {
+    **{abbr: abbr for abbr in TEAM_ABBR.values()},
+    **{f"{abbr}B": abbr for abbr in TEAM_ABBR.values()},
     "ATH": "OAK",
     "WSN": "WSH",
+    "WAS": "WSH",
     "CHW": "CWS",
+    "CHIW": "CWS",
+    "CHIB": "CHC",
+    "NYMB": "NYM",
+    "NYYB": "NYY",
+    "SDP": "SD",
     "KCR": "KC",
+    "KCA": "KC",
+    "SFG": "SF",
     "TBD": "TB",
+    "TBR": "TB",
+    "LAA": "LAA",
+    "OAK": "OAK",
 }
 
 
