@@ -1666,6 +1666,12 @@ def write_to_csv(
         # baseline_consensus_prob = original implied probability when bet first appeared; never overwritten
         row["baseline_consensus_prob"] = baseline
 
+        if row.get("baseline_consensus_prob") is None:
+            row["baseline_consensus_prob"] = (
+                (prior_row or {}).get("baseline_consensus_prob")
+                or row.get("consensus_prob")
+            )
+
         movement = track_and_update_market_movement(
             row,
             MARKET_EVAL_TRACKER,
