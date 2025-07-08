@@ -284,8 +284,9 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
             continue
         for field in fields:
             if field == "baseline_consensus_prob":
-                if row.get(field) is None and prior.get(field) is not None:
-                    row[field] = prior[field]
+                prior_val = prior.get(field)
+                if prior_val is not None and row.get(field) is None:
+                    row[field] = prior_val
             elif field == "snapshot_roles":
                 prior_roles = prior.get(field)
                 if prior_roles:
