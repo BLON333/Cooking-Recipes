@@ -108,7 +108,37 @@ OFFICIAL_PLAYS_WEBHOOK_URL = os.getenv("OFFICIAL_PLAYS_WEBHOOK_URL")
 MAX_STAKE = 2.0
 
 
+# === Market Confirmation Tracker ===
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MARKET_CONF_TRACKER_PATH = os.path.join(
+    SCRIPT_DIR, "..", "data", "trackers", "market_conf_tracker.json"
+)
 
+
+def load_market_conf_tracker(path: str = MARKET_CONF_TRACKER_PATH):
+    """Load last seen consensus probabilities for bets."""
+    data = safe_load_json(path)
+    if isinstance(data, dict):
+        return data
+    if os.path.exists(path):
+        print(
+            f"⚠️ Could not load market confirmation tracker at {path}, starting fresh."
+        )
+    # Return empty dict if file missing or failed to load
+    return {}
+
+
+def save_market_conf_tracker(tracker: dict, path: str = MARKET_CONF_TRACKER_PATH):
+    """Atomically save tracker data to disk with a lock."""
+    lock = f"{path}.lock"
+    tmp = f"{path}.tmp"
+    try:
+        with with_locked_file(lock):
+            with open(tmp, "w") as f:
+                json.dump(tracker, f, indent=2)
+            os.replace(tmp, path)
+    except Exception as e:
+        logger.warning("❌ Failed to save market confirmation tracker: %s", e)
 
 
 
