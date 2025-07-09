@@ -214,7 +214,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     try:
         curr_prob = float(row.get("market_prob"))
         base_prob = float(row.get("baseline_consensus_prob"))
-        row["consensus_move"] = round(base_prob - curr_prob, 5)
+        row["consensus_move"] = round(curr_prob - base_prob, 5)
     except Exception:
         row["consensus_move"] = 0.0
 
@@ -241,7 +241,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     if debug_movement:
         global _movement_debug_count
         if _movement_debug_count < MOVEMENT_DEBUG_LIMIT:
-            delta = (row.get("baseline_consensus_prob") or 0) - (row.get("market_prob") or 0)
+            delta = (row.get("market_prob") or 0) - (row.get("baseline_consensus_prob") or 0)
             print(
                 f"Movement Debug → game_id: {row.get('game_id')} | Baseline: {row.get('baseline_consensus_prob')}"
                 f" | Market: {row.get('market_prob')} | Δ = {delta*100:+.1f}% | confirmed: {row.get('movement_confirmed')}"
@@ -699,7 +699,7 @@ def main() -> None:
                     if None in (baseline, market_prob, best_book, market_odds, required_move):
                         continue
 
-                    consensus_move = float(baseline) - float(market_prob)
+                    consensus_move = float(market_prob) - float(baseline)
                     should_be_logged = (
                         "Yes" if movement_confirmed and ev >= 5.0 and stake >= 1.0 else "No"
                     )
@@ -764,7 +764,7 @@ def main() -> None:
                         required_move = row.get("required_move")
                         movement_confirmed = bool(row.get("movement_confirmed"))
                         logged = bool(row.get("logged"))
-                        consensus_move = float(baseline) - float(market_prob)
+                        consensus_move = float(market_prob) - float(baseline)
 
                         should_be_logged = (
                             "Yes" if (stake >= 1.0 and ev >= 5.0 and movement_confirmed) else "No"
