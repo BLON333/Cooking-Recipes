@@ -46,3 +46,15 @@ def test_lookup_fallback_odds_fuzzy_off_by_one():
     }
     result, key = lookup_fallback_odds("2025-07-07-TOR@CWS-T1940", odds)
     assert result == {"val": 1}
+    assert key == "2025-07-07-TOR@CWS-T1941"
+
+
+def test_lookup_fallback_odds_unique_exceeds_delta(caplog):
+    odds = {
+        "2025-07-07-TOR@CWS-T2200": {"val": 99},
+    }
+    with caplog.at_level(logging.WARNING):
+        row, key = lookup_fallback_odds("2025-07-07-TOR@CWS-T2140", odds)
+    assert row == {"val": 99}
+    assert key == "2025-07-07-TOR@CWS-T2200"
+    assert any("only match" in rec.message for rec in caplog.records)

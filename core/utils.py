@@ -1072,7 +1072,7 @@ def lookup_fallback_odds(
     game_id: str,
     fallback_odds: dict,
     *,
-    max_delta: int | None = 3,
+    max_delta: int | None = 10,
     debug: bool = False,
 ) -> tuple[dict | None, str | None]:
     """Return the best-matching fallback odds entry for ``game_id``.
@@ -1160,9 +1160,22 @@ def lookup_fallback_odds(
     best_delta, best_key = scored[0]
 
     if max_delta is not None and best_delta is not None and best_delta > max_delta:
-        if debug:
-            print(f"[Fallback Debug] Tried fuzzy match for {game_id} — no similar keys found.")
-        return None, None
+        if len(candidates) == 1:
+            from core.logger import get_logger
+            logger = get_logger(__name__)
+            logger.warning(
+                "⚠️ Fallback odds delta %s exceeds max %s for %s; using %s because it was the only match",
+                best_delta,
+                max_delta,
+                game_id,
+                best_key,
+            )
+        else:
+            if debug:
+                print(
+                    f"[Fallback Debug] Tried fuzzy match for {game_id} — no similar keys found."
+                )
+            return None, None
 
     row = fallback_odds.get(best_key)
     if row and debug:
