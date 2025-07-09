@@ -26,7 +26,6 @@ from core.theme_key_utils import make_theme_key
 from core.exposure_utils import get_exposure_key
 from core.market_snapshot_tracker import (
     load_latest_snapshot_tracker,
-    write_market_snapshot,
 )
 from core.snapshot_core import build_key
 from core.lock_utils import with_locked_file
@@ -326,7 +325,6 @@ from core.time_utils import compute_hours_to_game
 from core.shared_logging_logic import evaluate_snapshot_row_for_logging
 from core.market_snapshot_tracker import (
     load_latest_snapshot_tracker,
-    write_market_snapshot,
 )
 from core.snapshot_core import build_key
 from core.market_movement_tracker import (
@@ -3022,14 +3020,7 @@ def process_theme_logged_bets(
             upload_summary_image_to_discord(output_path, webhook_url)
 
     # Market snapshots are now written solely by ``unified_snapshot_generator.py``.
-    # Keeping this block commented out prevents duplicate snapshot files while
-    # still allowing ``market_evals.csv`` to be updated normally.
-    # if not dry_run:
-    #     try:
-    #         path = write_market_snapshot(MARKET_EVAL_TRACKER)
-    #         logger.info("\u2705 Snapshot written to %s", path)
-    #     except Exception as e:  # pragma: no cover - unexpected save failure
-    #         logger.warning("\u26a0\ufe0f Failed to write market snapshot: %s", e)
+    # This script only updates ``market_evals.csv``.
 
 
     if not config.DEBUG_MODE:
