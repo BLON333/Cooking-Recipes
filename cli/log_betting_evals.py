@@ -138,6 +138,10 @@ BASE_CSV_COLUMNS = [
     "date_simulated",
     "result",
     "logger_config",
+    "baseline_consensus_prob",
+    "consensus_move",
+    "required_move",
+    "movement_confirmed",
 ]
 
 # Populated by run_batch_logging() and written with each CSV row
@@ -273,7 +277,7 @@ from core.market_pricer import (
     calculate_ev_from_prob,
     extract_best_book,
 )
-from core.confirmation_utils import extract_book_count
+from core.confirmation_utils import extract_book_count, required_market_move
 from core.snapshot_core import annotate_display_deltas
 from core.scaling_utils import blend_prob
 from core.odds_fetcher import fetch_market_odds_from_api, save_market_odds_to_file
@@ -2829,6 +2833,39 @@ def process_theme_logged_bets(
                 seen_lines.add(line_key)
                 row["entry_type"] = "top-up" if not is_initial_bet else "first"
                 row["segment"] = segment
+
+                tracker_key = build_key(row["game_id"], row["market"], row["side"])
+                prior_snapshot = row.get("_prior_snapshot") or MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(tracker_key)
+                if row.get("baseline_consensus_prob") is None:
+                    row["baseline_consensus_prob"] = (
+                        (prior_snapshot or {}).get("baseline_consensus_prob")
+                        or row.get("consensus_prob")
+                        or row.get("market_prob")
+                    )
+
+                try:
+                    curr_prob = float(row.get("consensus_prob", row.get("market_prob")))
+                    base_prob = float(row.get("baseline_consensus_prob"))
+                    row["consensus_move"] = round(curr_prob - base_prob, 5)
+                except Exception:
+                    row["consensus_move"] = 0.0
+
+                try:
+                    hours = float(row.get("hours_to_game", 0))
+                except Exception:
+                    hours = 0.0
+                book_count = extract_book_count(row)
+                row["required_move"] = round(
+                    required_market_move(
+                        hours_to_game=hours,
+                        book_count=book_count,
+                        market=row.get("market"),
+                        ev_percent=row.get("ev_percent"),
+                    ),
+                    5,
+                )
+
+                row["movement_confirmed"] = row.get("consensus_move", 0.0) >= row.get("required_move", 0.0)
 
                 row_copy = row.copy()
                 # 🛡️ Protect against derivative market flattening
