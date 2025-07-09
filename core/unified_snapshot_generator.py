@@ -242,13 +242,15 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
         global _movement_debug_count
         if _movement_debug_count < MOVEMENT_DEBUG_LIMIT:
             delta = (row.get("market_prob") or 0) - (row.get("baseline_consensus_prob") or 0)
-            print(
-                f"Movement Debug → game_id: {row.get('game_id')} | Baseline: {row.get('baseline_consensus_prob')}"
-                f" | Market: {row.get('market_prob')} | Δ = {delta*100:+.1f}% | confirmed: {row.get('movement_confirmed')}"
-            )
+            if VERBOSE or DEBUG:
+                print(
+                    f"Movement Debug → game_id: {row.get('game_id')} | Baseline: {row.get('baseline_consensus_prob')}"
+                    f" | Market: {row.get('market_prob')} | Δ = {delta*100:+.1f}% | confirmed: {row.get('movement_confirmed')}"
+                )
             _movement_debug_count += 1
         elif _movement_debug_count == MOVEMENT_DEBUG_LIMIT:
-            print("Movement Debug output truncated...")
+            if VERBOSE or DEBUG:
+                print("Movement Debug output truncated...")
             _movement_debug_count += 1
 
     # 🧩 Enrich: early/low-EV gating
@@ -364,20 +366,23 @@ def build_snapshot_for_date(
         logger.warning("❌ No simulation files found for %s", date_str)
         return []
 
-    print("🎯 Sim GIDs:")
-    for gid in sims.keys():
-        print(" →", gid)
+    if VERBOSE or DEBUG:
+        print("🎯 Sim GIDs:")
+        for gid in sims.keys():
+            print(" →", gid)
 
     # Fetch or slice market odds
     if odds_data is None:
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
         odds = {}
-        print("🔍 Odds Matching Debug:")
+        if VERBOSE or DEBUG:
+            print("🔍 Odds Matching Debug:")
         for gid in sims.keys():
             canon = canonical_game_id(gid)
             matched, matched_key = lookup_fallback_odds(canon, odds_data)
-            print(f"  {gid} → {canon} → Match: {matched_key or '❌ No match'}")
+            if VERBOSE or DEBUG:
+                print(f"  {gid} → {canon} → Match: {matched_key or '❌ No match'}")
             if matched:
                 odds[canon] = matched
 
@@ -441,7 +446,7 @@ def build_snapshot_for_date(
 
             if cp is not None:
                 row["consensus_prob"] = cp
-                if DEBUG:
+                if VERBOSE or DEBUG:
                     print(f"[Consensus] Using inherited value: {row['consensus_prob']}")
 
         canon_gid = canonical_game_id(row.get("game_id", ""))
@@ -515,7 +520,7 @@ def main() -> None:
         global DEBUG, VERBOSE
         DEBUG = args.debug or DEBUG_MODE
         VERBOSE = args.verbose or VERBOSE_MODE
-        if DEBUG:
+        if VERBOSE or DEBUG:
             print("🧪 DEBUG_MODE ENABLED — Verbose output activated")
 
         if args.date:
@@ -558,8 +563,9 @@ def main() -> None:
                     odds_cache = json.load(f)
                 if isinstance(odds_cache, dict) and odds_cache:
                     logger.info("📥 Loaded odds from %s", odds_file_path)
-                    print("📂 Odds file loaded:", odds_file_path)
-                    print("📦 Odds file keys:", list(odds_cache.keys())[:5])
+                    if VERBOSE or DEBUG:
+                        print("📂 Odds file loaded:", odds_file_path)
+                        print("📦 Odds file keys:", list(odds_cache.keys())[:5])
                 else:
                     logger.error(
                         "❌ Odds file loaded but is empty or invalid structure: %s",
