@@ -36,9 +36,10 @@ logger = get_logger(__name__)
 logger.debug("✅ Loaded webhook: %s", os.getenv("DISCORD_FV_DROP_WEBHOOK_URL"))
 
 
-def load_latest_snapshot_rows() -> list:
-    """Return snapshot rows from the most recent snapshot file."""
-    path = find_latest_market_snapshot_path("backtest")
+def load_snapshot_rows(path: str | None = None) -> list:
+    """Return snapshot rows from ``path`` or the most recent snapshot file."""
+    if not path:
+        path = find_latest_market_snapshot_path("backtest")
     rows = safe_load_json(path) if path else []
     logger.info("📊 Loaded %d snapshot rows from %s", len(rows), path)
     for r in rows:
@@ -115,6 +116,17 @@ def main() -> None:
         default=20.0,
         help="Maximum EV% allowed to dispatch",
     )
+    parser.add_argument(
+        "--snapshot",
+        default=None,
+        help="Path to snapshot JSON (defaults to latest)",
+    )
+    parser.add_argument(
+        "--min-move",
+        type=float,
+        default=None,
+        help="Override required market move threshold",
+    )
     args = parser.parse_args()
 
     # Clamp EV range to 5%-20%
@@ -123,7 +135,7 @@ def main() -> None:
     if args.min_ev > args.max_ev:
         args.max_ev = args.min_ev
 
-    rows = load_latest_snapshot_rows()
+    rows = load_snapshot_rows(args.snapshot)
     if not rows:
         logger.warning("⚠️ No snapshot rows found – skipping dispatch")
         return
@@ -138,7 +150,7 @@ def main() -> None:
         if "book" not in r and "best_book" in r:
             r["book"] = r["best_book"]
 
-    # ✅ No role/movement filter — allow full snapshot set
+    # ✅ Apply filtering based on EV, stake and market movement
     skip_counts = Counter()
 
     rows = filter_by_date(rows, args.date)
@@ -149,29 +161,44 @@ def main() -> None:
             ev = float(r.get("ev_percent", 0) or 0)
         except Exception:
             ev = 0.0
-        if r.get("logged") and float(r.get("hours_to_game", 0)) > 0:
-            filtered.append(r)
-            skip_counts["logged"] += 1
-            continue
-        if ev < 5:
-            skip_counts["ev_below_5"] += 1
-            continue
+        try:
+            stake = float(r.get("stake", r.get("raw_kelly", 0)) or 0)
+        except Exception:
+            stake = 0.0
 
         base = r.get("baseline_consensus_prob")
         curr = r.get("market_prob") or r.get("consensus_prob")
         try:
-            if base is not None and curr is not None and float(base) >= float(curr):
-                skip_counts["market_not_moved"] += 1
-                continue
+            consensus_move = float(curr) - float(base)
         except Exception:
-            pass
+            consensus_move = float(r.get("consensus_move", 0) or 0)
+        r["consensus_move"] = consensus_move
 
-        if r.get("visible_in_snapshot") is False:
-            skip_counts["hidden_or_logged"] += 1
+        required_move = float(r.get("required_move", 0) or 0)
+        move_threshold = args.min_move if args.min_move is not None else required_move
+        r["required_move"] = required_move
+
+        movement_confirmed = bool(
+            r.get("movement_confirmed", consensus_move >= required_move)
+        )
+        r["movement_confirmed"] = movement_confirmed
+
+        if ev < 5:
+            skip_counts["ev_below_5"] += 1
             continue
-    
+        if stake < 1.0:
+            skip_counts["stake_below_1"] += 1
+            continue
+        if consensus_move < move_threshold:
+            skip_counts["move_below_req"] += 1
+            continue
+        if not movement_confirmed:
+            skip_counts["move_not_confirmed"] += 1
+            continue
         if r.get("logged"):
             skip_counts["logged"] += 1
+            continue
+
         filtered.append(r)
     rows = filtered
 
@@ -185,6 +212,20 @@ def main() -> None:
     rows = deduped
 
     df = format_for_display(rows, include_movement=False)
+
+    if "consensus_move" in df.columns:
+        df["Move"] = (
+            pd.to_numeric(df["consensus_move"], errors="coerce") * 100
+        ).map("{:+.1f}%".format)
+    if "required_move" in df.columns:
+        df["Req"] = (
+            pd.to_numeric(df["required_move"], errors="coerce") * 100
+        ).map("{:.1f}%".format)
+
+    if "consensus_move" in df.columns:
+        df = df.sort_values("consensus_move", ascending=False)
+    elif "ev_percent" in df.columns:
+        df = df.sort_values("ev_percent", ascending=False)
 
     # Ensure a valid market class column exists before any role filtering
     if "market_class" not in df.columns:
@@ -287,6 +328,8 @@ def main() -> None:
         "Odds",
         "Sim %",
         "Mkt %",
+        "Move",
+        "Req",
         "FV",
         "EV",
         "Stake",
@@ -339,6 +382,8 @@ def main() -> None:
         "Odds",
         "Sim %",
         "Mkt %",
+        "Move",
+        "Req",
         "FV",
         "EV",
         "Stake",
