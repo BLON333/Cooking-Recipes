@@ -392,6 +392,23 @@ def build_snapshot_for_date(
     # Build base rows and expand per-book variants
     raw_rows = build_snapshot_rows(sims, odds, min_ev=0.01)
     logger.info("\U0001F9EA Raw bets from build_snapshot_rows(): %d", len(raw_rows))
+
+    for r in raw_rows:
+        mkt = r.get("market")
+        label = r.get("side")
+        if not mkt or not label:
+            continue
+        canon_gid = canonical_game_id(r.get("game_id", ""))
+        game_odds = odds.get(canon_gid)
+        if game_odds is None:
+            game_odds, _ = lookup_fallback_odds(canon_gid, odds)
+        try:
+            cp = game_odds[mkt][label].get("consensus_prob")
+        except Exception:
+            cp = None
+        if cp is not None:
+            r["consensus_prob"] = cp
+
     expanded_rows = expand_snapshot_rows_with_kelly(raw_rows, POPULAR_BOOKS)
     logger.info("\U0001F9E0 Expanded per-book rows: %d", len(expanded_rows))
 
@@ -413,60 +430,28 @@ def build_snapshot_for_date(
         row_label = row.get("side")
         if row_market and row_label:
             canonical_gid = canonical_game_id(row["game_id"])
-            odds_row = odds_data.get(canonical_gid)
-            matched_gid = canonical_gid
-            if odds_row is None:
-                odds_row, matched_gid = lookup_fallback_odds(canonical_gid, odds_data)
+            game_odds = odds_data.get(canonical_gid)
+            if game_odds is None:
+                game_odds, _ = lookup_fallback_odds(canonical_gid, odds_data)
 
-            consensus_data, method = calculate_consensus_prob(
-                matched_gid,
-                {matched_gid: odds_row} if odds_row else {},
-                row_market,
-                row_label,
-                debug=False,
-            )
-            if consensus_data and consensus_data.get("consensus_prob") is not None:
-                row["consensus_prob"] = consensus_data["consensus_prob"]
+            try:
+                cp = game_odds[row_market][row_label].get("consensus_prob")
+            except Exception:
+                cp = None
+
+            if cp is not None:
+                row["consensus_prob"] = cp
+                if DEBUG:
+                    print(f"[Consensus] Using inherited value: {row['consensus_prob']}")
 
         canon_gid = canonical_game_id(row.get("game_id", ""))
-        snap_key = (canon_gid, row.get("market"), row.get("side"))
+        snap_key = (canon_gid, row_market, row_label)
         prior_baseline = prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
 
         if prior_baseline is not None:
             row["baseline_consensus_prob"] = prior_baseline
-        else:
-            try:
-                canon_gid = canonical_game_id(row["game_id"])
-                if VERBOSE or DEBUG:
-                    print(
-                        f"\U0001F50D Baseline lookup → {canon_gid} | {row['market']} | {row['side']}"
-                    )
-
-                game_odds = odds_data.get(canon_gid)
-                matched_gid = canon_gid
-                if game_odds is None:
-                    game_odds, matched_gid = lookup_fallback_odds(canon_gid, odds_data)
-
-                market_odds = game_odds[row["market"]]
-                side_data = market_odds[row["side"]]
-
-                odds_baseline = side_data.get("consensus_prob")
-                if odds_baseline is not None:
-                    if VERBOSE or DEBUG:
-                        print(
-                            f"\u2705 consensus_prob found: {odds_baseline}"
-                        )
-                    row["baseline_consensus_prob"] = odds_baseline
-                else:
-                    if VERBOSE or DEBUG:
-                        print(
-                            f"\u26A0\uFE0F No consensus_prob for {row['market']} \u2192 {row['side']}"
-                        )
-            except (KeyError, TypeError):
-                if VERBOSE or DEBUG:
-                    print(
-                        f"\u26A0\uFE0F Lookup failed for {canon_gid} | {row['market']} | {row['side']}"
-                    )
+        elif row.get("baseline_consensus_prob") is None:
+            row["baseline_consensus_prob"] = row.get("consensus_prob")
 
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
