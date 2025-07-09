@@ -643,73 +643,76 @@ def main() -> None:
         logger.info("✅ Snapshot written: %s with %d rows", final_path, len(all_rows))
 
         # -------------------------------------------------------------------
-        # Write summary CSV for log-ready bets
+        # Write summary CSV for log-ready bets if verbose mode enabled
         # -------------------------------------------------------------------
-        summary_path = os.path.join(out_dir, f"snapshot_summary_{timestamp}.csv")
-        headers = [
-            "game_id",
-            "market",
-            "side",
-            "ev_percent",
-            "raw_kelly",
-            "stake",
-            "baseline_consensus_prob",
-            "market_prob",
-            "best_book",
-            "market_odds",
-            "consensus_move",
-            "required_move",
-            "movement_confirmed",
-            "should_be_logged",
-        ]
+        if VERBOSE:
+            summary_path = os.path.join(out_dir, f"snapshot_summary_{timestamp}.csv")
+            headers = [
+                "game_id",
+                "market",
+                "side",
+                "ev_percent",
+                "raw_kelly",
+                "stake",
+                "baseline_consensus_prob",
+                "market_prob",
+                "best_book",
+                "market_odds",
+                "consensus_move",
+                "required_move",
+                "movement_confirmed",
+                "should_be_logged",
+            ]
 
-        with open(summary_path, "w", newline="") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=headers)
-            writer.writeheader()
+            with open(summary_path, "w", newline="") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=headers)
+                writer.writeheader()
 
-            for row in all_rows:
-                try:
-                    ev = float(row.get("ev_percent", 0))
-                    stake = float(row.get("stake", row.get("full_stake", 0) or 0))
-                    if ev < 5.0 or stake < 1.0:
+                for row in all_rows:
+                    try:
+                        ev = float(row.get("ev_percent", 0))
+                        stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+                        if ev < 5.0 or stake < 1.0:
+                            continue
+
+                        baseline = row.get("baseline_consensus_prob")
+                        market_prob = row.get("market_prob")
+                        best_book = row.get("best_book")
+                        market_odds = row.get("market_odds")
+                        required_move = row.get("required_move")
+                        movement_confirmed = bool(row.get("movement_confirmed"))
+
+                        if None in (baseline, market_prob, best_book, market_odds, required_move):
+                            continue
+
+                        consensus_move = float(market_prob) - float(baseline)
+                        should_be_logged = (
+                            "Yes" if movement_confirmed and ev >= 5.0 and stake >= 1.0 else "No"
+                        )
+
+                        writer.writerow(
+                            {
+                                "game_id": row.get("game_id"),
+                                "market": row.get("market"),
+                                "side": row.get("side"),
+                                "ev_percent": f"{ev:.4f}",
+                                "raw_kelly": f"{float(row.get('raw_kelly', 0) or 0):.4f}",
+                                "stake": f"{stake:.4f}",
+                                "baseline_consensus_prob": f"{float(baseline):.4f}",
+                                "market_prob": f"{float(market_prob):.4f}",
+                                "best_book": best_book,
+                                "market_odds": market_odds,
+                                "consensus_move": f"{consensus_move:.4f}",
+                                "required_move": f"{float(required_move):.4f}",
+                                "movement_confirmed": movement_confirmed,
+                                "should_be_logged": should_be_logged,
+                            }
+                        )
+                    except Exception:
+                        # Skip rows with invalid or missing data
                         continue
-
-                    baseline = row.get("baseline_consensus_prob")
-                    market_prob = row.get("market_prob")
-                    best_book = row.get("best_book")
-                    market_odds = row.get("market_odds")
-                    required_move = row.get("required_move")
-                    movement_confirmed = bool(row.get("movement_confirmed"))
-
-                    if None in (baseline, market_prob, best_book, market_odds, required_move):
-                        continue
-
-                    consensus_move = float(market_prob) - float(baseline)
-                    should_be_logged = (
-                        "Yes" if movement_confirmed and ev >= 5.0 and stake >= 1.0 else "No"
-                    )
-
-                    writer.writerow(
-                        {
-                            "game_id": row.get("game_id"),
-                            "market": row.get("market"),
-                            "side": row.get("side"),
-                            "ev_percent": f"{ev:.4f}",
-                            "raw_kelly": f"{float(row.get('raw_kelly', 0) or 0):.4f}",
-                            "stake": f"{stake:.4f}",
-                            "baseline_consensus_prob": f"{float(baseline):.4f}",
-                            "market_prob": f"{float(market_prob):.4f}",
-                            "best_book": best_book,
-                            "market_odds": market_odds,
-                            "consensus_move": f"{consensus_move:.4f}",
-                            "required_move": f"{float(required_move):.4f}",
-                            "movement_confirmed": movement_confirmed,
-                            "should_be_logged": should_be_logged,
-                        }
-                    )
-                except Exception:
-                    # Skip rows with invalid or missing data
-                    continue
+        else:
+            logger.info("📝 Skipping snapshot_summary CSV (not in verbose mode)")
 
         if VERBOSE:
             # -------------------------------------------------------------------
