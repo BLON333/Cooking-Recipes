@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
 import traceback
 import ijson
+import os
 
 from core.game_id_utils import (
     build_game_id,
@@ -68,6 +69,12 @@ def logging_allowed_now(
 def safe_load_json(path: str):
     """Load JSON from ``path`` using a streaming parser to minimize memory usage."""
     try:
+        if os.path.exists(path) and os.path.getsize(path) == 0:
+            from core.logger import get_logger
+            logger = get_logger(__name__)
+            logger.error("❌ File is empty: %s", path)
+            return []
+
         with open(path, "r", encoding="utf-8") as fh:
             # Assumes snapshot is a list of objects (rows)
             return list(ijson.items(fh, "item"))
