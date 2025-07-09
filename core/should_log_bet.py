@@ -350,7 +350,8 @@ def should_log_bet(
     if "market_prob" not in new_bet and "consensus_prob" in new_bet:
         new_bet["market_prob"] = new_bet["consensus_prob"]
     new_prob = new_bet.get("market_prob")
-    threshold = market_prob_increase_threshold
+    # Allow snapshot-defined thresholds to override the static constant
+    threshold = required_move if required_move > 0 else market_prob_increase_threshold
 
     if entry_type in {"first", "top-up"}:
         if baseline_prob is None or new_prob is None:
