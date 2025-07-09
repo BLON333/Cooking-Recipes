@@ -218,6 +218,21 @@ def calculate_consensus_prob(
                     shared_books = alt_shared
                     mkt_key = alt_mkt_key
             if len(shared_books) < 1:
+                # 🆕 Allow single-book fallback without devig
+                books_used = [b for b in consensus_books if b in books_label]
+                if len(books_used) == 1:
+                    book = books_used[0]
+                    odds = books_label[book]
+                    prob = implied_prob(odds)
+                    if debug:
+                        print(
+                            f"⚠️ Only 1 book used for consensus: {book} → implied_prob = {prob:.4f}"
+                        )
+                    return {
+                        "consensus_prob": prob,
+                        "books_used": books_used,
+                        "pricing_method": "single_book",
+                    }, "single_book"
                 return {"consensus_prob": None}, "no_books"
      
         if len(shared_books) == 1 and not debug:
