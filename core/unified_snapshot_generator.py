@@ -364,26 +364,22 @@ def build_snapshot_for_date(
         logger.warning("❌ No simulation files found for %s", date_str)
         return []
 
+    print("🎯 Sim GIDs:")
+    for gid in sims.keys():
+        print(" →", gid)
+
     # Fetch or slice market odds
     if odds_data is None:
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
         odds = {}
+        print("🔍 Odds Matching Debug:")
         for gid in sims.keys():
-            canonical_id = canonical_game_id(gid)
-            matched_odds, matched_key = lookup_fallback_odds(canonical_id, odds_data)
-            match_type = None
-            if matched_key:
-                match_type = "exact" if matched_key == canonical_id else "fuzzy"
-            if matched_odds:
-                odds[canonical_id] = matched_odds
-                if DEBUG:
-                    print(
-                        f"✅ Matched odds for {gid} → {canonical_id} ({match_type})"
-                    )
-            else:
-                if DEBUG:
-                    print(f"❌ No odds for {gid} → {canonical_id}")
+            canon = canonical_game_id(gid)
+            matched, matched_key = lookup_fallback_odds(canon, odds_data)
+            print(f"  {gid} → {canon} → Match: {matched_key or '❌ No match'}")
+            if matched:
+                odds[canon] = matched
 
     for gid in sims.keys():
         canon_gid = canonical_game_id(gid)
@@ -551,6 +547,7 @@ def main() -> None:
             return
     
         odds_cache = None
+        odds_file_path = None
         if args.odds_path:
             if not os.path.exists(args.odds_path):
                 logger.error(
@@ -558,33 +555,29 @@ def main() -> None:
                     args.odds_path,
                 )
                 sys.exit(1)
-            odds_cache = safe_load_json(args.odds_path)
+            odds_file_path = args.odds_path
+        else:
+            auto_path = latest_odds_file()
+            if auto_path:
+                odds_file_path = auto_path
+            if odds_file_path is None:
+                logger.error(
+                    "❌ Failed to generate snapshot – no market_odds_*.json files"
+                    " found."
+                )
+                sys.exit(1)
+
+        if odds_file_path:
+            odds_cache = safe_load_json(odds_file_path)
             if odds_cache:
-                logger.info("📥 Loaded odds from %s", args.odds_path)
+                logger.info("📥 Loaded odds from %s", odds_file_path)
+                print("📂 Odds file loaded:", odds_file_path)
+                print("📦 Odds file keys:", list(odds_cache.keys())[:5])
             else:
                 logger.error(
                     "❌ Failed to generate snapshot – no valid odds data loaded"
                     " from %s",
-                    args.odds_path,
-                )
-                sys.exit(1)
-        else:
-            auto_path = latest_odds_file()
-            if auto_path:
-                odds_cache = safe_load_json(auto_path)
-                if odds_cache:
-                    logger.info("📥 Auto-loaded latest odds: %s", auto_path)
-                else:
-                    logger.error(
-                        "❌ Failed to generate snapshot – no valid odds data"
-                        " loaded from %s",
-                        auto_path,
-                    )
-                    sys.exit(1)
-            if odds_cache is None:
-                logger.error(
-                    "❌ Failed to generate snapshot – no market_odds_*.json files"
-                    " found."
+                    odds_file_path,
                 )
                 sys.exit(1)
     
