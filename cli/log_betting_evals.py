@@ -3021,12 +3021,15 @@ def process_theme_logged_bets(
             )
             upload_summary_image_to_discord(output_path, webhook_url)
 
-    if not dry_run:
-        try:
-            path = write_market_snapshot(MARKET_EVAL_TRACKER)
-            logger.info("\u2705 Snapshot written to %s", path)
-        except Exception as e:  # pragma: no cover - unexpected save failure
-            logger.warning("\u26a0\ufe0f Failed to write market snapshot: %s", e)
+    # Market snapshots are now written solely by ``unified_snapshot_generator.py``.
+    # Keeping this block commented out prevents duplicate snapshot files while
+    # still allowing ``market_evals.csv`` to be updated normally.
+    # if not dry_run:
+    #     try:
+    #         path = write_market_snapshot(MARKET_EVAL_TRACKER)
+    #         logger.info("\u2705 Snapshot written to %s", path)
+    #     except Exception as e:  # pragma: no cover - unexpected save failure
+    #         logger.warning("\u26a0\ufe0f Failed to write market snapshot: %s", e)
 
 
     if not config.DEBUG_MODE:
