@@ -34,3 +34,34 @@ def test_log_when_move_exceeds_required():
     result = should_log_bet(bet.copy(), {}, existing_csv_stakes={})
     assert result["log"] is True
     assert result["entry_type"] == "first"
+
+
+def test_dynamic_required_move_parity():
+    """Movement confirmation should match snapshot and logging rules."""
+    hours = 14
+    # Compute dynamic movement threshold using confirmation utilities
+    from core.confirmation_utils import required_market_move
+
+    base = _base_bet(0.0)
+    base["hours_to_game"] = hours
+    threshold = required_market_move(
+        hours,
+        book_count=1,
+        market=base["market"],
+        ev_percent=base["ev_percent"],
+    )
+
+    # Case 1: consensus_move meets/exceeds the required threshold
+    accept = base.copy()
+    accept["consensus_move"] = threshold + 0.001
+    accept["required_move"] = threshold
+    result = should_log_bet(accept.copy(), {}, existing_csv_stakes={})
+    assert result["log"] is True
+
+    # Case 2: consensus_move falls below the threshold
+    reject = base.copy()
+    reject["consensus_move"] = threshold - 0.001
+    reject["required_move"] = threshold
+    result = should_log_bet(reject.copy(), {}, existing_csv_stakes={})
+    assert result["skip"] is True
+    assert result["skip_reason"] == SkipReason.MARKET_NOT_MOVED.value
