@@ -304,6 +304,7 @@ def log_bets_with_snapshot_odds(odds_path: str, sim_dir: str = "backtest/sims"):
                 logger.info("⏭ Skipping tomorrow's eval: sim data not ready yet")
                 continue
 
+        # Run logging synchronously
         cmd = [
             PYTHON,
             "-m",
@@ -315,7 +316,7 @@ def log_bets_with_snapshot_odds(odds_path: str, sim_dir: str = "backtest/sims"):
             "--debug",
             "--output-dir=logs",
         ]
-        launch_process(f"LogBets {eval_folder}", cmd)
+        run_subprocess(cmd)
 
 
 def run_unified_snapshot_and_dispatch(odds_path: str):
@@ -374,21 +375,19 @@ logger.info(
 )
 initial_odds = fetch_and_cache_odds_snapshot()
 if initial_odds:
-    last_snapshot_time = time.time()
-    last_log_time = last_snapshot_time
-    last_sim_time = last_snapshot_time
-    run_logger(initial_odds)
-    logger.info("🧼 [%s] Reconciling tracker after log pass", now_eastern())
-    run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
-    # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
     if any(p["name"].startswith("dispatch_") for p in active_processes):
         logger.info(
             "🟡 Skipping snapshot dispatch – previous dispatch scripts still active."
         )
     else:
         run_unified_snapshot_and_dispatch(initial_odds)
-
-        # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
+        last_snapshot_time = time.time()
+    last_log_time = last_snapshot_time
+    last_sim_time = last_snapshot_time
+    run_logger(initial_odds)
+    logger.info("🧼 [%s] Reconciling tracker after log pass", now_eastern())
+    run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
+    # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
 start_time = time.time()
 loop_count = 0
@@ -439,15 +438,13 @@ while True:
                     "🟡 Skipping logger – previous LogBets process still running."
                 )
             else:
+                run_unified_snapshot_and_dispatch(odds_file)
                 last_snapshot_time = now
                 run_logger(odds_file)
                 logger.info(
                     "🧼 [%s] Reconciling tracker after log pass", now_eastern()
                 )
                 run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
-                # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
-                run_unified_snapshot_and_dispatch(odds_file)
-
                 # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
                 # Snapshot-first model: no pending_bets.json to update
