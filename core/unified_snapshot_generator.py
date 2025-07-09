@@ -568,17 +568,21 @@ def main() -> None:
                 sys.exit(1)
 
         if odds_file_path:
-            odds_cache = safe_load_json(odds_file_path)
-            if odds_cache:
-                logger.info("📥 Loaded odds from %s", odds_file_path)
-                print("📂 Odds file loaded:", odds_file_path)
-                print("📦 Odds file keys:", list(odds_cache.keys())[:5])
-            else:
-                logger.error(
-                    "❌ Failed to generate snapshot – no valid odds data loaded"
-                    " from %s",
-                    odds_file_path,
-                )
+            try:
+                with open(odds_file_path, "r", encoding="utf-8") as f:
+                    odds_cache = json.load(f)
+                if isinstance(odds_cache, dict) and odds_cache:
+                    logger.info("📥 Loaded odds from %s", odds_file_path)
+                    print("📂 Odds file loaded:", odds_file_path)
+                    print("📦 Odds file keys:", list(odds_cache.keys())[:5])
+                else:
+                    logger.error(
+                        "❌ Odds file loaded but is empty or invalid structure: %s",
+                        odds_file_path,
+                    )
+                    sys.exit(1)
+            except Exception as e:
+                logger.exception("❌ Failed to load odds from %s", odds_file_path)
                 sys.exit(1)
     
         # Refresh tracker baseline before snapshot generation
