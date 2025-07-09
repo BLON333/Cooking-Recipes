@@ -28,7 +28,6 @@ from core.market_snapshot_tracker import (
     load_latest_snapshot_tracker,
 )
 from core.snapshot_core import build_key
-from core.lock_utils import with_locked_file
 from core.skip_reasons import SkipReason
 from core.utils import (
     safe_load_json,
@@ -36,17 +35,12 @@ from core.utils import (
     EASTERN_TZ,
     parse_game_id,
     to_eastern,
-    parse_snapshot_timestamp,
     canonical_game_id,
 )
 from core.dispatch_clv_snapshot import parse_start_time
 from core.book_helpers import ensure_consensus_books
 from core.book_whitelist import ALLOWED_BOOKS
 from core.micro_topups import load_micro_topups, remove_micro_topup
-from core.snapshot_tracker_loader import (
-    find_latest_snapshot_tracker_path,
-    find_latest_market_snapshot_path,
-)
 import re
 import warnings
 
@@ -150,26 +144,12 @@ BASE_CSV_COLUMNS = [
 LOGGER_CONFIG = ""
 
 
-def latest_snapshot_path(folder="backtest"):
-    """Return the most recent snapshot file from the given folder."""
-    files = sorted(
-        [
-            f
-            for f in os.listdir(folder)
-            if f.startswith("market_snapshot_") and f.endswith(".json")
-        ],
-        reverse=True,
-    )
-    return os.path.join(folder, files[0]) if files else None
-
-
 # Load tracker from the most recent snapshot
 MARKET_EVAL_TRACKER, SNAPSHOT_PATH_USED = load_latest_snapshot_tracker()
 if SNAPSHOT_PATH_USED:
     print(f"📄 Snapshot File Used     : {SNAPSHOT_PATH_USED}")
 else:
     print("📄 Snapshot File Used     : [Not found]")
-STALE_SNAPSHOT = False
 MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
 
 
