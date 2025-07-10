@@ -32,16 +32,18 @@ def load_tracker(path: str = TRACKER_PATH) -> Dict[str, float]:
         stakes: Dict[str, float] = {}
         for k, v in data.items():
             if isinstance(k, str):
-                if "::" in k and k.count("::") == 2:
-                    stakes[k] = float(v)
+                if "::" in k:
+                    gid, theme, seg = parse_theme_key(k)
+                    norm_key = make_theme_key(gid, theme, seg)
+                    stakes[norm_key] = float(v)
                     continue
                 try:
                     key = ast.literal_eval(k)
                 except Exception:
                     key = None
                 if isinstance(key, (list, tuple)) and len(key) == 3:
-                    stakes[make_theme_key(str(key[0]), str(key[1]), str(key[2]))] = (
-                        float(v)
+                    stakes[make_theme_key(str(key[0]), str(key[1]), str(key[2]))] = float(
+                        v
                     )
         return stakes
     except Exception:
