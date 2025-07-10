@@ -375,30 +375,24 @@ logger.info(
 )
 initial_odds = fetch_and_cache_odds_snapshot()
 if initial_odds:
-    if any(p["name"].startswith("dispatch_") for p in active_processes):
+    run_unified_snapshot_and_dispatch(initial_odds)
+    last_snapshot_time = time.time()
+    while any(
+        p["name"].startswith("dispatch")
+        or "unified_snapshot_generator" in p["name"]
+        for p in active_processes
+    ):
+        poll_active_processes()
         logger.info(
-            "🟡 Skipping snapshot dispatch – previous dispatch scripts still active."
+            "⏳ Waiting for snapshot/dispatch scripts to complete..."
         )
-    else:
-        run_unified_snapshot_and_dispatch(initial_odds)
-        last_snapshot_time = time.time()
+        time.sleep(3)
     last_log_time = last_snapshot_time
     last_sim_time = last_snapshot_time
     run_logger(initial_odds)
     logger.info("🧼 [%s] Reconciling tracker after log pass", now_eastern())
     run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
     # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
-
-    while any(
-        p["name"].startswith("dispatch_") or p["name"].startswith("LogBets")
-        for p in active_processes
-    ):
-        poll_active_processes()
-        logger.info(
-            "⏳ Waiting for snapshot/logging to complete before starting monitor loop..."
-        )
-        time.sleep(3)
-
     logger.info("✅ Initial snapshot and logging complete — entering monitor loop")
     start_time = time.time()
 else:
@@ -442,25 +436,26 @@ while True:
         )
         odds_file = fetch_and_cache_odds_snapshot()
         if odds_file:
-            # Skip launching new logger processes if an existing LogBets
-            # subprocess is still running. This prevents duplicate log runs.
-            if any(
-                "logbets" in proc["name"].lower() for proc in active_processes
+            run_unified_snapshot_and_dispatch(odds_file)
+            last_snapshot_time = now
+            while any(
+                p["name"].startswith("dispatch")
+                or "unified_snapshot_generator" in p["name"]
+                for p in active_processes
             ):
+                poll_active_processes()
                 logger.info(
-                    "🟡 Skipping logger – previous LogBets process still running."
+                    "⏳ Waiting for snapshot/dispatch scripts to complete..."
                 )
-            else:
-                run_unified_snapshot_and_dispatch(odds_file)
-                last_snapshot_time = now
-                run_logger(odds_file)
-                logger.info(
-                    "🧼 [%s] Reconciling tracker after log pass", now_eastern()
-                )
-                run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
-                # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
+                time.sleep(3)
+            run_logger(odds_file)
+            logger.info(
+                "🧼 [%s] Reconciling tracker after log pass", now_eastern()
+            )
+            run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
+            # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
-                # Snapshot-first model: no pending_bets.json to update
+            # Snapshot-first model: no pending_bets.json to update
 
         last_log_time = now
         triggered_log = True
