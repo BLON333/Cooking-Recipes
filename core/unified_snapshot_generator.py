@@ -298,17 +298,6 @@ def _load_prior_snapshot_map(directory: str = "backtest") -> dict:
 
 def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
     """Merge persistent state fields from ``prior_map`` into ``rows``."""
-    fields = [
-        "logged",
-        "logged_ts",
-        "queued",
-        "queued_ts",
-        "skip_reason",
-        "baseline_consensus_prob",
-        "snapshot_roles",
-        "movement_confirmed",
-        "last_seen_loop_ts",
-    ]
 
     now_ts = now_eastern().isoformat()
     for row in rows:
@@ -318,20 +307,38 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
         if not prior:
             row["last_seen_loop_ts"] = now_ts
             continue
-        for field in fields:
-            if field == "baseline_consensus_prob":
-                prior_val = prior.get(field)
-                if prior_val is not None and row.get(field) is None:
-                    row[field] = prior_val
-            elif field == "snapshot_roles":
-                prior_roles = prior.get(field)
-                if prior_roles:
-                    roles = set(prior_roles)
-                    roles.update(row.get(field, []))
-                    row[field] = sorted(roles)
-            else:
-                if not row.get(field) and prior.get(field) is not None:
-                    row[field] = prior[field]
+
+        # Always merge baseline_consensus_prob if available
+        baseline = prior.get("baseline_consensus_prob")
+        if baseline is not None:
+            row["baseline_consensus_prob"] = baseline
+
+        skip_merge = (
+            row.get("skip_reason") in {"low_ev", "time_blocked"}
+            and not row.get("queued")
+            and not row.get("logged")
+        )
+
+        if not skip_merge:
+            if row.get("logged") is None and prior.get("logged") is not None:
+                row["logged"] = prior["logged"]
+            if not row.get("logged_ts") and prior.get("logged_ts"):
+                row["logged_ts"] = prior["logged_ts"]
+
+            if not row.get("queued") and prior.get("queued"):
+                row["queued"] = True
+                if not row.get("queued_ts"):
+                    row["queued_ts"] = prior.get("queued_ts")
+
+            if row.get("skip_reason") is None and prior.get("skip_reason") is not None:
+                row["skip_reason"] = prior["skip_reason"]
+
+            prior_roles = prior.get("snapshot_roles")
+            if prior_roles:
+                roles = set(prior_roles)
+                roles.update(row.get("snapshot_roles", []))
+                row["snapshot_roles"] = sorted(roles)
+
         row["last_seen_loop_ts"] = now_ts
 
 
