@@ -627,8 +627,15 @@ def main() -> None:
         all_rows = [sanitize_json_row(r) for r in all_rows]
 
         os.makedirs(out_dir, exist_ok=True)
-        with open(tmp_path, "w") as f:
-            json.dump(all_rows, f, indent=2)
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write("[\n")
+            first = True
+            for row in all_rows:
+                if not first:
+                    f.write(",\n")
+                json.dump(row, f)
+                first = False
+            f.write("\n]")
 
         # Validate written JSON before renaming
         try:
