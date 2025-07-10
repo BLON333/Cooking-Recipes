@@ -386,7 +386,6 @@ def build_snapshot_for_date(
             print(" →", gid)
 
     # Fetch or slice market odds
-    matched_odds_cache: dict[str, dict] = {}
     if odds_data is None:
         odds = fetch_market_odds_from_api(list(sims.keys()))
     else:
@@ -399,7 +398,6 @@ def build_snapshot_for_date(
             if VERBOSE or DEBUG:
                 print(f"  {gid} → {canon} → Match: {matched_key or '❌ No match'}")
             if matched:
-                matched_odds_cache[canon] = matched
                 odds[canon] = matched
 
     for gid in sims.keys():
@@ -420,13 +418,9 @@ def build_snapshot_for_date(
         if not mkt or not label:
             continue
         canon_gid = canonical_game_id(r.get("game_id", ""))
-        game_odds = odds.get(canon_gid)
-        if game_odds is None:
-            game_odds = matched_odds_cache.get(canon_gid)
-            if DEBUG and game_odds:
-                print(f"[Cache] Using matched odds for {canon_gid}")
+        game_odds, _ = lookup_fallback_odds(canon_gid, odds)
         try:
-            cp = game_odds[mkt][label].get("consensus_prob")
+            cp = game_odds[mkt][label].get("consensus_prob") if game_odds else None
         except Exception:
             cp = None
         if cp is not None:
@@ -453,14 +447,10 @@ def build_snapshot_for_date(
         row_label = row.get("side")
         if row_market and row_label:
             canonical_gid = canonical_game_id(row["game_id"])
-            game_odds = odds_data.get(canonical_gid)
-            if game_odds is None:
-                game_odds = matched_odds_cache.get(canonical_gid)
-                if DEBUG and game_odds:
-                    print(f"[Cache] Using matched odds for {canonical_gid}")
+            game_odds, _ = lookup_fallback_odds(canonical_gid, odds)
 
             try:
-                cp = game_odds[row_market][row_label].get("consensus_prob")
+                cp = game_odds[row_market][row_label].get("consensus_prob") if game_odds else None
             except Exception:
                 cp = None
 
