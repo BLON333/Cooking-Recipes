@@ -489,6 +489,8 @@ def fetch_market_odds_from_api(game_ids, filter_bookmakers=None, lookahead_days=
                         label=label,
                     )
                     normalized[mkt_key][label].update(result)
+                    if "books_used" in result:
+                        normalized[mkt_key][label]["books_used"] = result["books_used"]
 
             # Ensure all expected market keys exist for downstream tools
             for key in MARKET_KEYS:
@@ -697,6 +699,8 @@ def fetch_all_market_odds(lookahead_days=2):
                         label=label,
                     )
                     normalized[mkt_key][label].update(result)
+                    if "books_used" in result:
+                        normalized[mkt_key][label]["books_used"] = result["books_used"]
 
             for key in MARKET_KEYS:
                 normalized.setdefault(key, {})
