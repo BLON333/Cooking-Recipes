@@ -199,6 +199,20 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
         roles.append("live")
     if is_personal_book_row(row) and "personal" not in roles:
         roles.append("personal")
+    try:
+        base_prob = float(row.get("baseline_consensus_prob"))
+        market_prob = float(row.get("market_prob"))
+        ev = float(row.get("ev_percent", 0))
+        stake = float(row.get("stake", 0))
+        if (
+            (base_prob - market_prob) > 0
+            and ev >= 5.0
+            and stake >= 1.0
+            and "fv_drop" not in roles
+        ):
+            roles.append("fv_drop")
+    except Exception:
+        pass
     row["snapshot_role"] = role
     row["snapshot_roles"] = list(dict.fromkeys(roles))
 
