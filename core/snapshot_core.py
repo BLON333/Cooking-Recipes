@@ -1016,6 +1016,9 @@ def build_snapshot_rows(
                 consensus_prob = market_entry.get("consensus_prob")
             book_odds_list = list(result.get("bookwise_probs", {}).values())
 
+            # Capture which sportsbooks formed the consensus line
+            books_used = market_entry.get("books_used", [])
+
             market_clean = matched_key.replace("alternate_", "")
             market_class = "alternate" if price_source == "alternate" else "main"
 
@@ -1085,6 +1088,7 @@ def build_snapshot_rows(
                 "segment": segment,
                 "market_class": market_class,
                 "best_book": best_book,
+                "books_used": books_used,
                 "_raw_sportsbook": sportsbook_odds,
                 "date_simulated": datetime.now().isoformat(),
                 "hours_to_game": round(hours_to_game, 2),
