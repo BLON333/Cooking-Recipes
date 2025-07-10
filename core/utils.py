@@ -4,8 +4,10 @@ from collections import defaultdict
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
-import traceback
-import ijson
+try:
+    import ijson  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency
+    ijson = None
 import os
 
 from core.game_id_utils import (
@@ -77,7 +79,12 @@ def safe_load_json(path: str):
 
         with open(path, "r", encoding="utf-8") as fh:
             # Assumes snapshot is a list of objects (rows)
-            return list(ijson.items(fh, "item"))
+            if ijson:
+                return list(ijson.items(fh, "item"))
+            from core.logger import get_logger
+            logger = get_logger(__name__)
+            logger.warning("ijson not available; falling back to json.load()")
+            return json.load(fh)
     except Exception:
         from core.logger import get_logger
         logger = get_logger(__name__)
