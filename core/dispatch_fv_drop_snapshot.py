@@ -354,7 +354,8 @@ def main() -> None:
             df = df[inc_mask]
 
     # Prepare DataFrame copies for sending to the different Discord channels
-    df_main = filter_main_lines(df.copy())
+    # Include both Main and Alt market classes in the dispatch
+    df_main = df.copy()
     df_main = filter_by_odds(
         df_main,
         MIN_NEGATIVE_ODDS,
