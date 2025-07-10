@@ -1017,7 +1017,9 @@ def build_snapshot_rows(
             book_odds_list = list(result.get("bookwise_probs", {}).values())
 
             # Capture which sportsbooks formed the consensus line
-            books_used = market_entry.get("books_used", [])
+            books_used = result.get("books_used")
+            if books_used is None:
+                books_used = market_entry.get("books_used", [])
 
             market_clean = matched_key.replace("alternate_", "")
             market_class = "alternate" if price_source == "alternate" else "main"
