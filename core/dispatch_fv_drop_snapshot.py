@@ -124,8 +124,8 @@ def main() -> None:
     parser.add_argument(
         "--min-move",
         type=float,
-        default=None,
-        help="Override required market move threshold",
+        default=0.0,
+        help="Minimum consensus move required to display",
     )
     args = parser.parse_args()
 
@@ -171,17 +171,15 @@ def main() -> None:
         try:
             consensus_move = float(curr) - float(base)
         except Exception:
-            consensus_move = float(r.get("consensus_move", 0) or 0)
+            consensus_move = 0.0
         r["consensus_move"] = consensus_move
 
+        # capture for display only -- not used for filtering
         required_move = float(r.get("required_move", 0) or 0)
-        move_threshold = args.min_move if args.min_move is not None else required_move
         r["required_move"] = required_move
 
-        movement_confirmed = bool(
-            r.get("movement_confirmed", consensus_move >= required_move)
-        )
-        r["movement_confirmed"] = movement_confirmed
+        move_threshold = args.min_move if args.min_move is not None else 0.0
+        # 🔁 Logging uses stricter thresholds; FV Drop display is looser
 
         if ev < 5:
             skip_counts["ev_below_5"] += 1
@@ -189,12 +187,14 @@ def main() -> None:
         if stake < 1.0:
             skip_counts["stake_below_1"] += 1
             continue
-        if consensus_move < move_threshold:
-            skip_counts["move_below_req"] += 1
-            continue
-        if not movement_confirmed:
-            skip_counts["move_not_confirmed"] += 1
-            continue
+        if args.min_move > 0:
+            if consensus_move < move_threshold:
+                skip_counts["move_non_positive"] += 1
+                continue
+        else:
+            if consensus_move <= move_threshold:
+                skip_counts["move_non_positive"] += 1
+                continue
         if r.get("logged"):
             skip_counts["logged"] += 1
             continue
