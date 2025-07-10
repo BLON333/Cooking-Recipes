@@ -46,7 +46,7 @@ from core.snapshot_core import (
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
 from core.book_helpers import ensure_consensus_books
 from core.market_pricer import kelly_fraction
-from core.confirmation_utils import required_market_move, extract_book_count
+from core.confirmation_utils import required_market_move
 from core.consensus_pricer import calculate_consensus_prob
 
 logger = get_logger(__name__)
@@ -236,7 +236,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
         hours = float(row.get("hours_to_game", 0))
     except Exception:
         hours = 0.0
-    book_count = extract_book_count(row)
+    book_count = len(row.get("books_used", [])) or 1
     row["required_move"] = round(
         required_market_move(
             hours_to_game=hours,
