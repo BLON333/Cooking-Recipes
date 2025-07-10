@@ -42,9 +42,25 @@ def load_snapshot_rows(path: str | None = None) -> list:
         path = find_latest_market_snapshot_path("backtest")
     rows = safe_load_json(path) if path else []
     logger.info("📊 Loaded %d snapshot rows from %s", len(rows), path)
+    filtered = []
     for r in rows:
         ensure_side(r)
-    return rows
+
+        try:
+            stake = float(r.get("stake", r.get("raw_kelly", 0)) or 0)
+        except Exception:
+            stake = 0.0
+        try:
+            ev = float(r.get("ev_percent", 0) or 0)
+        except Exception:
+            ev = 0.0
+
+        if stake < 1.0 and ev < 5.0 and not r.get("snapshot_roles"):
+            continue
+
+        filtered.append(r)
+
+    return filtered
 
 
 def filter_by_date(rows: list, date_str: str | None) -> list:

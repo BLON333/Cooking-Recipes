@@ -54,9 +54,25 @@ def load_rows(path: str) -> List[dict]:
     if rows is None:
         logger.error("❌ Failed to load snapshot %s", path)
         sys.exit(1)
+    filtered: List[dict] = []
     for r in rows:
         ensure_side(r)
-    return rows
+
+        try:
+            stake = float(r.get("stake", r.get("raw_kelly", 0)) or 0)
+        except Exception:
+            stake = 0.0
+        try:
+            ev = float(r.get("ev_percent", 0) or 0)
+        except Exception:
+            ev = 0.0
+
+        if stake < 1.0 and ev < 5.0 and not r.get("snapshot_roles"):
+            continue
+
+        filtered.append(r)
+
+    return filtered
 
 
 def filter_by_date(rows: List[dict], date_str: str | None) -> List[dict]:
