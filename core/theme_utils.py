@@ -76,7 +76,7 @@ def get_theme_key(market: str, theme: str) -> str:
 
 def normalize_segment(market: str) -> str:
     """Return a unified segment tag from a raw market name."""
-    m = market.lower()
+    m = str(market).lower()
     if "1st_3" in m:
         return "1st_3"
     if "1st_5" in m:
@@ -85,5 +85,12 @@ def normalize_segment(market: str) -> str:
         return "1st_7"
     if "1st_1" in m or "1st_inning" in m:
         return "1st"
-    return "full_game"
+
+    # Full-game bets should not carry an explicit segment key
+    if "full_game" in m:
+        from core.logger import get_logger
+
+        logger = get_logger(__name__)
+        logger.warning("normalize_segment received literal 'full_game'")
+    return ""
 
