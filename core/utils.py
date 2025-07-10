@@ -68,28 +68,50 @@ def logging_allowed_now(
     return not (quiet_hours_start <= hour < quiet_hours_end)
 
 
-def safe_load_json(path: str):
-    """Load JSON from ``path`` using a streaming parser to minimize memory usage."""
-    try:
-        if os.path.exists(path) and os.path.getsize(path) == 0:
-            from core.logger import get_logger
-            logger = get_logger(__name__)
-            logger.error("❌ File is empty: %s", path)
-            return []
+def safe_load_json(path: str) -> list:
+    """Return rows from ``path`` using streaming JSON parsing."""
+    from core.logger import get_logger
 
+    logger = get_logger(__name__)
+    rows: list = []
+
+    if not path:
+        return rows
+
+    if os.path.exists(path) and os.path.getsize(path) == 0:
+        logger.error("❌ File is empty: %s", path)
+        return rows
+
+    try:
         with open(path, "r", encoding="utf-8") as fh:
-            # Assumes snapshot is a list of objects (rows)
             if ijson:
-                return list(ijson.items(fh, "item"))
-            from core.logger import get_logger
-            logger = get_logger(__name__)
-            logger.warning("ijson not available; falling back to json.load()")
-            return json.load(fh)
+                parser = ijson.items(fh, "item")
+                while True:
+                    try:
+                        rows.append(next(parser))
+                    except StopIteration:
+                        break
+                    except Exception as e:  # pragma: no cover - edge case
+                        logger.warning(
+                            "⚠️ Skipping corrupted row in %s: %s", path, e
+                        )
+                        break
+            else:
+                logger.warning(
+                    "ijson not available; falling back to json.load()"
+                )
+                data = json.load(fh)
+                if isinstance(data, list):
+                    rows.extend(data)
+                elif isinstance(data, dict):
+                    rows.extend(data.values())
+                else:
+                    logger.error(
+                        "❌ Unexpected JSON structure in %s", path
+                    )
     except Exception:
-        from core.logger import get_logger
-        logger = get_logger(__name__)
         logger.exception("❌ Failed to load JSON from %s", path)
-        return []
+    return rows
 
 TEAM_ABBR_FIXES = {
     "CHW": "CWS", "WSN": "WSH", "KCR": "KC", "TBD": "TB", "ATH": "OAK"
