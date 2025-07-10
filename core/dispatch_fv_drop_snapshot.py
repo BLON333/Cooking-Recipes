@@ -178,7 +178,6 @@ def main() -> None:
         required_move = float(r.get("required_move", 0) or 0)
         r["required_move"] = required_move
 
-        move_threshold = args.min_move if args.min_move is not None else 0.0
         # 🔁 Logging uses stricter thresholds; FV Drop display is looser
 
         if ev < 5:
@@ -187,14 +186,9 @@ def main() -> None:
         if stake < 1.0:
             skip_counts["stake_below_1"] += 1
             continue
-        if args.min_move > 0:
-            if consensus_move < move_threshold:
-                skip_counts["move_non_positive"] += 1
-                continue
-        else:
-            if consensus_move <= move_threshold:
-                skip_counts["move_non_positive"] += 1
-                continue
+        if consensus_move <= 0:
+            skip_counts["move_non_positive"] += 1
+            continue
         if r.get("logged"):
             skip_counts["logged"] += 1
             continue
