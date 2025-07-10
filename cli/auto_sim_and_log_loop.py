@@ -389,11 +389,24 @@ if initial_odds:
     run_subprocess([PYTHON, "-m", "scripts.reconcile_theme_exposure"])
     # ⚠️ Do not reconcile the snapshot tracker — this file preserves baseline + market memory
 
-start_time = time.time()
-loop_count = 0
-if not initial_odds:
+    while any(
+        p["name"].startswith("dispatch_") or p["name"].startswith("LogBets")
+        for p in active_processes
+    ):
+        poll_active_processes()
+        logger.info(
+            "⏳ Waiting for snapshot/logging to complete before starting monitor loop..."
+        )
+        time.sleep(3)
+
+    logger.info("✅ Initial snapshot and logging complete — entering monitor loop")
+    start_time = time.time()
+else:
+    start_time = time.time()
     last_log_time = start_time
     last_sim_time = start_time
+
+loop_count = 0
 
 while True:
     now = time.time()
