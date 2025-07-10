@@ -1,0 +1,9 @@
+{
+  "game_id": "TEST-GAME",
+  "market": "totals",
+  "side": "Over 8.5",
+  "hours_to_game": 6.0,
+  "ev_percent": 8.0,
+  "books_used": ["fanduel", "draftkings", "betmgm", "betonlineag"],
+  "required_move": 0.00225
+}
