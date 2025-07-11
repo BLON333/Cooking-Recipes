@@ -1,5 +1,4 @@
 import os
-import json
 from typing import Optional
 
 from core.utils import safe_load_json, safe_load_dict, parse_game_id
@@ -41,9 +40,7 @@ def load_snapshot_row(path: str, game_id: str, market: str, side: str) -> Option
 def load_snapshot_tracker(game_date: str) -> dict:
     path = find_latest_snapshot_tracker_path(game_date)
     if path and os.path.exists(path):
-        tracker = safe_load_dict(path)
-        if isinstance(tracker, dict):
-            return tracker
+        return safe_load_dict(path)
     try:
         return load_tracker_from_core()
     except Exception:

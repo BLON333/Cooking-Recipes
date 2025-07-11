@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from core.snapshot_core import build_key
-from core.utils import parse_snapshot_timestamp
+from core.utils import parse_snapshot_timestamp, safe_load_dict
 from core.snapshot_tracker_loader import (
     find_latest_market_snapshot_path,
     find_latest_snapshot_tracker_path,
@@ -41,13 +41,10 @@ def main() -> None:
         snapshot_date if snapshot_date is not None else datetime.now().date()
     )
     print(f"\U0001F4C4 Using tracker snapshot: {tracker_path}")
-    tracker: Dict[str, Any] = load_json(tracker_path) or {}
+    tracker: Dict[str, Any] = safe_load_dict(tracker_path)
 
     if not isinstance(snapshot, list):
         print("\u274c Snapshot file is not a list")
-        return
-    if not isinstance(tracker, dict):
-        print("\u274c Tracker file is not a dict")
         return
 
     header = [
