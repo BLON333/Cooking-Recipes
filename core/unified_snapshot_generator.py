@@ -335,7 +335,10 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
             "snapshot_roles",
             "theme_key",
         ]:
-            if field in prior and row.get(field) in {None, False, []}:
+            val = row.get(field)
+            if field in prior and (val is None or val is False or val == []):
+                row[field] = prior[field]
+
                 if field == "snapshot_roles" and row.get(field):
                     # Preserve any roles already on the row
                     roles = set(prior[field])
