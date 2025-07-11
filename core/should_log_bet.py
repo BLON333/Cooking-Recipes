@@ -372,21 +372,42 @@ def should_log_bet(
             return build_skipped_evaluation(
                 SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
             )
-        if (new_prob - baseline_prob) < threshold:
-            delta_prob = new_prob - baseline_prob
+        delta_prob = new_prob - baseline_prob
+        if delta_prob < 0:
             _log_verbose(
-                f"⛔ Market % increase too small ({delta_prob:.4f} < {threshold:.4f}) — skipping.",
+                f"⛔ Market probability decreased ({new_prob:.4f} < {baseline_prob:.4f}) — skipping.",
                 verbose,
             )
             if VERBOSE_MODE:
                 print(
-                    f"⛔ Skipping {entry_type} bet — market % increase too small ({delta_prob:.4f} < {threshold:.4f})"
+                    f"⛔ Skipping {entry_type} bet — market moved against us \u0394={delta_prob:.4f} "
+                    f"(threshold {threshold:.4f}; {baseline_prob:.4f}→{new_prob:.4f})"
                 )
             new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             new_bet["stake"] = 0.0
             return build_skipped_evaluation(
                 SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
             )
+        elif delta_prob < threshold:
+            if delta_prob >= 0.003:
+                new_bet["movement_confirmed"] = True
+            else:
+                _log_verbose(
+                    f"⛔ Market % increase too small ({delta_prob:.4f} < {threshold:.4f}) — skipping.",
+                    verbose,
+                )
+                if VERBOSE_MODE:
+                    print(
+                        f"⛔ Skipping {entry_type} bet — market % increase too small \u0394={delta_prob:.4f} "
+                        f"(threshold {threshold:.4f}; {baseline_prob:.4f}→{new_prob:.4f})"
+                    )
+                new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+                new_bet["stake"] = 0.0
+                return build_skipped_evaluation(
+                    SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
+                )
+        else:
+            new_bet["movement_confirmed"] = True
 
     if theme_total > 0 and csv_path is not None:
         if not theme_already_logged_in_csv(csv_path, game_id, theme_key, segment):
