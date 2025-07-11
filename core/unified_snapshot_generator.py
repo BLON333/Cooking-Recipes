@@ -291,7 +291,12 @@ def _load_prior_snapshot_map(directory: str = "backtest") -> dict:
     mapping = {}
     for r in data:
         canon_gid = canonical_game_id(r.get("game_id", ""))
-        key = (canon_gid, r.get("market"), r.get("side"))
+        key = (
+            canon_gid,
+            r.get("market"),
+            r.get("side"),
+            r.get("book") or r.get("best_book"),
+        )
         mapping[key] = r
     return mapping
 
@@ -302,7 +307,12 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
     now_ts = now_eastern().isoformat()
     for row in rows:
         canon_gid = canonical_game_id(row.get("game_id", ""))
-        key = (canon_gid, row.get("market"), row.get("side"))
+        key = (
+            canon_gid,
+            row.get("market"),
+            row.get("side"),
+            row.get("book") or row.get("best_book"),
+        )
         prior = prior_map.get(key)
 
         # Always update the heartbeat timestamp
@@ -473,8 +483,15 @@ def build_snapshot_for_date(
                     print(f"[Consensus] Using inherited value: {row['consensus_prob']}")
 
         canon_gid = canonical_game_id(row.get("game_id", ""))
-        snap_key = (canon_gid, row_market, row_label)
-        prior_baseline = prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
+        snap_key = (
+            canon_gid,
+            row_market,
+            row_label,
+            row.get("book") or row.get("best_book"),
+        )
+        prior_baseline = (
+            prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
+        )
 
         if prior_baseline is not None:
             row["baseline_consensus_prob"] = prior_baseline
