@@ -667,18 +667,9 @@ def main() -> None:
             logger.debug("🗒️ Deduplicated %d rows from final snapshot", dropped)
         all_rows = deduped_rows
 
-        all_rows = [sanitize_json_row(r) for r in all_rows]
-
         os.makedirs(out_dir, exist_ok=True)
         with open(tmp_path, "w", encoding="utf-8") as f:
-            f.write("[\n")
-            first = True
-            for row in all_rows:
-                if not first:
-                    f.write(",\n")
-                json.dump(row, f)
-                first = False
-            f.write("\n]")
+            json.dump([sanitize_json_row(r) for r in all_rows], f, indent=2)
 
         # Validate written JSON before renaming
         try:
