@@ -649,6 +649,26 @@ def main() -> None:
         # 🧩 Enrich: baseline
         ensure_baseline_consensus_prob(all_rows, MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
+        # 🗒️ Final deduplication pass
+        before_dedup = len(all_rows)
+        seen_keys: set[tuple] = set()
+        deduped_rows: list = []
+        for r in all_rows:
+            key = (
+                r.get("game_id"),
+                r.get("market"),
+                r.get("side"),
+                r.get("book"),
+            )
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            deduped_rows.append(r)
+        dropped = before_dedup - len(deduped_rows)
+        if dropped:
+            logger.debug("🗒️ Deduplicated %d rows from final snapshot", dropped)
+        all_rows = deduped_rows
+
         all_rows = [sanitize_json_row(r) for r in all_rows]
 
         os.makedirs(out_dir, exist_ok=True)
