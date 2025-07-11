@@ -488,10 +488,19 @@ def build_snapshot_for_date(
             prior_map.get(snap_key, {}).get("baseline_consensus_prob") if prior_map else None
         )
 
+        canon_gid = canonical_game_id(row.get("game_id", ""))
+        side_key = f"{canon_gid}:{row_market}:{row_label}"
+
         if prior_baseline is not None:
             row["baseline_consensus_prob"] = prior_baseline
-        elif row.get("baseline_consensus_prob") is None:
-            row["baseline_consensus_prob"] = row.get("consensus_prob")
+        else:
+            fallback = MARKET_EVAL_TRACKER_BEFORE_UPDATE.get(side_key, {}).get(
+                "baseline_consensus_prob"
+            )
+            if fallback is not None:
+                row["baseline_consensus_prob"] = fallback
+            elif row.get("baseline_consensus_prob") is None:
+                row["baseline_consensus_prob"] = row.get("consensus_prob")
 
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
