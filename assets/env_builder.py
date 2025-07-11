@@ -1,5 +1,6 @@
 import json
 import requests
+from core.utils import parse_game_id
 
 def get_park_name(game_id):
     park_by_home_team = {
@@ -34,7 +35,8 @@ def get_park_name(game_id):
         "NYY": "Yankee Stadium"
     }
     try:
-        home_abbr = game_id.split('@')[1].upper()
+        parsed = parse_game_id(str(game_id))
+        home_abbr = parsed.get("home", "").upper()
         return park_by_home_team.get(home_abbr, "League Average")
     except Exception as e:
         print(f"[WARNING] Could not extract park from game_id '{game_id}': {e}")
