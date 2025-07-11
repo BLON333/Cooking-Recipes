@@ -502,6 +502,8 @@ def build_snapshot_for_date(
             elif row.get("baseline_consensus_prob") is None:
                 row["baseline_consensus_prob"] = row.get("consensus_prob")
 
+        # Always recompute snapshot roles fresh for this build
+        row.pop("snapshot_roles", None)
         _enrich_snapshot_row(row, debug_movement=DEBUG_MOVEMENT)
 
         if is_best_book_row(row):
