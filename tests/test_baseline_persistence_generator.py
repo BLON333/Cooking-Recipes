@@ -45,7 +45,14 @@ def test_baseline_persists_across_runs(monkeypatch):
     first = usg.build_snapshot_for_date(date, odds1, (0.0, 10.0), prior_map=prior_map)
     assert first and first[0]["baseline_consensus_prob"] == 0.45
 
-    prior_map = {(canon_id, first[0]["market"], first[0]["side"]): first[0]}
+    prior_map = {
+        (
+            canon_id,
+            first[0]["market"],
+            first[0]["side"],
+            first[0].get("book", first[0].get("best_book")),
+        ): first[0]
+    }
     odds2 = {canon_id: {"totals": {"Over 8.5": {"consensus_prob": 0.50}}}}
     second = usg.build_snapshot_for_date(date, odds2, (0.0, 10.0), prior_map=prior_map)
     assert second and second[0]["baseline_consensus_prob"] == 0.45
