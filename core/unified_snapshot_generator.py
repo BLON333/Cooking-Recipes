@@ -305,57 +305,52 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
     """Merge persistent state fields from ``prior_map`` into ``rows``."""
 
     now_ts = now_eastern().isoformat()
+    filtered: list[dict] = []
     for row in rows:
         canon_gid = canonical_game_id(row.get("game_id", ""))
+        book = row.get("book") or row.get("best_book")
         key = (
             canon_gid,
             row.get("market"),
             row.get("side"),
-            row.get("book") or row.get("best_book"),
+            book,
         )
         prior = prior_map.get(key)
 
         # Always update the heartbeat timestamp
         row["last_seen_loop_ts"] = now_ts
 
-        # Optimization: skip merging entirely for low-priority rows that were
-        # previously dropped due to low EV or time blocking and are not queued
-        # or logged. We optionally preserve the original baseline probability
-        # if available so market movement tracking remains consistent.
-        if (
+        if prior:
+            for field in [
+                "queued",
+                "queued_ts",
+                "logged",
+                "logged_ts",
+                "skip_reason",
+                "baseline_consensus_prob",
+                "movement_confirmed",
+                "snapshot_roles",
+                "theme_key",
+            ]:
+                val = row.get(field)
+                if field in prior and (val is None or val is False or val == []):
+                    if field == "snapshot_roles" and row.get(field):
+                        # Preserve any roles already on the row
+                        roles = set(prior[field])
+                        roles.update(row[field])
+                        row[field] = sorted(roles)
+                    else:
+                        row[field] = prior[field]
+
+        skip = (
             row.get("skip_reason") in {"low_ev", "time_blocked"}
             and not row.get("queued")
             and not row.get("logged")
-        ):
-            if prior and "baseline_consensus_prob" in prior:
-                row["baseline_consensus_prob"] = prior["baseline_consensus_prob"]
-            continue
+        )
+        if not skip:
+            filtered.append(row)
 
-        if not prior:
-            continue
-
-        for field in [
-            "queued",
-            "queued_ts",
-            "logged",
-            "logged_ts",
-            "skip_reason",
-            "baseline_consensus_prob",
-            "movement_confirmed",
-            "snapshot_roles",
-            "theme_key",
-        ]:
-            val = row.get(field)
-            if field in prior and (val is None or val is False or val == []):
-                row[field] = prior[field]
-
-                if field == "snapshot_roles" and row.get(field):
-                    # Preserve any roles already on the row
-                    roles = set(prior[field])
-                    roles.update(row[field])
-                    row[field] = sorted(roles)
-                else:
-                    row[field] = prior[field]
+    rows[:] = filtered
 
 
 _SANITIZE_WARNED_TYPES: set[type] = set()
