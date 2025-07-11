@@ -1079,7 +1079,7 @@ def build_snapshot_rows(
                 "market": market_clean,
                 "side": normalized_side,
                 "sim_prob": round(sim_prob, 4),
-                "market_prob": round(p_market, 4),
+                "market_prob": round(p_market, 6),
                 "blended_prob": round(p_blended, 4),
                 "blended_fv": 1 / p_blended,
                 "market_odds": price,
