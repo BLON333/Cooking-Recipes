@@ -51,14 +51,62 @@ def get_park_factors(park_name):
         print(f"[ERROR] Failed to load park factors for '{park_name}': {e}")
         return {"hr_mult": 1.0, "single_mult": 1.0}
 
-def get_weather_hr_mult(weather_profile):
+_DIR_DEG = {
+    "n": 0,
+    "ne": 45,
+    "e": 90,
+    "se": 135,
+    "s": 180,
+    "sw": 225,
+    "w": 270,
+    "nw": 315,
+}
+
+
+def _relative_wind_dir(direction: str, stadium_orientation: str | None) -> str:
+    """Convert a compass wind direction into ``out``, ``in`` or ``cross``.
+
+    Parameters
+    ----------
+    direction:
+        Compass direction wind is coming *from* (e.g. ``"ne"``).
+    stadium_orientation:
+        Compass orientation that the ballpark faces. ``None`` will result in a
+        ``neutral`` mapping.
+    """
+
+    direction = direction.lower()
+    if direction in {"in", "out", "cross"}:
+        return direction
+    if direction in {"none", "calm", ""}:
+        return "neutral"
+
+    if stadium_orientation is None:
+        return "neutral"
+
+    wind_deg = _DIR_DEG.get(direction)
+    park_deg = _DIR_DEG.get(str(stadium_orientation).lower())
+    if wind_deg is None or park_deg is None:
+        return "neutral"
+
+    delta = (wind_deg - park_deg) % 360
+    if delta <= 45 or delta >= 315:
+        return "in"
+    if 135 <= delta <= 225:
+        return "out"
+    return "cross"
+
+
+def get_weather_hr_mult(weather_profile, stadium_orientation: str | None = None):
     direction = weather_profile.get("wind_direction", "").lower()
     speed = weather_profile.get("wind_speed", 0)
 
-    if direction == "out":
+    rel = _relative_wind_dir(direction, stadium_orientation)
+
+    if rel == "out":
         # allow a bit more juice for extreme out-blowing winds
         return 1.0 + min(speed * 0.01, 0.25)  # before: cap at 0.20
-    elif direction == "in":
+    elif rel == "in":
         return max(1.0 - speed * 0.01, 0.80)
     else:
         return 1.0
@@ -122,23 +170,37 @@ def get_noaa_weather(park_name):
             "humidity": 50
         }
 
-def compute_weather_multipliers(weather, hitter_side="R", park_orientation="center"):
+def compute_weather_multipliers(
+    weather,
+    hitter_side: str = "R",
+    park_orientation: str = "center",
+    stadium_orientation: str | None = None,
+):
     temp = weather.get("temperature", 70)
     humidity = weather.get("humidity", 50)
     wind_dir = weather.get("wind_direction", "none").lower()
     wind_speed = weather.get("wind_speed", 0)
 
+    rel_dir = _relative_wind_dir(wind_dir, stadium_orientation)
+
     temp_mult = 1.0 + 0.003 * (temp - 70)
     humidity_mult = 1.0 - 0.0015 * (humidity - 50)
 
     if park_orientation == "center":
-        wind_angle_mult = 1.0 + (0.01 * wind_speed if wind_dir == "out" else -0.01 * wind_speed)
+        factor = 0.01
     elif park_orientation == "lf" and hitter_side == "R":
-        wind_angle_mult = 1.0 + (0.015 * wind_speed if wind_dir == "out" else -0.015 * wind_speed)
+        factor = 0.015
     elif park_orientation == "rf" and hitter_side == "L":
-        wind_angle_mult = 1.0 + (0.015 * wind_speed if wind_dir == "out" else -0.015 * wind_speed)
+        factor = 0.015
     else:
+        factor = 0.0
+
+    if factor == 0.0 or rel_dir not in {"in", "out"}:
         wind_angle_mult = 1.0
+    elif rel_dir == "out":
+        wind_angle_mult = 1.0 + factor * wind_speed
+    else:  # "in"
+        wind_angle_mult = 1.0 - factor * wind_speed
 
     adi_mult = temp_mult * humidity_mult * wind_angle_mult
     # widen allowable range slightly for extreme conditions
