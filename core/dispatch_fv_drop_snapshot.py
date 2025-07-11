@@ -221,13 +221,34 @@ def main() -> None:
             deduped.append(r)
     rows = deduped
 
+    # 🆕 Compute display-only fields for the Discord table
+    for r in rows:
+        try:
+            base = float(r.get("baseline_consensus_prob", 0) or 0)
+            curr = float(r.get("market_prob") or r.get("consensus_prob") or 0)
+            r["Move"] = curr - base
+        except Exception:
+            r["Move"] = 0.0
+        try:
+            r["Req"] = float(r.get("required_move", 0) or 0)
+        except Exception:
+            r["Req"] = 0.0
+
     df = format_for_display(rows, include_movement=False)
 
-    if "consensus_move" in df.columns:
+    if "Move" in df.columns:
+        df["Move"] = (
+            pd.to_numeric(df["Move"], errors="coerce") * 100
+        ).map("{:+.1f}%".format)
+    elif "consensus_move" in df.columns:
         df["Move"] = (
             pd.to_numeric(df["consensus_move"], errors="coerce") * 100
         ).map("{:+.1f}%".format)
-    if "required_move" in df.columns:
+    if "Req" in df.columns:
+        df["Req"] = (
+            pd.to_numeric(df["Req"], errors="coerce") * 100
+        ).map("{:.1f}%".format)
+    elif "required_move" in df.columns:
         df["Req"] = (
             pd.to_numeric(df["required_move"], errors="coerce") * 100
         ).map("{:.1f}%".format)
