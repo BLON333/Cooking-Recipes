@@ -205,7 +205,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
         ev = float(row.get("ev_percent", 0))
         stake = float(row.get("stake", 0))
         if (
-            (base_prob - market_prob) > 0
+            (market_prob - base_prob) > 0
             and ev >= 5.0
             and stake >= 1.0
             and "fv_drop" not in roles
