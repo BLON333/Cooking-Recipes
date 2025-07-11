@@ -251,6 +251,9 @@ def should_log_bet(
             )
             new_bet["entry_type"] = "none"
             new_bet["skip_reason"] = "bad_odds"
+            if verbose:
+                print("⛔ Skipping: Odds out of range")
+            print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
             return build_skipped_evaluation("bad_odds", game_id, new_bet)
 
     # Determine EV% threshold based on market type and segment
@@ -275,8 +278,10 @@ def should_log_bet(
             print(
                 f"⛔ should_log_bet: Rejected due to EV threshold → EV: {ev:.2f}%, Required: {threshold_frac * 100:.2f}%"
             )
+            print("⛔ Skipping: EV below threshold")
         new_bet["entry_type"] = "none"
         new_bet["skip_reason"] = "low_ev"
+        print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
         return build_skipped_evaluation("low_ev", game_id, new_bet)
 
     base_market = market.replace("alternate_", "")
@@ -294,12 +299,6 @@ def should_log_bet(
 
     entry_type = "top-up" if prior_stake > 0 else "first"
     delta = max(0.0, stake - prior_stake)
-
-    print(f"[DEBUG] Evaluating exposure for {theme_key}")
-    print(f"  CSV Exposure: {prior_stake}")
-    print(f"  Target Stake: {stake}")
-    print(f"  Stake Delta: {stake - prior_stake}")
-    print(f"  Entry Type: {'top-up' if prior_stake > 0 else 'first'}")
 
     if entry_type == "top-up" and delta < MIN_TOPUP_STAKE:
         entry_type = "none"
@@ -336,20 +335,44 @@ def should_log_bet(
     consensus_move = float(new_bet.get("consensus_move", 0.0) or 0.0)
     required_move = float(new_bet.get("required_move", 0.0) or 0.0)
 
+    baseline_prob = new_bet.get("baseline_consensus_prob")
+    if "market_prob" not in new_bet and "consensus_prob" in new_bet:
+        new_bet["market_prob"] = new_bet["consensus_prob"]
+    new_prob = new_bet.get("market_prob")
+
+    if verbose:
+        print(f"\n🧪 [DEBUG] Evaluating Bet [{entry_type}]:")
+        print(f"• game_id: {game_id}")
+        print(f"• market: {market}")
+        print(f"• side: {side}")
+        print(f"• entry_type: {entry_type}")
+        print(f"• sim_prob: {new_bet.get('sim_prob')}")
+        print(f"• ev_percent: {ev:.2f}%")
+        print(f"• stake: {stake:.2f}u")
+        print(f"• raw_kelly: {new_bet.get('raw_kelly')}")
+        print(f"• baseline_consensus_prob: {baseline_prob}")
+        print(f"• market_prob: {new_prob}")
+        print(f"• consensus_move: {consensus_move}")
+        print(f"• required_move: {required_move}")
+        print(f"• movement_confirmed: {new_bet.get('movement_confirmed')}")
+        print(f"• hours_to_game: {hours_to_game}")
+        print(f"• CSV stake: {csv_stake}")
+        print(f"• theme_total: {theme_total}")
+        print(f"• segment: {segment}")
+
     if consensus_move >= required_move and not new_bet.get("movement_confirmed"):
         new_bet["movement_confirmed"] = True
 
     if not new_bet.get("movement_confirmed") and new_bet.get("entry_type") in {"first", "top-up"} and consensus_move < required_move:
         new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+        new_bet["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
         new_bet["stake"] = 0.0
+        if verbose:
+            print("⛔ Skipping: Market move not confirmed")
+        print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
         return build_skipped_evaluation(SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet)
 
     tracker_key = f"{game_id}:{market}:{side}"
-
-    baseline_prob = new_bet.get("baseline_consensus_prob")
-    if "market_prob" not in new_bet and "consensus_prob" in new_bet:
-        new_bet["market_prob"] = new_bet["consensus_prob"]
-    new_prob = new_bet.get("market_prob")
     # Allow snapshot-defined thresholds to override the static constant
     threshold = required_move if required_move > 0 else market_prob_increase_threshold
 
@@ -357,7 +380,11 @@ def should_log_bet(
         if baseline_prob is None or new_prob is None:
             _log_verbose("⛔ No baseline probability — skipping log.", verbose)
             new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            new_bet["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             new_bet["stake"] = 0.0
+            if verbose:
+                print("⛔ Skipping: Market move not confirmed")
+            print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
             return build_skipped_evaluation(
                 SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
             )
@@ -368,7 +395,11 @@ def should_log_bet(
                     f"⛔ Skipping {entry_type} bet — market probability did not improve ({new_prob:.4f} ≤ {baseline_prob:.4f})"
                 )
             new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            new_bet["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             new_bet["stake"] = 0.0
+            if verbose:
+                print("⛔ Skipping: Market prob <= baseline prob")
+            print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
             return build_skipped_evaluation(
                 SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
             )
@@ -384,7 +415,11 @@ def should_log_bet(
                     f"(threshold {threshold:.4f}; {baseline_prob:.4f}→{new_prob:.4f})"
                 )
             new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+            new_bet["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
             new_bet["stake"] = 0.0
+            if verbose:
+                print("⛔ Skipping: Market move not confirmed")
+            print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
             return build_skipped_evaluation(
                 SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
             )
@@ -402,7 +437,11 @@ def should_log_bet(
                         f"(threshold {threshold:.4f}; {baseline_prob:.4f}→{new_prob:.4f})"
                     )
                 new_bet["last_skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
+                new_bet["skip_reason"] = SkipReason.MARKET_NOT_MOVED.value
                 new_bet["stake"] = 0.0
+                if verbose:
+                    print("⛔ Skipping: Market move < required threshold")
+                print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
                 return build_skipped_evaluation(
                     SkipReason.MARKET_NOT_MOVED.value, game_id, new_bet
                 )
@@ -424,8 +463,10 @@ def should_log_bet(
             print(
                 f"⏳ should_log_bet: Skipping {segment} bet — too early (>12h to game)"
             )
+            print("⛔ Skipping: Market too early for segment")
         new_bet["entry_type"] = "none"
         new_bet["skip_reason"] = "time_blocked"
+        print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
         return build_skipped_evaluation("time_blocked", game_id, new_bet)
 
     rounded_delta = round_stake(delta)
@@ -439,6 +480,9 @@ def should_log_bet(
             )
             new_bet["entry_type"] = "none"
             new_bet["skip_reason"] = SkipReason.LOW_INITIAL.value
+            if verbose:
+                print("⛔ Skipping: Stake < 1.0u for first bet")
+            print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
             return build_skipped_evaluation(
                 SkipReason.LOW_INITIAL.value, game_id, new_bet
             )
@@ -500,4 +544,7 @@ def should_log_bet(
     new_bet["entry_type"] = "none"
     new_bet["skip_reason"] = skip_reason
     _log_verbose(msg, verbose)
+    if verbose:
+        print("⛔ Skipping: Stake delta < 0.5u for top-up")
+    print(f"⏱️ Final Skip Reason: {new_bet.get('skip_reason')}")
     return build_skipped_evaluation(skip_reason, game_id, new_bet)
