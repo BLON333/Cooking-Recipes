@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime
 
-from core.utils import safe_load_json
+from core.utils import safe_load_dict
 from core.lock_utils import with_locked_file
 
 MICRO_TOPUPS_PATH = os.path.join('logs', 'micro_topups_pending.json')
@@ -11,7 +11,7 @@ MICRO_TOPUPS_PATH = os.path.join('logs', 'micro_topups_pending.json')
 
 def load_micro_topups(path: str = MICRO_TOPUPS_PATH) -> dict:
     """Return dict of pending micro top-ups."""
-    data = safe_load_json(path)
+    data = safe_load_dict(path)
     if isinstance(data, dict):
         return data
     return {}

@@ -14,7 +14,7 @@ from datetime import datetime
 from core.utils import (
     now_eastern,
     to_eastern,
-    safe_load_json,
+    safe_load_dict,
     normalize_to_abbreviation,
     normalize_line_label,
     canonical_game_id,
@@ -336,7 +336,7 @@ def monitor_loop(poll_interval=600, target_date=None, force_game_id=None):
 
         file_path = os.path.join(closing_odds_path, f"{today}.json")
         if os.path.exists(file_path):
-            existing = safe_load_json(file_path)
+            existing = safe_load_dict(file_path)
             if not isinstance(existing, dict):
                 logger.warning(
                     "⚠️ Warning: Corrupt closing odds file for %s. Starting fresh.",

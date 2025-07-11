@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from core.snapshot_core import build_key
-from core.utils import safe_load_json, parse_snapshot_timestamp
+from core.utils import parse_snapshot_timestamp
 from core.snapshot_tracker_loader import (
     find_latest_market_snapshot_path,
     find_latest_snapshot_tracker_path,
@@ -13,7 +13,12 @@ from core.snapshot_tracker_loader import (
 BACKTEST_DIR = "backtest"
 
 def load_json(path: str) -> Any:
-    return safe_load_json(path)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Failed to load JSON from {path}: {e}")
+        return None
 
 def main() -> None:
     snapshot_path = find_latest_market_snapshot_path(BACKTEST_DIR)

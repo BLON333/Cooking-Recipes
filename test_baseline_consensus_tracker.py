@@ -1,7 +1,7 @@
 import os
 import json
 from core.snapshot_tracker_loader import find_latest_market_snapshot_path
-from core.utils import safe_load_json, build_snapshot_key
+from core.utils import safe_load_json, safe_load_dict, build_snapshot_key
 
 BACKTEST_DIR = "backtest"
 PENDING_BETS_PATH = os.path.join("logs", "pending_bets.json")
@@ -20,7 +20,7 @@ def main() -> None:
         print("❌ Snapshot file is not a list")
         return
 
-    pending_bets = safe_load_json(PENDING_BETS_PATH) or {}
+    pending_bets = safe_load_dict(PENDING_BETS_PATH)
     if not isinstance(pending_bets, dict):
         pending_bets = {}
 

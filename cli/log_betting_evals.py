@@ -30,7 +30,7 @@ from core.market_snapshot_tracker import (
 from core.snapshot_core import build_key
 from core.skip_reasons import SkipReason
 from core.utils import (
-    safe_load_json,
+    safe_load_dict,
     now_eastern,
     EASTERN_TZ,
     parse_game_id,
@@ -2477,7 +2477,7 @@ def run_batch_logging(
     micro_topups = load_micro_topups()
 
     if isinstance(market_odds, str):
-        all_market_odds = safe_load_json(market_odds)
+        all_market_odds = safe_load_dict(market_odds)
         if all_market_odds is None:
             logger.warning("❌ Failed to load odds file %s", market_odds)
             return
@@ -2491,7 +2491,7 @@ def run_batch_logging(
 
     fallback_odds = {}
     if fallback_odds_path:
-        fallback_odds = safe_load_json(fallback_odds_path) or {}
+        fallback_odds = safe_load_dict(fallback_odds_path)
         if not isinstance(fallback_odds, dict):
             fallback_odds = {}
         print(
@@ -2647,7 +2647,7 @@ def run_batch_logging(
         if not os.path.exists(sim_path):
             continue
 
-        sim = safe_load_json(sim_path)
+        sim = safe_load_dict(sim_path)
         if sim is None:
             print(f"❌ Failed to load simulation file {sim_path}")
             continue
@@ -3124,7 +3124,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if args.odds_path:
-        odds = safe_load_json(args.odds_path)
+        with open(args.odds_path, "r", encoding="utf-8") as f:
+            odds = json.load(f)
         if odds is None:
             logger.warning("❌ Failed to load odds file %s", args.odds_path)
             sys.exit(1)

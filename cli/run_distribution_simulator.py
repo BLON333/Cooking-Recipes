@@ -45,6 +45,7 @@ from core.utils import (
     TEAM_NAME_TO_ABBR,
     normalize_label_for_odds,
     safe_load_json,
+    safe_load_dict,
     game_id_to_dt,
 )
 from core.scaling_utils import scale_distribution
@@ -60,7 +61,10 @@ def _load_market_odds(date_str: str) -> dict | None:
     """Load market odds JSON for ``date_str`` once and cache the result."""
     if date_str not in _MARKET_ODDS_CACHE:
         path = os.path.join("data", "market_odds", f"{date_str}.json")
-        _MARKET_ODDS_CACHE[date_str] = safe_load_json(path) if os.path.exists(path) else None
+        if os.path.exists(path):
+            _MARKET_ODDS_CACHE[date_str] = safe_load_dict(path)
+        else:
+            _MARKET_ODDS_CACHE[date_str] = None
     return _MARKET_ODDS_CACHE[date_str]
 
 

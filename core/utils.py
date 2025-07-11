@@ -113,6 +113,23 @@ def safe_load_json(path: str) -> list:
         logger.exception("❌ Failed to load JSON from %s", path)
     return rows
 
+
+def safe_load_dict(path: str) -> dict:
+    """Return a JSON dict from ``path`` or an empty dict on failure."""
+    from core.logger import get_logger
+
+    logger = get_logger(__name__)
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if not isinstance(data, dict):
+                raise ValueError("Expected dict, got non-dict JSON")
+            return data
+    except Exception as e:  # pragma: no cover - I/O edge cases
+        logger.warning("⚠️ Failed to load dict from %s: %s", path, e)
+        return {}
+
 TEAM_ABBR_FIXES = {
     "CHW": "CWS", "WSN": "WSH", "KCR": "KC", "TBD": "TB", "ATH": "OAK"
 }
