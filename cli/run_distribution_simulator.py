@@ -316,13 +316,19 @@ def simulate_distribution(game_id, line, debug=False, no_weather=False, edge_thr
     if not no_weather:
         try:
             if os.path.exists(cache_path):
-                weather_profile = safe_load_json(cache_path)
+                try:
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        weather_profile = json.load(f)
+                    if not isinstance(weather_profile, dict):
+                        raise ValueError("Unexpected JSON structure")
+                except Exception as e:
+                    print(f"[WARN] Failed to load cached weather: {e}")
+                    weather_profile = get_noaa_weather(park_name)
             else:
                 weather_profile = get_noaa_weather(park_name)
-            if not isinstance(weather_profile, dict):
-                weather_profile = get_noaa_weather(park_name)
+
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            with open(cache_path, "w") as f:
+            with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(weather_profile, f, indent=2)
         except Exception:
             weather_profile = {"wind_direction": "none", "wind_speed": 0, "temperature": 70, "humidity": 50}
