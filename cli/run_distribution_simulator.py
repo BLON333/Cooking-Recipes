@@ -348,9 +348,18 @@ def simulate_distribution(game_id, line, debug=False, no_weather=False, edge_thr
     print(f"  Starters: {away_abbr} → {pitcher_data['away']['name']} | {home_abbr} → {pitcher_data['home']['name']}")
 
     # Load calibration
-    calibration = safe_load_json("logs/calibration_offset.json")
-    if not isinstance(calibration, dict):
+    try:
+        with open("logs/calibration_offset.json", "r", encoding="utf-8") as f:
+            calibration = json.load(f)
+    except Exception as e:
+        print(f"\u26A0\uFE0F Failed to load calibration_offset.json: {e}")
         calibration = {}
+
+    if not calibration:
+        print(
+            "\u26A0\uFE0F Warning: calibration file loaded as empty — using default scaling factors."
+        )
+
     pricing_engine = MLBPricingEngine(calibration)
 
     print(f"\n🔧 Calibration Loaded:")
