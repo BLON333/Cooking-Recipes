@@ -333,14 +333,11 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
                 "theme_key",
             ]:
                 val = row.get(field)
+                if field == "snapshot_roles":
+                    continue  # Don't merge roles — they are reassigned fresh
                 if field in prior and (val is None or val is False or val == []):
-                    if field == "snapshot_roles" and row.get(field):
-                        # Preserve any roles already on the row
-                        roles = set(prior[field])
-                        roles.update(row[field])
-                        row[field] = sorted(roles)
-                    else:
-                        row[field] = prior[field]
+                    row[field] = prior[field]
+
 
         skip = (
             row.get("skip_reason") in {"low_ev", "time_blocked"}
