@@ -11,7 +11,7 @@ from core.odds_fetcher import (
     american_to_prob,
 )
 from core.market_pricer import to_american_odds
-from core.utils import normalize_line_label, safe_load_json, canonical_game_id
+from core.utils import normalize_line_label, safe_load_dict, canonical_game_id
 
 load_dotenv()
 from core.logger import get_logger
@@ -108,7 +108,7 @@ def save_output_json(data, date_str):
 
     existing = {}
     if os.path.exists(path):
-        loaded = safe_load_json(path)
+        loaded = safe_load_dict(path)
         if isinstance(loaded, dict):
             existing = loaded
 

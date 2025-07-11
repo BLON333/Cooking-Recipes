@@ -2,7 +2,7 @@ import os
 import json
 from typing import Optional
 
-from core.utils import safe_load_json, parse_game_id
+from core.utils import safe_load_json, safe_load_dict, parse_game_id
 from core.snapshot_tracker_loader import (
     find_latest_market_snapshot_path,
     find_latest_snapshot_tracker_path,
@@ -21,7 +21,7 @@ TARGET_SIDE = 'Under 4.5'
 
 
 def load_pending_bet(game_id: str, market: str, side: str) -> Optional[dict]:
-    data = safe_load_json(PENDING_BETS_PATH) or {}
+    data = safe_load_dict(PENDING_BETS_PATH)
     key = f"{game_id}:{market}:{side}"
     return data.get(key)
 
@@ -41,7 +41,7 @@ def load_snapshot_row(path: str, game_id: str, market: str, side: str) -> Option
 def load_snapshot_tracker(game_date: str) -> dict:
     path = find_latest_snapshot_tracker_path(game_date)
     if path and os.path.exists(path):
-        tracker = safe_load_json(path)
+        tracker = safe_load_dict(path)
         if isinstance(tracker, dict):
             return tracker
     try:

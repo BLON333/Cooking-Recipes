@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 from core.utils import (
     format_market_key,
     TEAM_ABBR,
-    safe_load_json,
+    safe_load_dict,
     normalize_line_label,
     normalize_to_abbreviation,
     canonical_game_id,
@@ -72,7 +72,7 @@ def update_clv(csv_path, odds_json_path, target_date):
     with open(csv_path, "r", newline="") as f:
         rows = list(csv.DictReader(f))
 
-    closing_odds = safe_load_json(odds_json_path)
+    closing_odds = safe_load_dict(odds_json_path)
     if not isinstance(closing_odds, dict):
         logger.warning(
             "⚠️ Failed to load closing odds from %s. CLV columns will be blank.",
