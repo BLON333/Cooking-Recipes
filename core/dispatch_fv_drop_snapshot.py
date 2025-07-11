@@ -234,23 +234,38 @@ def main() -> None:
         except Exception:
             r["Req"] = 0.0
 
+    df_extra = pd.DataFrame(rows)
     df = format_for_display(rows, include_movement=False)
+
+    if "Bet" not in df.columns and "side" in df.columns:
+        df["Bet"] = df["side"]
+    if "Logged?" not in df.columns and "logged" in df.columns:
+        df["Logged?"] = df["logged"].apply(lambda x: "YES" if bool(x) else "NO")
 
     if "Move" in df.columns:
         df["Move"] = (
             pd.to_numeric(df["Move"], errors="coerce") * 100
         ).map("{:+.1f}%".format)
-    elif "consensus_move" in df.columns:
+    elif "Move" in df_extra.columns:
         df["Move"] = (
-            pd.to_numeric(df["consensus_move"], errors="coerce") * 100
+            pd.to_numeric(df_extra.loc[df.index, "Move"], errors="coerce") * 100
         ).map("{:+.1f}%".format)
+    elif "consensus_move" in df_extra.columns:
+        df["Move"] = (
+            pd.to_numeric(df_extra.loc[df.index, "consensus_move"], errors="coerce") * 100
+        ).map("{:+.1f}%".format)
+
     if "Req" in df.columns:
         df["Req"] = (
             pd.to_numeric(df["Req"], errors="coerce") * 100
         ).map("{:.1f}%".format)
-    elif "required_move" in df.columns:
+    elif "Req" in df_extra.columns:
         df["Req"] = (
-            pd.to_numeric(df["required_move"], errors="coerce") * 100
+            pd.to_numeric(df_extra.loc[df.index, "Req"], errors="coerce") * 100
+        ).map("{:.1f}%".format)
+    elif "required_move" in df_extra.columns:
+        df["Req"] = (
+            pd.to_numeric(df_extra.loc[df.index, "required_move"], errors="coerce") * 100
         ).map("{:.1f}%".format)
 
     if "consensus_move" in df.columns:
@@ -423,6 +438,7 @@ def main() -> None:
     ]
     if "Status" in df_fv_filtered.columns or "Status" in df_fv_all.columns:
         columns.append("Status")
+    print("🧪 Columns in df_fv_filtered:", df_fv_filtered.columns.tolist())
     missing = [c for c in columns if c not in df_fv_filtered.columns]
     missing_all = [c for c in columns if c not in df_fv_all.columns]
     if missing:
