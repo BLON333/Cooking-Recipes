@@ -1,6 +1,9 @@
 import json
 import requests
 from core.utils import parse_game_id
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 def get_park_name(game_id):
     park_by_home_team = {
@@ -46,9 +49,15 @@ def get_park_factors(park_name):
     try:
         with open("data/park_factors.json") as f:
             park_data = json.load(f)
+        if park_name not in park_data:
+            logger.warning(
+                "⚠️ Using League Average park factors for %s", park_name
+            )
         return park_data.get(park_name, park_data["League Average"])
     except Exception as e:
-        print(f"[ERROR] Failed to load park factors for '{park_name}': {e}")
+        logger.warning(
+            "⚠️ Failed to load park factors for %s: %s", park_name, e
+        )
         return {"hr_mult": 1.0, "single_mult": 1.0}
 
 _DIR_DEG = {
@@ -123,7 +132,7 @@ def get_noaa_weather(park_name):
     }
 
     if park_name in domes:
-        print(f"[🌐] Skipping NOAA fetch for dome stadium: {park_name}")
+        logger.info("\U0001F30D Skipping NOAA fetch for dome stadium: %s", park_name)
         return {
             "wind_direction": "none",
             "wind_speed": 0,
@@ -135,6 +144,10 @@ def get_noaa_weather(park_name):
         with open("data/stadium_locations.json") as f:
             stadiums = json.load(f)
 
+        if park_name not in stadiums:
+            logger.warning(
+                "⚠️ Using League Average location for %s", park_name
+            )
         location = stadiums.get(park_name, stadiums["League Average"])
         lat, lon = location["lat"], location["lon"]
 
@@ -162,7 +175,9 @@ def get_noaa_weather(park_name):
         }
 
     except Exception as e:
-        print(f"[ERROR] NOAA weather fetch failed for {park_name}: {e}")
+        logger.warning(
+            "⚠️ NOAA weather fetch failed for %s: %s", park_name, e
+        )
         return {
             "wind_direction": "none",
             "wind_speed": 0,
