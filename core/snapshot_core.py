@@ -509,8 +509,8 @@ def send_bet_snapshot_to_discord(
     try:
         min_stake = 1.0
         stake_vals = None
-        if "full_stake" in df.columns:
-            stake_vals = pd.to_numeric(df["full_stake"], errors="coerce")
+        if "raw_kelly" in df.columns:
+            stake_vals = pd.to_numeric(df["raw_kelly"], errors="coerce")
         elif "stake" in df.columns:
             stake_vals = pd.to_numeric(df["stake"], errors="coerce")
         elif "Stake" in df.columns:
@@ -605,7 +605,7 @@ def send_bet_snapshot_to_discord(
         "blended_fv",
         "market_class",
         "_raw_sportsbook",
-        "full_stake",
+        "raw_kelly",
         "blended_prob",
         "segment",
         "date_simulated",
@@ -1085,7 +1085,6 @@ def build_snapshot_rows(
                 "market_odds": price,
                 "ev_percent": round(ev_pct, 2),
                 "stake": stake,
-                "full_stake": stake,
                 "raw_kelly": raw_kelly,
                 "segment": segment,
                 "market_class": market_class,
@@ -1557,7 +1556,6 @@ def expand_snapshot_rows_with_kelly(
                     "market_odds": odds_val,
                     "ev_percent": round(ev, 2),
                     "stake": stake,
-                    "full_stake": stake,
                     "raw_kelly": raw_kelly,
                     "_raw_sportsbook": per_book,
                     "consensus_books": per_book,
@@ -1770,8 +1768,8 @@ def dispatch_snapshot_rows(
     # Stake filter (prospective bets bypass minimum)
     try:
         stake_vals = None
-        if "full_stake" in df.columns:
-            stake_vals = pd.to_numeric(df["full_stake"], errors="coerce")
+        if "raw_kelly" in df.columns:
+            stake_vals = pd.to_numeric(df["raw_kelly"], errors="coerce")
         elif "stake" in df.columns:
             stake_vals = pd.to_numeric(df["stake"], errors="coerce")
         elif "Stake" in df.columns:

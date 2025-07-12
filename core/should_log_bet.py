@@ -108,7 +108,7 @@ def build_skipped_evaluation(
     result = {
         "game_id": game_id,
         "log": False,
-        "full_stake": 0.0,
+        "raw_kelly": 0.0,
         "skip_reason": reason,
         "skip": True,
         "reason": reason,
@@ -215,13 +215,13 @@ def should_log_bet(
     market = new_bet["market"]
     side = normalize_label_for_odds(new_bet["side"], market)
     new_bet["side"] = side  # ensure consistent formatting
-    # ``full_stake`` may be absent in legacy entries; fall back to ``stake``
+    # ``raw_kelly`` may be absent in legacy entries; fall back to ``stake``
     # or 0.0 to avoid KeyError.
     stake = round_stake(
         float(
             new_bet.get(
                 "raw_kelly",
-                new_bet.get("full_stake", new_bet.get("stake", 0.0)),
+                new_bet.get("stake", 0.0),
             )
         )
     )
@@ -494,7 +494,7 @@ def should_log_bet(
             "skip",
             "log",
             "entry_type",
-            "full_stake",
+            "raw_kelly",
             "stake",
             "skip_reason",
         ]:
@@ -504,7 +504,7 @@ def should_log_bet(
             "log": True,
             "entry_type": "first",
             "stake": stake,
-            "full_stake": stake,
+            "raw_kelly": stake,
             "ev": ev,
             "game_id": game_id,
             "side": new_bet["side"],
@@ -521,7 +521,7 @@ def should_log_bet(
             "skip",
             "log",
             "entry_type",
-            "full_stake",
+            "raw_kelly",
             "stake",
             "skip_reason",
         ]:
@@ -531,7 +531,7 @@ def should_log_bet(
             "log": True,
             "entry_type": "top-up",
             "stake": rounded_delta,
-            "full_stake": stake,
+            "raw_kelly": stake,
             "partial_stake": rounded_delta,
             "ev": ev,
             "game_id": game_id,

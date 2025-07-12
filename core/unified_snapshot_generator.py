@@ -270,7 +270,7 @@ def _enrich_snapshot_row(row: dict, *, debug_movement: bool = False) -> None:
     # 🧩 Enrich: early/low-EV gating
     ev = row.get("ev_percent", 0.0) or 0.0
     rk = row.get("raw_kelly", 0.0) or 0.0
-    stake = row.get("stake", row.get("full_stake", 0.0)) or 0.0
+    stake = row.get("stake", row.get("raw_kelly", 0.0)) or 0.0
     if ev < 5.0 and rk < 1.0 and stake < 1.0:
         row.setdefault("skip_reason", "low_ev")
 
@@ -346,7 +346,7 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
             except Exception:
                 ev = 0.0
             try:
-                stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+                stake = float(row.get("stake", row.get("raw_kelly", 0) or 0))
             except Exception:
                 stake = 0.0
 
@@ -761,7 +761,7 @@ def main() -> None:
                 for row in all_rows:
                     try:
                         ev = float(row.get("ev_percent", 0))
-                        stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+                        stake = float(row.get("stake", row.get("raw_kelly", 0) or 0))
                         if ev < 5.0 or stake < 1.0:
                             continue
 
@@ -837,7 +837,7 @@ def main() -> None:
                             continue
 
                         ev = float(row.get("ev_percent", 0))
-                        stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+                        stake = float(row.get("stake", row.get("raw_kelly", 0) or 0))
                         raw_kelly = float(row.get("raw_kelly", 0) or 0)
                         required_move = row.get("required_move")
                         movement_confirmed = bool(row.get("movement_confirmed"))
