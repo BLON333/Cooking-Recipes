@@ -224,7 +224,7 @@ def evaluate_late_confirmed_bet(
         print(f"🔁 Using raw_kelly stake without confirmation scaling: {raw_kelly:.4f}")
         target_stake = round(raw_kelly, 4)
         try:
-            max_full = float(bet.get("full_stake", target_stake))
+            max_full = float(bet.get("raw_kelly", target_stake))
         except Exception:
             max_full = target_stake
         target_stake = min(target_stake, max_full)
@@ -232,7 +232,7 @@ def evaluate_late_confirmed_bet(
         updated.update(
             {
                 "stake": target_stake,
-                "full_stake": target_stake,
+                "raw_kelly": target_stake,
                 "entry_type": "first",
                 "consensus_prob": new_prob,
                 "market_prob": new_prob,
@@ -243,7 +243,7 @@ def evaluate_late_confirmed_bet(
     # Top-up: scale to raw Kelly ignoring confirmation
     target_stake = raw_kelly
     try:
-        max_full = float(bet.get("full_stake", target_stake))
+        max_full = float(bet.get("raw_kelly", target_stake))
     except Exception:
         max_full = target_stake
 
@@ -257,7 +257,7 @@ def evaluate_late_confirmed_bet(
     updated.update(
         {
             "stake": delta,
-            "full_stake": target_stake,
+            "raw_kelly": target_stake,
             "entry_type": "top-up",
             "consensus_prob": new_prob,
             "market_prob": new_prob,
