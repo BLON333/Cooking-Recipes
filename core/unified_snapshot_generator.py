@@ -322,8 +322,6 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
 
         if prior:
             for field in [
-                "queued",
-                "queued_ts",
                 "logged",
                 "logged_ts",
                 "skip_reason",
@@ -337,6 +335,41 @@ def _merge_persistent_fields(rows: list, prior_map: dict) -> None:
                     continue  # Don't merge roles — they are reassigned fresh
                 if field in prior and (val is None or val is False or val == []):
                     row[field] = prior[field]
+
+        # Determine queue status for the current snapshot
+        if row.get("logged"):
+            row["queued"] = False
+            row.pop("queued_ts", None)
+        else:
+            try:
+                ev = float(row.get("ev_percent", 0))
+            except Exception:
+                ev = 0.0
+            try:
+                stake = float(row.get("stake", row.get("full_stake", 0) or 0))
+            except Exception:
+                stake = 0.0
+
+            qualifies = (
+                ev >= 5.0
+                and stake >= 1.0
+                and bool(row.get("movement_confirmed"))
+            )
+
+            if qualifies:
+                row["queued"] = True
+                row["queued_ts"] = now_ts
+                row.pop("skip_reason", None)
+            else:
+                row["queued"] = False
+                row.pop("queued_ts", None)
+                if "skip_reason" not in row:
+                    if ev < 5.0:
+                        row["skip_reason"] = "low_ev"
+                    elif stake < 1.0:
+                        row["skip_reason"] = "low_stake"
+                    elif not row.get("movement_confirmed"):
+                        row["skip_reason"] = "not_confirmed"
 
 
         skip = (
