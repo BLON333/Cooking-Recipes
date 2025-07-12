@@ -2803,7 +2803,7 @@ def process_theme_logged_bets(
                 if theme_total >= proposed_stake:
                     if key not in existing:
                         logger.warning(
-                            "Tracker shows full stake but bet missing from CSV: %s",
+                            "Tracker shows raw Kelly stake but bet missing from CSV: %s",
                             key,
                         )
                         # Allow logging to proceed in case of tracker desync
