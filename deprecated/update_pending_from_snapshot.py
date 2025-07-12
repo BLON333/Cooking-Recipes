@@ -52,7 +52,7 @@ def filter_rows(rows: list) -> list:
             logged = bool(row.get("logged"))
             ev = float(row.get("ev_percent", 0) or 0)
             rk = float(row.get("raw_kelly", 0) or 0)
-            stake = float(row.get("stake", row.get("full_stake", 0)) or 0)
+            stake = float(row.get("stake", row.get("raw_kelly", 0)) or 0)
         except Exception:
             continue
 

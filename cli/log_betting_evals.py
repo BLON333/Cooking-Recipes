@@ -826,7 +826,6 @@ def expand_snapshot_rows_with_kelly(
                         "segment_label": bet.get("segment_label"),
                         "ev_percent": round(ev, 2),
                         "stake": stake,
-                        "full_stake": stake,
                         "raw_kelly": raw_kelly,
                         "_prior_snapshot": prior_snapshot_row,
                         "_raw_sportsbook": raw_books,
@@ -1069,7 +1068,7 @@ def get_market_class_emoji(segment_label: str) -> str:
 def get_topup_note(
     ev: float,
     stake: float,
-    full_stake: float,
+    raw_kelly: float,
     entry_type: str,
     market_class: str | None,
 ) -> tuple[str, str, str, str]:
@@ -1091,7 +1090,7 @@ def get_topup_note(
 
     note = ""
     if entry_type == "top-up":
-        note = f"\U0001f501 Top-Up: `{stake:.2f}u` added → Total: `{full_stake:.2f}u`"
+        note = f"\U0001f501 Top-Up: `{stake:.2f}u` added → Total: `{raw_kelly:.2f}u`"
 
     return tag, header, bet_label, note
 
@@ -1100,11 +1099,11 @@ def build_discord_embed(row: dict) -> str:
     """Return the Discord message body for a logged bet."""
     ev = float(row.get("ev_percent", 0))
     stake = round(float(row.get("stake", 0)), 2)
-    full_stake = round(float(row.get("full_stake", stake)), 2)
+    raw_kelly = round(float(row.get("raw_kelly", stake)), 2)
     entry_type = row.get("entry_type", "first")
 
     tag, header, bet_label, topup_note = get_topup_note(
-        ev, stake, full_stake, entry_type, row.get("market_class")
+        ev, stake, raw_kelly, entry_type, row.get("market_class")
     )
 
     if row.get("test_mode"):
@@ -1338,10 +1337,10 @@ def send_discord_notification(row, skipped_bets=None):
     print(f"Webhook URL resolved: {webhook_url}")
 
     stake = round(float(row.get("stake", 0)), 2)
-    full_stake = round(float(row.get("full_stake", stake)), 2)
+    raw_kelly = round(float(row.get("raw_kelly", stake)), 2)
     entry_type = row.get("entry_type", "first")
     print(
-        f"📬 Sending Discord Notification → stake: {stake}, full: {full_stake}, type: {entry_type}"
+        f"📬 Sending Discord Notification → stake: {stake}, full: {raw_kelly}, type: {entry_type}"
     )
 
     message = build_discord_embed(row)
@@ -1419,14 +1418,14 @@ def write_to_csv(
     #         f"  ⛔ Market confirmation not improved ({new_conf_val:.4f} ≤ {prev_conf_val:.4f}) — skipping {tracker_key}"
     #     )
     #     return 0
-    full_stake = round_stake(float(row.get("full_stake", 0)))
+    raw_kelly = round_stake(float(row.get("raw_kelly", 0)))
     entry_type = row.get("entry_type", "first")
-    stake_to_log = round_stake(row.get("stake", full_stake))
+    stake_to_log = round_stake(row.get("stake", raw_kelly))
 
     prev = existing.get(key, 0)
     row["cumulative_stake"] = prev + stake_to_log
-    # Preserve the total intended exposure in full_stake
-    row["full_stake"] = full_stake
+    # Preserve the total intended exposure in raw_kelly
+    row["raw_kelly"] = raw_kelly
     row["result"] = ""
 
     if dry_run:
@@ -1547,7 +1546,7 @@ def write_to_csv(
                 "_movement",
                 "_movement_str",
                 "_prior_snapshot",
-                "full_stake",
+                "raw_kelly",
                 "adjusted_kelly",
             ]:
                 row.pop(k, None)
@@ -1923,7 +1922,7 @@ def log_bets(
 
         # Continue with staking filters, logging, top-up checks...
 
-        row["full_stake"] = stake
+        row["raw_kelly"] = stake
 
         key = (game_id, matched_key, side)
         prev = existing.get(key, 0)
@@ -2321,7 +2320,7 @@ def log_derivative_bets(
                         except Exception:
                             pass
                 # Tracker update moved below evaluation to preserve prior state
-                row["full_stake"] = stake
+                row["raw_kelly"] = stake
                 row["price_source"] = price_source
                 row["segment"] = segment
 
@@ -2331,8 +2330,8 @@ def log_derivative_bets(
                     f"        → EV: {ev_calc:.2f}% | Stake: {stake:.2f}u | Model: {p_model:.1%} | Market: {p_market:.1%} | Odds: {market_price}"
                 )
 
-                full_stake = stake
-                row["full_stake"] = full_stake
+                raw_kelly_val = stake
+                row["raw_kelly"] = raw_kelly_val
                 row["entry_type"] = "top-up" if prev > 0 else "first"
                 row["result"] = ""
                 row.pop("consensus_books", None)
@@ -2395,7 +2394,7 @@ def send_summary_to_discord(skipped_bets, webhook_url):
                 "name": f"📅 {b['game_id']} | {b['market']} | {b['side']}",
                 "value": (
                     f"💸 Fair Odds: `{b['blended_fv']}`\n"
-                    f"💰 Stake: `{b.get('full_stake', b['stake']):.2f}u` @ `{b['market_odds']}`\n"
+                    f"💰 Stake: `{b.get('raw_kelly', b['stake']):.2f}u` @ `{b['market_odds']}`\n"
                     f"📈 EV: `{b['ev_percent']:+.2f}%`\n"
                     f"🚫 Reason: `{skip_reason}`\n"
                     f"🏦 Books:\n{books_str}"
@@ -2758,7 +2757,7 @@ def process_theme_logged_bets(
                 key=lambda x: 1 if x[1].get("market_class") == "alternate" else 0
             )
             for segment, row in ordered_rows:
-                stake = round(float(row.get("full_stake", row.get("stake", 0))), 2)
+                stake = round(float(row.get("raw_kelly", row.get("stake", 0))), 2)
                 ev = row.get("ev_percent", 0)
                 print(
                     f"   - {theme_key} [{segment}] → {row['side']} ({row['market']}) @ {stake:.2f}u | EV: {ev:.2f}%"
@@ -2780,8 +2779,8 @@ def process_theme_logged_bets(
                         delta_p = float(pending.get("delta", 0))
                     except Exception:
                         delta_p = 0.0
-                    row["full_stake"] = round(float(row.get("full_stake", 0)) + delta_p, 2)
-                proposed_stake = round(float(row.get("full_stake", 0)), 2)
+                    row["raw_kelly"] = round(float(row.get("raw_kelly", 0)) + delta_p, 2)
+                proposed_stake = round(float(row.get("raw_kelly", 0)), 2)
                 key = (row["game_id"], row["market"], row["side"])
                 line_key = (row["market"], row["side"])
                 theme_total = existing_exposure.get(exposure_key, 0.0)
@@ -2804,7 +2803,7 @@ def process_theme_logged_bets(
                 if theme_total >= proposed_stake:
                     if key not in existing:
                         logger.warning(
-                            "Tracker shows full stake but bet missing from CSV: %s",
+                            "Tracker shows raw Kelly stake but bet missing from CSV: %s",
                             key,
                         )
                         # Allow logging to proceed in case of tracker desync

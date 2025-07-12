@@ -22,7 +22,7 @@ UNMATCHED_MARKET_LOOKUPS = defaultdict(list)
 
 def validate_bet_schema(bet_dict):
     """Validate required keys exist in a bet evaluation result."""
-    required_keys = ["skip", "full_stake", "log"]
+    required_keys = ["skip", "raw_kelly", "log"]
     for key in required_keys:
         if key not in bet_dict:
             raise ValueError(f"Missing required key in bet evaluation: {key}")
