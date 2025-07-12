@@ -2452,6 +2452,7 @@ def run_batch_logging(
     force_log=False,
     no_save_skips=False,
 ):
+    """Evaluate queued snapshot rows and log qualifying bets."""
     from collections import defaultdict
     import os, json
     from dotenv import load_dotenv
@@ -2465,68 +2466,19 @@ def run_batch_logging(
         f"ev_min={min_ev_pct}_stake_cap={MAX_STAKE}_odds_range={min_odds}/{max_odds}"
     )
 
-    if market_odds is None:
-        logger.warning(
-            "❌ No odds data provided. Use --odds-path or pass market_odds as a dict."
-        )
-        return
-
     DISCORD_SUMMARY_WEBHOOK_URL = os.getenv("DISCORD_SUMMARY_WEBHOOK_URL")
     summary_candidates = []
-    micro_topups = load_micro_topups()
 
-    if isinstance(market_odds, str):
-        all_market_odds = safe_load_dict(market_odds)
-        if all_market_odds is None:
-            logger.warning("❌ Failed to load odds file %s", market_odds)
-            return
-        if not all_market_odds or not isinstance(all_market_odds, dict):
-            logger.warning(
-                "❌ Odds file %s is empty or malformed — skipping logging.", market_odds
-            )
-            return
-    else:
-        all_market_odds = market_odds
+    # ------------------------------------------------------------------
+    # Load snapshot rows
+    # ------------------------------------------------------------------
+    from core.snapshot_core import load_market_snapshot, find_latest_market_snapshot_path
+    snapshot_path = find_latest_market_snapshot_path()
+    snapshot_rows = load_market_snapshot(snapshot_path)
 
-    fallback_odds = {}
-    if fallback_odds_path:
-        fallback_odds = safe_load_dict(fallback_odds_path)
-        if not isinstance(fallback_odds, dict):
-            fallback_odds = {}
-        print(
-            f"📂 Loaded fallback odds from {fallback_odds_path} ({len(fallback_odds)} games)"
-        )
-
-    if fallback_odds:
-        merged_odds = dict(fallback_odds)
-        merged_odds.update(all_market_odds)
-        all_market_odds = merged_odds
-
-    def extract_start_times(odds_data):
-        from dateutil import parser
-        from pytz import timezone
-        from core.utils import canonical_game_id
-
-        if not isinstance(odds_data, dict):
-            print(
-                "⚠️ extract_start_times: odds_data is None or invalid, returning empty dict."
-            )
-            return {}
-
-        eastern = timezone("US/Eastern")
-        start_times = {}
-        for game_id, game in odds_data.items():
-            if not isinstance(game, dict):
-                continue
-            if "start_time" in game:
-                try:
-                    canon_id = canonical_game_id(game_id)
-                    start_times[canon_id] = parser.parse(game["start_time"]).astimezone(
-                        eastern
-                    )
-                except Exception:
-                    pass
-        return start_times
+    if not snapshot_rows:
+        logger.warning("⚠️ No snapshot rows found — aborting batch log")
+        return
 
     existing = load_existing_stakes("logs/market_evals.csv")
     market_evals_path = "logs/market_evals.csv"
@@ -2546,65 +2498,28 @@ def run_batch_logging(
             f"📋 Loaded market_evals.csv with columns: {market_evals_df.columns.tolist()}"
         )
 
-        # ✅ Ensure 'segment' column exists (required for correct should_log_bet evaluation)
         if "segment" not in market_evals_df.columns:
             print("🔧 Adding missing 'segment' column to market_evals_df...")
             market_evals_df["segment"] = "mainline"
     else:
         market_evals_df = pd.DataFrame()
 
-    # Load the live tracker and snapshot baseline
+    # Load trackers
     MARKET_EVAL_TRACKER.clear()
     latest_tracker, _ = load_latest_snapshot_tracker()
     MARKET_EVAL_TRACKER.update(latest_tracker)
 
-    # ------------------------------------------------------------------
-    # Snapshot tracker baseline
-    # ------------------------------------------------------------------
     MARKET_EVAL_TRACKER_BEFORE_UPDATE = {}
-
-    # 📂 Load from latest snapshot first
-    latest_tracker, snapshot_path = load_latest_snapshot_tracker()
+    latest_tracker, tracker_snapshot = load_latest_snapshot_tracker()
     MARKET_EVAL_TRACKER_BEFORE_UPDATE.update(latest_tracker)
-    if snapshot_path:
+    if tracker_snapshot:
         print(
-            f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {snapshot_path}"
+            f"📄 Loaded {len(MARKET_EVAL_TRACKER_BEFORE_UPDATE)} tracker rows from snapshot: {tracker_snapshot}"
         )
 
     print_tracker_snapshot_keys(MARKET_EVAL_TRACKER_BEFORE_UPDATE)
 
-    # ✅ Ensure all required columns exist for downstream filters like should_log_bet
-    required_cols = [
-        "game_id",
-        "market",
-        "side",
-        "lookup_side",
-        "sim_prob",
-        "fair_odds",
-        "market_prob",
-        "market_fv",
-        "model_edge",
-        "market_odds",
-        "ev_percent",
-        "blended_prob",
-        "blended_fv",
-        "hours_to_game",
-        "blend_weight_model",
-        "stake",
-        "entry_type",
-        "segment",
-        "best_book",
-        "date_simulated",
-        "result",
-        "logger_config",
-    ]
-
-    for col in required_cols:
-        if col not in market_evals_df.columns:
-            market_evals_df[col] = None
-
-    session_exposure = defaultdict(set)
-    global theme_logged
+    # Build best row cache by theme/segment
     theme_logged = defaultdict(lambda: defaultdict(dict))
 
     def cache_theme_bet(row, segment):
@@ -2622,79 +2537,92 @@ def run_batch_logging(
         bets = theme_logged[game_id][theme_key]
         current_best = bets.get(segment)
 
-        if not current_best or row["ev_percent"] >= current_best["ev_percent"]:
-            bets[segment] = row.copy()
-        else:
-            if DEBUG:
-                print(
-                    f"🧹 Skipped in cache — {market} | {row['side']} | "
-                    f"EV {row['ev_percent']} not better than current {current_best['ev_percent']}"
+        if not current_best or row.get("ev_percent", 0) >= current_best.get("ev_percent", -999):
+            bets[segment] = row
+
+    # Filter queued snapshot rows
+    pending_rows = [r for r in snapshot_rows if r.get("queued") and not r.get("logged")]
+
+    for row in pending_rows:
+        cache_theme_bet(row, row.get("segment"))
+
+    logged_rows = []
+    skipped_counts = defaultdict(int)
+
+    for game_id in theme_logged:
+        for theme_key, seg_map in theme_logged[game_id].items():
+            for segment, row in seg_map.items():
+                evaluation = should_log_bet(
+                    row.copy(),
+                    {},
+                    csv_exposure=existing_exposure,
+                    verbose=config.VERBOSE_MODE,
+                    eval_tracker=MARKET_EVAL_TRACKER,
+                    existing_csv_stakes=existing,
                 )
 
+                if not evaluation.get("log"):
+                    reason = evaluation.get("skip_reason")
+                    if reason:
+                        row["skip_reason"] = reason
+                        skipped_counts[reason] += 1
+                        if should_include_in_summary(row):
+                            ensure_consensus_books(row)
+                            summary_candidates.append(row)
+                    continue
 
+                result = evaluate_snapshot_row_for_logging(
+                    row,
+                    existing_exposure,
+                    MARKET_EVAL_TRACKER,
+                    existing,
+                )
+                if result and not result.get("skip_reason"):
+                    row.update(result)
+                    row["logged"] = True
+                    row["queued"] = False
+                    row["logged_ts"] = datetime.utcnow().isoformat()
+                    logged_rows.append(row)
+                    send_discord_notification(row, summary_candidates)
+                else:
+                    reason = (result or {}).get("skip_reason")
+                    if reason:
+                        row["skip_reason"] = reason
+                        skipped_counts[reason] += 1
+                        if should_include_in_summary(row):
+                            ensure_consensus_books(row)
+                            summary_candidates.append(row)
 
-    odds_start_times = extract_start_times(all_market_odds)
-
-    for fname in os.listdir(eval_folder):
-        if not fname.endswith(".json"):
-            continue
-
-        raw_game_id = fname.replace(".json", "")
-        game_id = canonical_game_id(raw_game_id)
-        sim_path = os.path.join(eval_folder, fname)
-
-        if not os.path.exists(sim_path):
-            continue
-
-        sim = safe_load_dict(sim_path)
-        if sim is None:
-            print(f"❌ Failed to load simulation file {sim_path}")
-            continue
-
-        mkt = get_closest_odds(game_id, all_market_odds, debug=debug or DEBUG_MISSING_ODDS)
-
-        if not mkt:
-            print(
-                f"❌ No market odds for {raw_game_id} (normalized: {game_id}), skipping."
-            )
-            if DEBUG_MISSING_ODDS:
-                prefix = game_id.rsplit("-T", 1)[0]
-                similar = [k for k in all_market_odds if k.startswith(prefix)]
-                if similar:
-                    print(f"🔍 Similar keys: {similar}")
-            continue
-
-        log_bets(
-            game_id=game_id,
-            sim_results=sim,
-            market_odds=mkt,
-            odds_start_times=odds_start_times,
-            min_ev=min_ev,
-            dry_run=dry_run,
-            cache_func=cache_theme_bet,
-            session_exposure=session_exposure,
-            skipped_bets=summary_candidates,
-            existing=existing,
-        )
-
-    process_theme_logged_bets(
-        theme_logged=theme_logged,
-        existing_exposure=existing_exposure,
-        existing=existing,
-        session_exposure=session_exposure,
-        dry_run=dry_run,
-        skipped_bets=summary_candidates,
-        webhook_url=DISCORD_SUMMARY_WEBHOOK_URL,
-        market_evals_df=market_evals_df,
-        snapshot_ev=args.min_ev,
-        image=image,
-        output_dir=output_dir,
-        force_log=force_log,
-        micro_topups=micro_topups,
+    print(
+        f"🧾 Summary: {len(logged_rows)} logged, {sum(skipped_counts.values())} skipped"
     )
+
+    snapshot_raw = logged_rows + summary_candidates
+    final_snapshot = expand_snapshot_rows_with_kelly(
+        snapshot_raw,
+        min_ev=min_ev,
+        min_stake=0.5,
+        allowed_books=POPULAR_BOOKS,
+    )
+
+    if image and final_snapshot:
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, "mlb_summary_table_model.png")
+        generate_clean_summary_image(final_snapshot, output_path=output_path, stake_mode="model")
+        upload_summary_image_to_discord(output_path, DISCORD_SUMMARY_WEBHOOK_URL)
 
     if summary_candidates and not no_save_skips and not dry_run:
         save_skipped_bets(summary_candidates)
+
+    # Write updated snapshot rows back to disk
+    from core.lock_utils import with_locked_file
+    if snapshot_path:
+        tmp = snapshot_path + ".tmp"
+        lock = snapshot_path + ".lock"
+        with with_locked_file(lock):
+            with open(tmp, "w") as f:
+                json.dump(snapshot_rows, f, indent=2)
+            os.replace(tmp, snapshot_path)
 
 
 def process_theme_logged_bets(

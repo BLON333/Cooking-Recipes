@@ -106,6 +106,13 @@ def load_latest_snapshot(folder: str = "backtest") -> list:
     return []
 
 
+def load_market_snapshot(path: str | None) -> list:
+    """Return snapshot rows loaded from ``path``."""
+    rows = safe_load_json(path) if path else []
+    logger.info("\U0001F4CA Loaded %d snapshot rows from %s", len(rows), path)
+    return rows
+
+
 def should_log_movement() -> bool:
     global movement_log_count
     movement_log_count += 1
